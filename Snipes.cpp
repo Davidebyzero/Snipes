@@ -154,6 +154,19 @@ void ParseSkillLevel(char *skillLevel, DWORD skillLevelLength)
 		skillLevelNumber = skillLevelNumberTmp;
 }
 
+static Uchar skillThing1Table  ['Z'-'A'+1] = {2, 3, 4, 3, 4, 4, 3, 4, 3, 4, 4, 5, 3, 4, 3, 4, 3, 4, 3, 4, 4, 5, 4, 4, 5, 5};
+static bool  skillThing2Table  ['Z'-'A'+1] = {0, 0, 0, 1, 1, 1, 0, 0, 1, 1, 1, 1, 0, 0, 1, 1, 0, 0, 1, 1, 1, 1, 1, 1, 1, 1};
+static bool  rubberBulletTable ['Z'-'A'+1] = {0, 0, 0, 0, 0, 0, 1, 1, 1, 1, 1, 1, 0, 0, 0, 0, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1};
+static Uchar skillThing3Table  ['Z'-'A'+1] = {0x7F, 0x7F, 0x7F, 0x3F, 0x3F, 0x1F, 0x7F, 0x7F, 0x3F, 0x3F, 0x1F, 0x1F, 0x7F, 0x7F, 0x3F, 0x3F, 0x7F, 0x7F, 0x3F, 0x3F, 0x1F, 0x1F, 0x3F, 0x1F, 0x1F, 0x0F};
+static Uchar maxSnipesTable    ['9'-'1'+1] = { 10,  20,  30,  40,  60,  80, 100, 120, 150};
+static Uchar numGeneratorsTable['9'-'1'+1] = {  3,   3,   4,   4,   5,   5,   6,   8,  10};
+static Uchar numLivesTable     ['9'-'1'+1] = {  5,   5,   5,   5,   5,   4,   4,   3,   2};
+
+bool enableElectricWalls, skillThing2, skillThing7, enableRubberBullets;
+Uchar skillThing1, skillThing3, maxSnipes, numGenerators, numLives;
+
+Uchar data_1D0;
+
 int main(int argc, char* argv[])
 {
 	input  = GetStdHandle(STD_INPUT_HANDLE);
@@ -233,6 +246,18 @@ int main(int argc, char* argv[])
 			break;
 		}
 	//printf("Skill: %c%c\n", skillLevelLetter + 'A', skillLevelNumber + '0');
+
+	enableElectricWalls = skillLevelLetter >= 'M'-'A';
+	skillThing1           = skillThing1Table  [skillLevelLetter];
+	skillThing2           = skillThing2Table  [skillLevelLetter];
+	skillThing3           = skillThing3Table  [skillLevelLetter];
+	maxSnipes             = maxSnipesTable    [skillLevelNumber];
+	numGenerators         = numGeneratorsTable[skillLevelNumber];
+	numLives              = numLivesTable     [skillLevelNumber];
+	skillThing7           = skillLevelLetter < 'W'-'A';
+	enableRubberBullets   = rubberBulletTable [skillLevelLetter];
+
+	data_1D0 = 0;
 
 	/*StartTone(2711);
 	for (;;)

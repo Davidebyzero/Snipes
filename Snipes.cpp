@@ -124,6 +124,35 @@ Uint PollKeyboard()
 	return state;
 }
 
+DWORD ReadConsole_wrapper(char buffer[], DWORD bufsize)
+{
+	DWORD numread, numreadWithoutNewline;
+	ReadConsole(input, buffer, bufsize, &numread, NULL);
+	if (!numread)
+		return numread;
+
+	numreadWithoutNewline = numread;
+	if (buffer[numread-1] == '\n')
+	{
+		numreadWithoutNewline--;
+		if (numread > 1 && buffer[numread-2] == '\r')
+			numreadWithoutNewline--;
+		return numreadWithoutNewline;
+	}
+	else
+	if (buffer[numread-1] == '\r')
+		numreadWithoutNewline--;
+
+	if (buffer[numread-1] != '\n')
+	{
+		char dummy;
+		do
+			ReadConsole(input, &dummy, 1, &numread, NULL);
+		while (numread && dummy != '\n');
+	}
+	return numreadWithoutNewline;
+}
+
 WORD random_seed_lo, random_seed_hi;
 
 Uint skillLevelLetter = 0;
@@ -154,6 +183,24 @@ void ParseSkillLevel(char *skillLevel, DWORD skillLevelLength)
 		skillLevelNumber = skillLevelNumberTmp;
 }
 
+void ReadSkillLevel()
+{
+	char skillLevel[0x80] = {0};
+	DWORD skillLevelLength = ReadConsole_wrapper(skillLevel, _countof(skillLevel));
+
+	if (skillLevel[skillLevelLength-1] == '\n')
+		skillLevelLength--;
+	if (skillLevel[skillLevelLength-1] == '\r')
+		skillLevelLength--;
+
+	for (Uint i=0; i<skillLevelLength; i++)
+		if (skillLevel[i] != ' ')
+		{
+			ParseSkillLevel(skillLevel + i, skillLevelLength - i);
+			break;
+		}
+}
+
 static Uchar skillThing1Table  ['Z'-'A'+1] = {2, 3, 4, 3, 4, 4, 3, 4, 3, 4, 4, 5, 3, 4, 3, 4, 3, 4, 3, 4, 4, 5, 4, 4, 5, 5};
 static bool  skillThing2Table  ['Z'-'A'+1] = {0, 0, 0, 1, 1, 1, 0, 0, 1, 1, 1, 1, 0, 0, 1, 1, 0, 0, 1, 1, 1, 1, 1, 1, 1, 1};
 static bool  rubberBulletTable ['Z'-'A'+1] = {0, 0, 0, 0, 0, 0, 1, 1, 1, 1, 1, 1, 0, 0, 0, 0, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1};
@@ -165,7 +212,7 @@ static Uchar numLivesTable     ['9'-'1'+1] = {  5,   5,   5,   5,   5,   4,   4,
 bool enableElectricWalls, skillThing2, skillThing7, enableRubberBullets;
 Uchar skillThing1, skillThing3, maxSnipes, numGenerators, numLives;
 
-Uchar data_1D0;
+Uchar data_1D0, data_2AA;
 
 int main(int argc, char* argv[])
 {
@@ -229,23 +276,7 @@ int main(int argc, char* argv[])
 	FillConsoleOutputAttribute(output, FOREGROUND_BLUE | FOREGROUND_GREEN | FOREGROUND_RED, windowSize.X*windowSize.Y, pos, &operationSize);
 	SetConsoleTextAttribute(output, FOREGROUND_BLUE | FOREGROUND_GREEN | FOREGROUND_RED);
 	WriteConsole(output, STRING_WITH_LEN("Enter skill level (A-Z)(1-9): "), &operationSize, 0);
-
-	char skillLevel[4] = {0};
-	DWORD skillLevelLength = 0;
-	ReadConsole(input, skillLevel, _countof(skillLevel), &skillLevelLength, NULL);
-
-	if (skillLevel[skillLevelLength-1] == '\n')
-		skillLevelLength--;
-	if (skillLevel[skillLevelLength-1] == '\r')
-		skillLevelLength--;
-
-	for (Uint i=0; i<skillLevelLength; i++)
-		if (skillLevel[i] != ' ')
-		{
-			ParseSkillLevel(skillLevel + i, skillLevelLength - i);
-			break;
-		}
-	//printf("Skill: %c%c\n", skillLevelLetter + 'A', skillLevelNumber + '0');
+	ReadSkillLevel();
 
 	WORD tick_count = GetTickCountWord();
 	random_seed_lo = (BYTE)tick_count;
@@ -257,6 +288,8 @@ int main(int argc, char* argv[])
 
 	for (;;)
 	{
+		//printf("Skill: %c%c\n", skillLevelLetter + 'A', skillLevelNumber + '0');
+
 		enableElectricWalls = skillLevelLetter >= 'M'-'A';
 		skillThing1           = skillThing1Table  [skillLevelLetter];
 		skillThing2           = skillThing2Table  [skillLevelLetter];
@@ -265,6 +298,7 @@ int main(int argc, char* argv[])
 		numGenerators         = numGeneratorsTable[skillLevelNumber];
 		numLives              = numLivesTable     [skillLevelNumber];
 		skillThing7           = skillLevelLetter < 'W'-'A';
+		data_2AA              = 2;
 		enableRubberBullets   = rubberBulletTable [skillLevelLetter];
 
 		data_1D0 = 0;
@@ -289,13 +323,48 @@ int main(int argc, char* argv[])
 		backgroundFill.Attributes = FOREGROUND_BLUE | FOREGROUND_GREEN | FOREGROUND_RED | BACKGROUND_BLUE;
 		ScrollConsoleScreenBuffer(output, &window, NULL, moveto, &backgroundFill);*/
 
-		//Uint time = 0;
 		for (;;)
 		{
 			Uint result = PollKeyboard();
-			Sleep(1);
+
+			if (forfeit_match)
+				break;
+
+			for (;;)
+			{
+				Sleep(1);
+				WORD tick_count2 = GetTickCountWord();
+				if (tick_count2 != tick_count)
+				{
+					tick_count = tick_count2;
+					break;
+				}
+			}
 		}
+
+		{
+			COORD pos;
+			pos.X = 0;
+			pos.Y = 25-1;
+			SetConsoleCursorPosition(output, pos);
+		}
+		SetConsoleTextAttribute(output, FOREGROUND_BLUE | FOREGROUND_GREEN | FOREGROUND_RED);
+		for (;;)
+		{
+			SetConsoleMode(input, ENABLE_PROCESSED_INPUT | ENABLE_LINE_INPUT | ENABLE_ECHO_INPUT);
+			WriteConsole(output, STRING_WITH_LEN("Play another game? (Y or N) "), &operationSize, 0);
+			char playAgain;
+			ReadConsole_wrapper(&playAgain, 1);
+			if (playAgain == 'Y' || playAgain == 'y')
+				goto do_play_again;
+			if (playAgain == 'N' || playAgain == 'n')
+				goto do_not_play_again;
+		}
+	do_play_again:
+		WriteConsole(output, STRING_WITH_LEN("Enter new skill level (A-Z)(1-9): "), &operationSize, 0);
+		ReadSkillLevel();
 	}
+do_not_play_again:
 
 	for (Uint i=0; i<WAVE_BUFFER_COUNT; i++)
 		waveOutUnprepareHeader(waveOutput, &waveHeader[i], sizeof(waveHeader[i]));

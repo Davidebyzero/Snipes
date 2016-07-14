@@ -96,20 +96,26 @@ Uint PollKeyboard()
 				shooting_sound_enabled ^= true;
 		}
 	}
-	Uint result = 0;
+	Uint state = 0;
 	forfeit_match = GetKeyState(VK_ESCAPE) < 0;
-	if (GetKeyState(VK_RIGHT) < 0) result |= KEYSTATE_MOVE_RIGHT;
-	if (GetKeyState(VK_LEFT ) < 0) result |= KEYSTATE_MOVE_LEFT;
-	if (GetKeyState(VK_DOWN ) < 0) result |= KEYSTATE_MOVE_DOWN;
-	if (GetKeyState(VK_CLEAR) < 0) result |= KEYSTATE_MOVE_DOWN;
-	if (GetKeyState(VK_UP   ) < 0) result |= KEYSTATE_MOVE_UP;
-	if (GetKeyState('D'     ) < 0) result |= KEYSTATE_FIRE_RIGHT;
-	if (GetKeyState('A'     ) < 0) result |= KEYSTATE_FIRE_LEFT;
-	if (GetKeyState('S'     ) < 0) result |= KEYSTATE_FIRE_DOWN;
-	if (GetKeyState('X'     ) < 0) result |= KEYSTATE_FIRE_DOWN;
-	if (GetKeyState('W'     ) < 0) result |= KEYSTATE_FIRE_UP;
+	if (GetKeyState(VK_RIGHT) < 0) state |= KEYSTATE_MOVE_RIGHT;
+	if (GetKeyState(VK_LEFT ) < 0) state |= KEYSTATE_MOVE_LEFT;
+	if (GetKeyState(VK_DOWN ) < 0) state |= KEYSTATE_MOVE_DOWN;
+	if (GetKeyState(VK_CLEAR) < 0) state |= KEYSTATE_MOVE_DOWN;
+	if (GetKeyState(VK_UP   ) < 0) state |= KEYSTATE_MOVE_UP;
+	if (GetKeyState('D'     ) < 0) state |= KEYSTATE_FIRE_RIGHT;
+	if (GetKeyState('A'     ) < 0) state |= KEYSTATE_FIRE_LEFT;
+	if (GetKeyState('S'     ) < 0) state |= KEYSTATE_FIRE_DOWN;
+	if (GetKeyState('X'     ) < 0) state |= KEYSTATE_FIRE_DOWN;
+	if (GetKeyState('W'     ) < 0) state |= KEYSTATE_FIRE_UP;
 	spacebar_state = GetKeyState(VK_SPACE) < 0;
-	return result;
+	if ((state & (KEYSTATE_MOVE_RIGHT | KEYSTATE_MOVE_LEFT)) == (KEYSTATE_MOVE_RIGHT | KEYSTATE_MOVE_LEFT) ||
+		(state & (KEYSTATE_MOVE_DOWN  | KEYSTATE_MOVE_UP  )) == (KEYSTATE_MOVE_DOWN  | KEYSTATE_MOVE_UP  ))
+		state &= ~(KEYSTATE_MOVE_RIGHT | KEYSTATE_MOVE_LEFT | KEYSTATE_MOVE_DOWN | KEYSTATE_MOVE_UP);
+	if ((state & (KEYSTATE_FIRE_RIGHT | KEYSTATE_FIRE_LEFT)) == (KEYSTATE_FIRE_RIGHT | KEYSTATE_FIRE_LEFT) ||
+		(state & (KEYSTATE_FIRE_DOWN  | KEYSTATE_FIRE_UP  )) == (KEYSTATE_FIRE_DOWN  | KEYSTATE_FIRE_UP  ))
+		state &= ~(KEYSTATE_FIRE_RIGHT | KEYSTATE_FIRE_LEFT | KEYSTATE_FIRE_DOWN | KEYSTATE_FIRE_UP);
+	return state;
 }
 
 int main(int argc, char* argv[])

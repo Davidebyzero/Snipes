@@ -81,6 +81,7 @@ static bool forfeit_match = false;
 static bool sound_enabled = true;
 static bool shooting_sound_enabled = false;
 static bool spacebar_state = false;
+static Uchar keyboard_state = 0;
 Uint PollKeyboard()
 {
 	for (;;)
@@ -214,6 +215,49 @@ Uchar skillThing1, skillThing3, maxSnipes, numGenerators, numLives;
 
 Uchar data_1D0, data_2AA;
 
+void main_609()
+{
+}
+void main_263()
+{
+}
+void main_FBD()
+{
+}
+void main_25E2(Uchar a, Uchar b)
+{
+}
+bool main_81A()
+{
+	return false;
+}
+void main_125C()
+{
+}
+void main_2124()
+{
+}
+void main_1EC1()
+{
+}
+void main_10C9()
+{
+}
+bool main_1AB0()
+{
+	keyboard_state = PollKeyboard();
+	return false;
+}
+void main_1D64()
+{
+}
+void main_260E()
+{
+}
+void main_9BB()
+{
+}
+
 int main(int argc, char* argv[])
 {
 	input  = GetStdHandle(STD_INPUT_HANDLE);
@@ -302,18 +346,14 @@ int main(int argc, char* argv[])
 		enableRubberBullets   = rubberBulletTable [skillLevelLetter];
 
 		data_1D0 = 0;
+		main_609();
+		main_263();
+		main_FBD();
+		main_25E2(0, 0xFF);
 
 		/*StartTone(2711);
 		for (;;)
 			Sleep(1000);*/
-
-		/*char string[] = "Hello, \x01 world!\n";
-		COORD pos;
-		pos.X = 10;
-		pos.Y = 10;
-		SetConsoleCursorPosition(output, pos);
-		SetConsoleTextAttribute(output, FOREGROUND_BLUE | FOREGROUND_GREEN | FOREGROUND_RED | BACKGROUND_BLUE);
-		WriteConsole(output, string, strlength(string), &operationSize, 0);*/
 
 		/*COORD moveto;
 		moveto.X = 2;
@@ -325,9 +365,7 @@ int main(int argc, char* argv[])
 
 		for (;;)
 		{
-			Uint result = PollKeyboard();
-
-			if (forfeit_match)
+			if (forfeit_match || main_81A())
 				break;
 
 			for (;;)
@@ -340,14 +378,27 @@ int main(int argc, char* argv[])
 					break;
 				}
 			}
+
+			main_125C();
+			main_2124();
+			main_1EC1();
+			main_10C9();
+
+			if (main_1AB0())
+				break;
+
+			main_1D64();
+			main_260E();
+			main_9BB();
 		}
 
-		{
-			COORD pos;
-			pos.X = 0;
-			pos.Y = 25-1;
-			SetConsoleCursorPosition(output, pos);
-		}
+		ClearSound();
+		forfeit_match = false;
+
+		COORD pos;
+		pos.X = 0;
+		pos.Y = 25-1;
+		SetConsoleCursorPosition(output, pos);
 		SetConsoleTextAttribute(output, FOREGROUND_BLUE | FOREGROUND_GREEN | FOREGROUND_RED);
 		for (;;)
 		{

@@ -65,9 +65,6 @@ void ClearSound()
 	toneFreq = 0.;
 }
 
-#define MAZE_WIDTH  (7*17)
-#define MAZE_HEIGHT (6*20)
-
 #define KEYSTATE_MOVE_RIGHT (1<<0)
 #define KEYSTATE_MOVE_LEFT  (1<<1)
 #define KEYSTATE_MOVE_DOWN  (1<<2)
@@ -232,10 +229,76 @@ bool enableElectricWalls, skillThing2, skillThing7, enableRubberBullets;
 Uchar skillThing1, skillThing3, maxSnipes, numGenerators, numLives;
 
 Uchar data_1D0, data_2AA;
+static Uchar data_2B4, data_2B3, data_2B2, data_2C0;
+static WORD data_290, data_28E, data_292;
 
-void main_609()
+#define MAZE_WIDTH  (7*17)
+#define MAZE_PITCH  128    // elements per row (MAZE_WIDTH rounded up to the nearest power of 2)
+#define MAZE_HEIGHT (6*20)
+
+static WORD maze[MAZE_PITCH * MAZE_HEIGHT];
+
+void outputText(BYTE color, WORD count, WORD dst, char *src)
 {
+	COORD pos;
+	pos.X = dst / 2 % WINDOW_WIDTH;
+	pos.Y = dst / 2 / WINDOW_WIDTH;
+	SetConsoleCursorPosition(output, pos);
+	SetConsoleTextAttribute(output, color);
+	DWORD operationSize;
+	WriteConsole(output, src, count, &operationSize, 0);
 }
+
+void outputNumber(BYTE color, WORD count, WORD dst, Uint number)
+{
+	char textbuf[strlength("4294967295")+1];
+	sprintf_s(textbuf, sizeof(textbuf), "%*u", count, number);
+	outputText(color, count, dst, textbuf);
+}
+
+static char statusLine[] = "\xDA\xBF\xB3\x01\x1A\xB3\x02\xB3""Skill""\xC0\xD9\xB3\x01\x1A\xB3\x02\xB3""Time  Men Left                 Score     0  0000001 Man Left\x65";
+
+void outputHUD()
+{
+	char skillLetter = skillLevelLetter + 'A';
+	memset((char*)maze, ' ', 40);
+	outputText  (0x17, 40, 2* 0, (char*)maze);
+	outputText  (0x17, 40, 2*40, (char*)maze);
+	outputText  (0x17,  2, 2* 0, statusLine);
+	outputNumber(0x13,  2, 2* 3, 0);
+	outputText  (0x17,  1, 2* 6, statusLine+2);
+	outputText  (0x13,  2, 2* 8, statusLine+3);
+	outputNumber(0x13,  4, 2*11, 0);
+	outputText  (0x17,  1, 2*16, statusLine+5);
+	outputText  (0x13,  1, 2*18, statusLine+6);
+	outputNumber(0x13,  4, 2*20, 0);
+	outputText  (0x17,  1, 2*25, statusLine+7);
+	outputText  (0x17,  5, 2*27, statusLine+8);
+	outputNumber(0x17,  1, 2*38, skillLevelNumber);
+	outputText  (0x17,  1, 2*37, &skillLetter);
+	outputText  (0x17,  2, 2*40, statusLine+13);
+	outputText  (0x17,  1, 2*46, statusLine+15);
+	outputText  (0x17,  2, 2*48, statusLine+16);
+	outputText  (0x17,  1, 2*56, statusLine+18);
+	outputText  (0x17,  1, 2*58, statusLine+19);
+	outputText  (0x17,  1, 2*65, statusLine+20);
+	outputText  (0x17,  4, 2*67, statusLine+21);
+	memcpy(maze, statusLine+25, 40);
+	((char*)maze)[0] = numLives + '0';
+	((char*)maze)[1] = 0;
+	if (numLives == 1)
+		((char*)maze)[6] = 'a';
+	outputText  (0x17, 40, 2*80, (char*)maze);
+
+	data_2B4 = 0xFF;
+	data_2B3 = 0xFF;
+	data_2B2 = 0xFF;
+	data_290 = 0xFFFF;
+	data_28E = 0xFFFF;
+	data_2C0 = 0xFF;
+	data_292 = 0xFFFF;
+}
+
 void main_263()
 {
 }
@@ -361,9 +424,9 @@ int main(int argc, char* argv[])
 		skillThing1           = skillThing1Table  [skillLevelLetter];
 		skillThing2           = skillThing2Table  [skillLevelLetter];
 		skillThing3           = skillThing3Table  [skillLevelLetter];
-		maxSnipes             = maxSnipesTable    [skillLevelNumber];
-		numGenerators         = numGeneratorsTable[skillLevelNumber];
-		numLives              = numLivesTable     [skillLevelNumber];
+		maxSnipes             = maxSnipesTable    [skillLevelNumber-1];
+		numGenerators         = numGeneratorsTable[skillLevelNumber-1];
+		numLives              = numLivesTable     [skillLevelNumber-1];
 		skillThing7           = skillLevelLetter < 'W'-'A';
 		data_2AA              = 2;
 		enableRubberBullets   = rubberBulletTable [skillLevelLetter];
@@ -373,7 +436,7 @@ int main(int argc, char* argv[])
 		SetConsoleCursorInfo(output, &cursorInfo);
 
 		data_1D0 = 0;
-		main_609();
+		outputHUD();
 		main_263();
 		main_FBD();
 		main_25E2(0, 0xFF);

@@ -170,6 +170,16 @@ DWORD ReadConsole_wrapper(char buffer[], DWORD bufsize)
 }
 
 WORD random_seed_lo, random_seed_hi;
+WORD GetRandom(WORD mask)
+{
+	random_seed_lo *= 2;
+	if (random_seed_lo  > 941)
+		random_seed_lo -= 941;
+	random_seed_hi *= 2;
+	if (random_seed_hi  > 947)
+		random_seed_hi -= 947;
+	return (random_seed_lo + random_seed_hi) & mask;
+}
 
 Uint skillLevelLetter = 0;
 Uint skillLevelNumber = 1;
@@ -229,12 +239,17 @@ bool enableElectricWalls, skillThing2, skillThing7, enableRubberBullets;
 Uchar skillThing1, skillThing3, maxSnipes, numGenerators, numLives;
 
 Uchar data_1D0, data_2AA;
-static Uchar data_2B4, data_2B3, data_2B2, data_2C0;
-static WORD data_290, data_28E, data_292;
+static Uchar data_2B4, data_2B3, data_2B2, data_2C0, data_2AF, data_2B0;
+static WORD data_290, data_28E, data_292, data_1EA, data_1E2;
+static SHORT data_1DE, data_1E0, data_1E4, data_1E6, data_1E8;
 
-#define MAZE_WIDTH  (7*17)
-#define MAZE_PITCH  128    // elements per row (MAZE_WIDTH rounded up to the nearest power of 2)
-#define MAZE_HEIGHT (6*20)
+static BYTE data_350[320];
+
+#define MAZE_CELL_WIDTH  7
+#define MAZE_CELL_HEIGHT 6
+#define MAZE_WIDTH  (MAZE_CELL_WIDTH  * 17)
+#define MAZE_HEIGHT (MAZE_CELL_HEIGHT * 20)
+#define MAZE_PITCH  128    // array elements per row (MAZE_WIDTH rounded up to the nearest power of 2)
 
 static WORD maze[MAZE_PITCH * MAZE_HEIGHT];
 
@@ -299,9 +314,141 @@ void outputHUD()
 	data_292 = 0xFFFF;
 }
 
-void main_263()
+void CreateMaze_helper()
 {
+	switch (data_2AF)
+	{
+	case 0:
+		data_1E0 -= 0x10;
+		if (data_1E0 < 0)
+			data_1E0 += sizeof(data_350);
+		break;
+	case 1:
+		data_1E0 += 0x10;
+		if (data_1E0 >= sizeof(data_350))
+			data_1E0 -= sizeof(data_350);
+		break;
+	case 2:
+		if ((data_1E0 & 0xF) == 0)
+			data_1E0 += 0xF;
+		else
+			data_1E0--;
+		break;
+	case 3:
+		if ((data_1E0 & 0xF) == 0xF)
+			data_1E0 -= 0xF;
+		else
+			data_1E0++;
+		break;
+	}
 }
+
+void CreateMaze()
+{
+	memset(data_350, 0xF, sizeof(data_350));
+	data_350[0] = 0xE;
+	data_350[1] = 0xD;
+	data_1EA = 0x13E;
+
+main_283:
+	if (!data_1EA)
+		goto main_372;
+	do
+		data_1DE = GetRandom(0x1FF);
+	while (data_1DE >= sizeof(data_350));
+	if (data_350[data_1DE] != 0xF)
+		goto main_283;
+	data_1E2 = GetRandom(3);
+	data_1E4 = 0;
+	for (;;)
+	{
+		if (data_1E4 > 3)
+			goto main_283;
+		data_2AF = data_1E2 & 3;
+		data_1E0 = data_1DE;
+		CreateMaze_helper();
+		if (data_350[data_1E0] != 0xF)
+			break;
+		data_1E2++;
+		data_1E4++;
+	}
+	data_1EA--;
+	static BYTE data_EA3[] = {8, 4, 2, 1};
+	static BYTE data_EA7[] = {4, 8, 1, 2};
+	data_350[data_1E0] ^= data_EA7[data_2AF];
+	data_350[data_1DE] ^= data_EA3[data_2AF];
+	data_1E2 = data_1DE;
+main_30E:
+	data_2AF = (BYTE)GetRandom(3);
+	data_2B0 = (BYTE)GetRandom(3) + 1;
+	data_1E0 = data_1E2;
+	for (;;)
+	{
+		CreateMaze_helper();
+		if (!data_2B0 || data_350[data_1E0] != 0xF)
+			break;
+		data_350[data_1E0] ^= data_EA7[data_2AF];
+		data_350[data_1E2] ^= data_EA3[data_2AF];
+		data_1EA--;
+		data_2B0--;
+		data_1E2 = data_1E0;
+	}
+	if (data_2B0)
+		goto main_283;
+	goto main_30E;
+main_372:
+	for (data_1DE = 1; data_1DE <= 0x40; data_1DE++)
+	{
+		do
+			data_1E0 = GetRandom(0x1FF);
+		while (data_1E0 >= sizeof(data_350));
+		data_2AF = (BYTE)GetRandom(3);
+		data_350[data_1E0] &= ~data_EA3[data_2AF];
+		CreateMaze_helper();
+		data_350[data_1E0] &= ~data_EA7[data_2AF];
+	}
+	for (Uint i=0; i<_countof(maze); i++)
+		maze[i] = 0x920;
+	data_1E4 = 0;
+	data_1E2 = 0;
+	for (data_1DE = 0; data_1DE <= 0x13; data_1DE++)
+	{
+		for (data_1E0 = 0; data_1E0 <= 0xF; data_1E0++)
+		{
+			if (data_350[data_1E2] & 8)
+				for (Uint i=0; i<MAZE_CELL_WIDTH; i++)
+					maze[data_1E4 + 1 + i] = 0x9CD;
+			if (data_350[data_1E2] & 2)
+			{
+				data_1E6 = data_1E4 + MAZE_PITCH;
+				for (data_1E8 = 1; data_1E8 <= 5; data_1E8++)
+				{
+					maze[data_1E6] = 0x9BA;
+					data_1E6 += MAZE_PITCH;
+				}
+			}
+			if (data_1DE)
+				data_1E6 = data_1E2 - (!data_1E0 ? 1 : 0x11);
+			else
+			{
+				if (!data_1E0)
+					data_1E6 = sizeof(data_350) - 1;
+				else
+					data_1E6 = data_1E2 + sizeof(data_350) - 0x11;
+			}
+			static BYTE data_EAB[] = {0x20, 0xBA, 0xBA, 0xBA, 0xCD, 0xBC, 0xBB, 0xB9, 0xCD, 0xC8, 0xC9, 0xCC, 0xCD, 0xCA, 0xCB, 0xCE};
+			maze[data_1E4] = data_EAB[data_350[data_1E2]&0xA | data_350[data_1E6]&0x5] + 0x900;
+			data_1E4 += 8;
+			data_1E2++;
+		}
+		data_1E4 += MAZE_PITCH * 5;
+	}
+	FILE *f = fopen("mazey.bin", "wb");
+	for (Uint i=0; i<sizeof(maze)/2; i++)
+		fwrite(&maze[i], 1, 1, f);
+	fclose(f);
+}
+
 void main_FBD()
 {
 }
@@ -437,7 +584,7 @@ int main(int argc, char* argv[])
 
 		data_1D0 = 0;
 		outputHUD();
-		main_263();
+		CreateMaze();
 		main_FBD();
 		main_25E2(0, 0xFF);
 

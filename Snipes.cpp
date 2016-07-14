@@ -245,13 +245,12 @@ static SHORT data_1DE, data_1E0, data_1E4, data_1E6, data_1E8;
 
 static BYTE data_350[320];
 
-#define MAZE_CELL_WIDTH  7
+#define MAZE_CELL_WIDTH  8
 #define MAZE_CELL_HEIGHT 6
-#define MAZE_WIDTH  (MAZE_CELL_WIDTH  * 17)
+#define MAZE_WIDTH  (MAZE_CELL_WIDTH  * 16)
 #define MAZE_HEIGHT (MAZE_CELL_HEIGHT * 20)
-#define MAZE_PITCH  128    // array elements per row (MAZE_WIDTH rounded up to the nearest power of 2)
 
-static WORD maze[MAZE_PITCH * MAZE_HEIGHT];
+static WORD maze[MAZE_WIDTH * MAZE_HEIGHT];
 
 void outputText(BYTE color, WORD count, WORD dst, char *src)
 {
@@ -416,15 +415,15 @@ main_372:
 		for (data_1E0 = 0; data_1E0 <= 0xF; data_1E0++)
 		{
 			if (data_350[data_1E2] & 8)
-				for (Uint i=0; i<MAZE_CELL_WIDTH; i++)
+				for (Uint i=0; i<MAZE_CELL_WIDTH-1; i++)
 					maze[data_1E4 + 1 + i] = 0x9CD;
 			if (data_350[data_1E2] & 2)
 			{
-				data_1E6 = data_1E4 + MAZE_PITCH;
+				data_1E6 = data_1E4 + MAZE_WIDTH;
 				for (data_1E8 = 1; data_1E8 <= 5; data_1E8++)
 				{
 					maze[data_1E6] = 0x9BA;
-					data_1E6 += MAZE_PITCH;
+					data_1E6 += MAZE_WIDTH;
 				}
 			}
 			if (data_1DE)
@@ -441,7 +440,7 @@ main_372:
 			data_1E4 += 8;
 			data_1E2++;
 		}
-		data_1E4 += MAZE_PITCH * 5;
+		data_1E4 += MAZE_WIDTH * 5;
 	}
 	FILE *f = fopen("mazey.bin", "wb");
 	for (Uint i=0; i<sizeof(maze)/2; i++)

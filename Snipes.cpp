@@ -4,8 +4,11 @@
 #include <math.h>
 #pragma comment(lib,"winmm.lib")
 
+typedef unsigned char Uchar;
 typedef unsigned int Uint;
 typedef unsigned long long QWORD;
+
+#define inrange(n,a,b) ((Uint)((n)-(a))<=(Uint)((b)-(a)))
 
 template <size_t size>
 char (*__strlength_helper(char const (&_String)[size]))[size];
@@ -123,6 +126,34 @@ Uint PollKeyboard()
 
 WORD random_seed_lo, random_seed_hi;
 
+Uint skillLevelLetter = 0;
+Uint skillLevelNumber = 1;
+
+void ParseSkillLevel(char *skillLevel, DWORD skillLevelLength)
+{
+	Uint skillLevelNumberTmp = 0;
+	for (; skillLevelLength; skillLevel++, skillLevelLength--)
+	{
+		if (skillLevelNumberTmp >= 0x80)
+		{
+			// strange behavior, but this is what the original game does
+			skillLevelNumber = 1;
+			return;
+		}
+		char ch = *skillLevel;
+		if (inrange(ch, 'a', 'z'))
+			skillLevelLetter = ch - 'a';
+		else
+		if (inrange(ch, 'A', 'Z'))
+			skillLevelLetter = ch - 'A';
+		else
+		if (inrange(ch, '0', '9'))
+			skillLevelNumberTmp = skillLevelNumberTmp * 10 + (ch - '0');
+	}
+	if (inrange(skillLevelNumberTmp, 1, 9))
+		skillLevelNumber = skillLevelNumberTmp;
+}
+
 int main(int argc, char* argv[])
 {
 	input  = GetStdHandle(STD_INPUT_HANDLE);
@@ -186,8 +217,22 @@ int main(int argc, char* argv[])
 	SetConsoleTextAttribute(output, FOREGROUND_BLUE | FOREGROUND_GREEN | FOREGROUND_RED);
 	WriteConsole(output, STRING_WITH_LEN("Enter skill level (A-Z)(1-9): "), &operationSize, 0);
 
-	char skillLevel[2] = {0};
-	ReadConsole(input, skillLevel, 2, &operationSize, NULL);
+	char skillLevel[4] = {0};
+	DWORD skillLevelLength = 0;
+	ReadConsole(input, skillLevel, _countof(skillLevel), &skillLevelLength, NULL);
+
+	if (skillLevel[skillLevelLength-1] == '\n')
+		skillLevelLength--;
+	if (skillLevel[skillLevelLength-1] == '\r')
+		skillLevelLength--;
+
+	for (Uint i=0; i<skillLevelLength; i++)
+		if (skillLevel[i] != ' ')
+		{
+			ParseSkillLevel(skillLevel + i, skillLevelLength - i);
+			break;
+		}
+	//printf("Skill: %c%c\n", skillLevelLetter + 'A', skillLevelNumber + '0');
 
 	/*StartTone(2711);
 	for (;;)

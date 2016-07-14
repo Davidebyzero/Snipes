@@ -15,7 +15,7 @@ char (*__strlength_helper(char const (&_String)[size]))[size];
 
 QWORD perf_freq;
 
-WORD GetTimer()
+WORD GetTickCountWord()
 {
 	QWORD time;
 	QueryPerformanceCounter((LARGE_INTEGER*)&time);
@@ -211,17 +211,7 @@ int main(int argc, char* argv[])
 	for (;;)
 	{
 		Uint result = PollKeyboard();
-		//printf("%X, %u, %u\n", result, sound_enabled, shooting_sound_enabled);
 		Sleep(1);
-		/*Uint time2 = GetTimer() % 10;
-		if (time2 != time)
-		{
-			time = time2;
-			if (time < 5)
-				PlayTone(1000 + time * 200);
-			else
-				ClearSound();
-		}*/
 	}
 
 	for (Uint i=0; i<WAVE_BUFFER_COUNT; i++)

@@ -247,38 +247,6 @@ int main(int argc, char* argv[])
 		}
 	//printf("Skill: %c%c\n", skillLevelLetter + 'A', skillLevelNumber + '0');
 
-	enableElectricWalls = skillLevelLetter >= 'M'-'A';
-	skillThing1           = skillThing1Table  [skillLevelLetter];
-	skillThing2           = skillThing2Table  [skillLevelLetter];
-	skillThing3           = skillThing3Table  [skillLevelLetter];
-	maxSnipes             = maxSnipesTable    [skillLevelNumber];
-	numGenerators         = numGeneratorsTable[skillLevelNumber];
-	numLives              = numLivesTable     [skillLevelNumber];
-	skillThing7           = skillLevelLetter < 'W'-'A';
-	enableRubberBullets   = rubberBulletTable [skillLevelLetter];
-
-	data_1D0 = 0;
-
-	/*StartTone(2711);
-	for (;;)
-		Sleep(1000);*/
-
-	/*char string[] = "Hello, \x01 world!\n";
-	COORD pos;
-	pos.X = 10;
-	pos.Y = 10;
-	SetConsoleCursorPosition(output, pos);
-	SetConsoleTextAttribute(output, FOREGROUND_BLUE | FOREGROUND_GREEN | FOREGROUND_RED | BACKGROUND_BLUE);
-	WriteConsole(output, string, strlength(string), &operationSize, 0);*/
-
-	/*COORD moveto;
-	moveto.X = 2;
-	moveto.Y = 2;
-	CHAR_INFO backgroundFill;
-	backgroundFill.Char.AsciiChar = ' ';
-	backgroundFill.Attributes = FOREGROUND_BLUE | FOREGROUND_GREEN | FOREGROUND_RED | BACKGROUND_BLUE;
-	ScrollConsoleScreenBuffer(output, &window, NULL, moveto, &backgroundFill);*/
-
 	WORD tick_count = GetTickCountWord();
 	random_seed_lo = (BYTE)tick_count;
 	if (!random_seed_lo)
@@ -287,11 +255,46 @@ int main(int argc, char* argv[])
 	if (!random_seed_hi)
 		random_seed_hi = 555;
 
-	//Uint time = 0;
 	for (;;)
 	{
-		Uint result = PollKeyboard();
-		Sleep(1);
+		enableElectricWalls = skillLevelLetter >= 'M'-'A';
+		skillThing1           = skillThing1Table  [skillLevelLetter];
+		skillThing2           = skillThing2Table  [skillLevelLetter];
+		skillThing3           = skillThing3Table  [skillLevelLetter];
+		maxSnipes             = maxSnipesTable    [skillLevelNumber];
+		numGenerators         = numGeneratorsTable[skillLevelNumber];
+		numLives              = numLivesTable     [skillLevelNumber];
+		skillThing7           = skillLevelLetter < 'W'-'A';
+		enableRubberBullets   = rubberBulletTable [skillLevelLetter];
+
+		data_1D0 = 0;
+
+		/*StartTone(2711);
+		for (;;)
+			Sleep(1000);*/
+
+		/*char string[] = "Hello, \x01 world!\n";
+		COORD pos;
+		pos.X = 10;
+		pos.Y = 10;
+		SetConsoleCursorPosition(output, pos);
+		SetConsoleTextAttribute(output, FOREGROUND_BLUE | FOREGROUND_GREEN | FOREGROUND_RED | BACKGROUND_BLUE);
+		WriteConsole(output, string, strlength(string), &operationSize, 0);*/
+
+		/*COORD moveto;
+		moveto.X = 2;
+		moveto.Y = 2;
+		CHAR_INFO backgroundFill;
+		backgroundFill.Char.AsciiChar = ' ';
+		backgroundFill.Attributes = FOREGROUND_BLUE | FOREGROUND_GREEN | FOREGROUND_RED | BACKGROUND_BLUE;
+		ScrollConsoleScreenBuffer(output, &window, NULL, moveto, &backgroundFill);*/
+
+		//Uint time = 0;
+		for (;;)
+		{
+			Uint result = PollKeyboard();
+			Sleep(1);
+		}
 	}
 
 	for (Uint i=0; i<WAVE_BUFFER_COUNT; i++)

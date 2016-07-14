@@ -125,6 +125,24 @@ Uint PollKeyboard()
 	return state;
 }
 
+#define WINDOW_WIDTH  40
+#define WINDOW_HEIGHT 25
+
+void WriteTextMem(Uint count, Uint dst, WORD *src)
+{
+	COORD pos;
+	pos.X = dst / 2 % WINDOW_WIDTH;
+	pos.Y = dst / 2 / WINDOW_WIDTH;
+	SetConsoleCursorPosition(output, pos);
+	while (count--)
+	{
+		SetConsoleTextAttribute(output, ((BYTE*)src)[1]);
+		DWORD operationSize;
+		WriteConsole(output, (BYTE*)src, 1, &operationSize, 0);
+		src++;
+	}
+}
+
 DWORD ReadConsole_wrapper(char buffer[], DWORD bufsize)
 {
 	DWORD numread, numreadWithoutNewline;
@@ -266,9 +284,12 @@ int main(int argc, char* argv[])
 	SetConsoleCP      (437);
 	SetConsoleOutputCP(437);
 	
+	CONSOLE_CURSOR_INFO cursorInfo;
+	GetConsoleCursorInfo(output, &cursorInfo);
+
 	COORD windowSize;
-	windowSize.X = 40;
-	windowSize.Y = 25;
+	windowSize.X = WINDOW_WIDTH;
+	windowSize.Y = WINDOW_HEIGHT;
 	SMALL_RECT window;
 	window.Left   = 0;
 	window.Top    = 0;
@@ -322,6 +343,8 @@ int main(int argc, char* argv[])
 	WriteConsole(output, STRING_WITH_LEN("Enter skill level (A-Z)(1-9): "), &operationSize, 0);
 	ReadSkillLevel();
 
+	//WriteTextMem(5, 80, (WORD*)"H\x48""e\x39""l\x2A""l\x1B""o\x0C");
+
 	WORD tick_count = GetTickCountWord();
 	random_seed_lo = (BYTE)tick_count;
 	if (!random_seed_lo)
@@ -344,6 +367,10 @@ int main(int argc, char* argv[])
 		skillThing7           = skillLevelLetter < 'W'-'A';
 		data_2AA              = 2;
 		enableRubberBullets   = rubberBulletTable [skillLevelLetter];
+
+		SetConsoleMode(output, 0);
+		cursorInfo.bVisible = FALSE;
+		SetConsoleCursorInfo(output, &cursorInfo);
 
 		data_1D0 = 0;
 		main_609();
@@ -395,11 +422,14 @@ int main(int argc, char* argv[])
 		ClearSound();
 		forfeit_match = false;
 
+		cursorInfo.bVisible = TRUE;
+		SetConsoleCursorInfo(output, &cursorInfo);
 		COORD pos;
 		pos.X = 0;
 		pos.Y = 25-1;
 		SetConsoleCursorPosition(output, pos);
 		SetConsoleTextAttribute(output, FOREGROUND_BLUE | FOREGROUND_GREEN | FOREGROUND_RED);
+		SetConsoleMode(output, ENABLE_PROCESSED_OUTPUT);
 		for (;;)
 		{
 			SetConsoleMode(input, ENABLE_PROCESSED_INPUT | ENABLE_LINE_INPUT | ENABLE_ECHO_INPUT);

@@ -121,6 +121,8 @@ Uint PollKeyboard()
 	return state;
 }
 
+WORD random_seed_lo, random_seed_hi;
+
 int main(int argc, char* argv[])
 {
 	input  = GetStdHandle(STD_INPUT_HANDLE);
@@ -206,6 +208,14 @@ int main(int argc, char* argv[])
 	backgroundFill.Char.AsciiChar = ' ';
 	backgroundFill.Attributes = FOREGROUND_BLUE | FOREGROUND_GREEN | FOREGROUND_RED | BACKGROUND_BLUE;
 	ScrollConsoleScreenBuffer(output, &window, NULL, moveto, &backgroundFill);*/
+
+	WORD tick_count = GetTickCountWord();
+	random_seed_lo = (BYTE)tick_count;
+	if (!random_seed_lo)
+		random_seed_lo = 444;
+	random_seed_hi = tick_count >> 8;
+	if (!random_seed_hi)
+		random_seed_hi = 555;
 
 	//Uint time = 0;
 	for (;;)

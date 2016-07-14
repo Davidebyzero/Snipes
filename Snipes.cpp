@@ -36,15 +36,13 @@ void CALLBACK WaveOutProc(HWAVEOUT hwo, UINT uMsg, DWORD_PTR dwInstance, DWORD_P
 		return;
 	if (toneFreq == 0.)
 		return;
-	WAVEHDR *finishedWaveHeader = (WAVEHDR*)dwParam1;
-	WAVEHDR &nextWaveHeader = *finishedWaveHeader;//waveHeader[finishedWaveHeader->dwUser];
-	printf("%u, ", nextWaveHeader.dwUser, nextWaveHeader.lpData);
+	WAVEHDR *currentWaveHeader = (WAVEHDR*)dwParam1;
 	for (Uint i=0; i<WAVE_BUFFER_LENGTH; i++)
 	{
-		((SHORT*)nextWaveHeader.lpData)[i] = fmod(tonePhase * toneFreq, 1.) < 0.5 ? 0 : 0x2000;
+		((SHORT*)currentWaveHeader->lpData)[i] = fmod(tonePhase * toneFreq, 1.) < 0.5 ? 0 : 0x2000;
 		tonePhase++;
 	}
-	waveOutWrite(hwo, &nextWaveHeader, sizeof(SHORT)*WAVE_BUFFER_LENGTH);
+	waveOutWrite(hwo, currentWaveHeader, sizeof(SHORT)*WAVE_BUFFER_LENGTH);
 }
 void StartTone(Uint freq)
 {

@@ -22,6 +22,9 @@ WORD GetTimer()
 	return (WORD)(time * 13125000 / perf_freq);
 }
 
+HANDLE input;
+HANDLE output;
+
 #define TONE_SAMPLE_RATE 48000
 #define WAVE_BUFFER_LENGTH 200
 #define WAVE_BUFFER_COUNT 11
@@ -52,10 +55,60 @@ void StartTone(Uint freq)
 		WaveOutProc(waveOutput, WOM_DONE, 0, (DWORD_PTR)&waveHeader[i], 0);
 }
 
+#define KEYSTATE_MOVE_RIGHT (1<<0)
+#define KEYSTATE_MOVE_LEFT  (1<<1)
+#define KEYSTATE_MOVE_DOWN  (1<<2)
+#define KEYSTATE_MOVE_UP    (1<<3)
+#define KEYSTATE_FIRE_RIGHT (1<<4)
+#define KEYSTATE_FIRE_LEFT  (1<<5)
+#define KEYSTATE_FIRE_DOWN  (1<<6)
+#define KEYSTATE_FIRE_UP    (1<<7)
+
+static bool forfeit_match = false;
+static bool sound_enabled = true;
+static bool shooting_sound_enabled = false;
+static bool spacebar_state = false;
+Uint PollKeyboard()
+{
+	for (;;)
+	{
+		DWORD numread = 0;
+		INPUT_RECORD record;
+		if (!PeekConsoleInput(input, &record, 1, &numread))
+			break;
+		if (!numread)
+			break;
+		ReadConsoleInput(input, &record, 1, &numread);
+		if (!numread)
+			break;
+		if (record.EventType == KEY_EVENT && record.Event.KeyEvent.bKeyDown)
+		{
+			if (record.Event.KeyEvent.wVirtualKeyCode == VK_F1)
+				sound_enabled ^= true;
+			if (record.Event.KeyEvent.wVirtualKeyCode == VK_F2)
+				shooting_sound_enabled ^= true;
+		}
+	}
+	Uint result = 0;
+	forfeit_match = GetKeyState(VK_ESCAPE) < 0;
+	if (GetKeyState(VK_RIGHT) < 0) result |= KEYSTATE_MOVE_RIGHT;
+	if (GetKeyState(VK_LEFT ) < 0) result |= KEYSTATE_MOVE_LEFT;
+	if (GetKeyState(VK_DOWN ) < 0) result |= KEYSTATE_MOVE_DOWN;
+	if (GetKeyState(VK_CLEAR) < 0) result |= KEYSTATE_MOVE_DOWN;
+	if (GetKeyState(VK_UP   ) < 0) result |= KEYSTATE_MOVE_UP;
+	if (GetKeyState('D'     ) < 0) result |= KEYSTATE_FIRE_RIGHT;
+	if (GetKeyState('A'     ) < 0) result |= KEYSTATE_FIRE_LEFT;
+	if (GetKeyState('S'     ) < 0) result |= KEYSTATE_FIRE_DOWN;
+	if (GetKeyState('X'     ) < 0) result |= KEYSTATE_FIRE_DOWN;
+	if (GetKeyState('W'     ) < 0) result |= KEYSTATE_FIRE_UP;
+	spacebar_state = GetKeyState(VK_SPACE) < 0;
+	return result;
+}
+
 int main(int argc, char* argv[])
 {
-	HANDLE input  = GetStdHandle(STD_INPUT_HANDLE);
-	HANDLE output = GetStdHandle(STD_OUTPUT_HANDLE);
+	input  = GetStdHandle(STD_INPUT_HANDLE);
+	output = GetStdHandle(STD_OUTPUT_HANDLE);
 
 	SetConsoleCP      (437);
 	SetConsoleOutputCP(437);
@@ -137,6 +190,13 @@ int main(int argc, char* argv[])
 	backgroundFill.Char.AsciiChar = ' ';
 	backgroundFill.Attributes = FOREGROUND_BLUE | FOREGROUND_GREEN | FOREGROUND_RED | BACKGROUND_BLUE;
 	ScrollConsoleScreenBuffer(output, &window, NULL, moveto, &backgroundFill);*/
+
+	for (;;)
+	{
+		Uint result = PollKeyboard();
+		//printf("%X, %u, %u\n", result, sound_enabled, shooting_sound_enabled);
+		Sleep(1);
+	}
 
 	for (Uint i=0; i<WAVE_BUFFER_COUNT; i++)
 		waveOutUnprepareHeader(waveOutput, &waveHeader[i], sizeof(waveHeader[i]));

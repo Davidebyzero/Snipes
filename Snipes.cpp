@@ -30,7 +30,7 @@ HANDLE output;
 #define WAVE_BUFFER_COUNT 11
 HWAVEOUT waveOutput;
 WAVEHDR waveHeader[WAVE_BUFFER_COUNT];
-double toneFreq;
+static double toneFreq = 0;
 Uint tonePhase;
 SHORT toneBuf[WAVE_BUFFER_LENGTH * WAVE_BUFFER_COUNT];
 void CALLBACK WaveOutProc(HWAVEOUT hwo, UINT uMsg, DWORD_PTR dwInstance, DWORD_PTR dwParam1, DWORD_PTR dwParam2)
@@ -47,12 +47,19 @@ void CALLBACK WaveOutProc(HWAVEOUT hwo, UINT uMsg, DWORD_PTR dwInstance, DWORD_P
 	}
 	waveOutWrite(hwo, currentWaveHeader, sizeof(SHORT)*WAVE_BUFFER_LENGTH);
 }
-void StartTone(Uint freq)
+void PlayTone(Uint freq)
 {
+	bool soundAlreadyPlaying = toneFreq != 0.;
 	toneFreq = (13125000. / (TONE_SAMPLE_RATE * 11)) / freq;
 	tonePhase = 0;
+	if (soundAlreadyPlaying)
+		return;
 	for (Uint i=0; i<WAVE_BUFFER_COUNT; i++)
 		WaveOutProc(waveOutput, WOM_DONE, 0, (DWORD_PTR)&waveHeader[i], 0);
+}
+void ClearSound()
+{
+	toneFreq = 0.;
 }
 
 #define KEYSTATE_MOVE_RIGHT (1<<0)
@@ -191,11 +198,21 @@ int main(int argc, char* argv[])
 	backgroundFill.Attributes = FOREGROUND_BLUE | FOREGROUND_GREEN | FOREGROUND_RED | BACKGROUND_BLUE;
 	ScrollConsoleScreenBuffer(output, &window, NULL, moveto, &backgroundFill);*/
 
+	//Uint time = 0;
 	for (;;)
 	{
 		Uint result = PollKeyboard();
 		//printf("%X, %u, %u\n", result, sound_enabled, shooting_sound_enabled);
 		Sleep(1);
+		/*Uint time2 = GetTimer() % 10;
+		if (time2 != time)
+		{
+			time = time2;
+			if (time < 5)
+				PlayTone(1000 + time * 200);
+			else
+				ClearSound();
+		}*/
 	}
 
 	for (Uint i=0; i<WAVE_BUFFER_COUNT; i++)

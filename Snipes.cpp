@@ -47,10 +47,10 @@ void CALLBACK WaveOutProc(HWAVEOUT hwo, UINT uMsg, DWORD_PTR dwInstance, DWORD_P
 	}
 	waveOutWrite(hwo, currentWaveHeader, sizeof(SHORT)*WAVE_BUFFER_LENGTH);
 }
-void PlayTone(Uint freq)
+void PlayTone(Uint freqnum)
 {
 	bool soundAlreadyPlaying = toneFreq != 0.;
-	toneFreq = (13125000. / (TONE_SAMPLE_RATE * 11)) / freq;
+	toneFreq = (13125000. / (TONE_SAMPLE_RATE * 11)) / freqnum;
 	tonePhase = 0;
 	if (soundAlreadyPlaying)
 		return;
@@ -61,6 +61,9 @@ void ClearSound()
 {
 	toneFreq = 0.;
 }
+
+#define MAZE_WIDTH  (7*17)
+#define MAZE_HEIGHT (6*20)
 
 #define KEYSTATE_MOVE_RIGHT (1<<0)
 #define KEYSTATE_MOVE_LEFT  (1<<1)

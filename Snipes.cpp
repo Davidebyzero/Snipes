@@ -480,7 +480,7 @@ Uchar main_CB0()
 {
 	data_C76 = data_C6C;
 	if (data_C76)
-		data_C6C = data_350[data_C76 * MAZE_CELL_WIDTH];
+		data_C6C = data_350[data_C76 * 8];
 	return data_C76;
 }
 

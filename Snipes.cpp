@@ -258,8 +258,8 @@ BYTE skillThing1, skillThing3, maxSnipes, numGenerators, numLives;
 
 BYTE data_2AA;
 WORD frame;
-static bool data_C75, data_C73, data_C72;
-static BYTE data_2B4, data_2B3, data_2B2, data_2C0, data_2AF, data_2B0, data_C6C, data_C6D, data_C6F, data_C71, data_C6E, data_C70, data_C76, data_B65, data_B68, data_B67, data_B66, data_B64, data_C74, data_DF0, data_DF1, data_C96, data_B69;
+static bool data_C75, data_C73, data_C72, data_CBF;
+static BYTE data_2B4, data_2B3, data_2B2, data_2C0, data_2AF, data_2B0, data_C6C, data_C6D, data_C6F, data_C71, data_C6E, data_C70, data_C76, data_B65, data_B68, data_B67, data_B66, data_B64, data_C74, data_DF0, data_DF1, data_C96, data_B69, data_C77, data_C78;
 static WORD data_290, data_28E, data_1EA, data_1E2, data_B58, data_348, data_346, data_1CA, data_1CC, data_B5C, data_29A;
 static SHORT data_1DE, data_1E0, data_1E4, data_1E6, data_1E8, data_292, data_34E;
 BYTE *data_34A;
@@ -526,6 +526,26 @@ static const WORD data_11AA[] = {SPRITE_SIZE(1,1), 0x0A5C};
 static const WORD *data_11B4[] = {data_1164, data_116E, data_1178, data_1182, data_118C, data_1196, data_11A0, data_11AA};
 static const WORD *data_11D4[] = {data_1150, data_115A, data_1150, data_115A};
 
+static const WORD data_12C2[] = {SPRITE_SIZE(2,2), 0x0FB0, 0x0FB2, 0x0FB2, 0x0FB0};
+static const WORD data_12CC[] = {SPRITE_SIZE(2,2), 0x0BB2, 0x0BB0, 0x0BB0, 0x0BB2};
+static const WORD data_12D6[] = {SPRITE_SIZE(2,2), 0x0CB0, 0x0CB2, 0x0CB2, 0x0CB0};
+static const WORD data_12E0[] = {SPRITE_SIZE(2,2), 0x04B2, 0x04B0, 0x04B0, 0x04B2};
+static const WORD data_12EA[] = {SPRITE_SIZE(2,2), 0x062A, 0x060F, 0x062A, 0x060F};
+static const WORD data_12F4[] = {SPRITE_SIZE(2,2), 0x0807, 0x0820, 0x0807, 0x0820};
+static const WORD *data_12FE[] = {data_12C2, data_12CC, data_12D6, data_12E0, data_12EA, data_12F4};
+static const WORD data_1316[] = {SPRITE_SIZE(2,1), 0x0FB0, 0x0FB2};
+static const WORD data_1320[] = {SPRITE_SIZE(2,1), 0x0BB2, 0x0BB0};
+static const WORD data_132A[] = {SPRITE_SIZE(2,1), 0x0CB0, 0x0CB2};
+static const WORD data_1334[] = {SPRITE_SIZE(2,1), 0x04B2, 0x04B0};
+static const WORD data_133E[] = {SPRITE_SIZE(2,1), 0x062A, 0x060F};
+static const WORD data_1348[] = {SPRITE_SIZE(2,1), 0x0807, 0x0820};
+static const WORD *data_1352[] = {data_1316, data_1320, data_132A, data_1334, data_133E, data_1348};
+static const WORD data_136A[] = {SPRITE_SIZE(1,1), 0x0FB2};
+static const WORD data_1374[] = {SPRITE_SIZE(1,1), 0x0B0F};
+static const WORD data_137E[] = {SPRITE_SIZE(1,1), 0x0C09};
+static const WORD data_1388[] = {SPRITE_SIZE(1,1), 0x0407};
+static const WORD *data_1392[] = {data_136A, data_136A, data_136A, data_1374, data_137E, data_1388};
+
 // fake pointers - hacky, but they work for now; should definitely replace them with real pointers once the porting is complete
 
 #define FAKE_POINTER_data_1002 0x1002
@@ -561,6 +581,22 @@ static const WORD *data_11D4[] = {data_1150, data_115A, data_1150, data_115A};
 #define FAKE_POINTER_data_1196 0x1196
 #define FAKE_POINTER_data_11A0 0x11A0
 #define FAKE_POINTER_data_11AA 0x11AA
+#define FAKE_POINTER_data_12C2 0x12C2
+#define FAKE_POINTER_data_12CC 0x12CC
+#define FAKE_POINTER_data_12D6 0x12D6
+#define FAKE_POINTER_data_12E0 0x12E0
+#define FAKE_POINTER_data_12EA 0x12EA
+#define FAKE_POINTER_data_12F4 0x12F4
+#define FAKE_POINTER_data_1316 0x1316
+#define FAKE_POINTER_data_1320 0x1320
+#define FAKE_POINTER_data_132A 0x132A
+#define FAKE_POINTER_data_1334 0x1334
+#define FAKE_POINTER_data_133E 0x133E
+#define FAKE_POINTER_data_1348 0x1348
+#define FAKE_POINTER_data_136A 0x136A
+#define FAKE_POINTER_data_1374 0x1374
+#define FAKE_POINTER_data_137E 0x137E
+#define FAKE_POINTER_data_1388 0x1388
 
 const WORD *FakePointerToPointer(WORD fakePtr)
 {
@@ -599,6 +635,22 @@ const WORD *FakePointerToPointer(WORD fakePtr)
 	case FAKE_POINTER_data_1196: return data_1196;
 	case FAKE_POINTER_data_11A0: return data_11A0;
 	case FAKE_POINTER_data_11AA: return data_11AA;
+	case FAKE_POINTER_data_12C2: return data_12C2;
+	case FAKE_POINTER_data_12CC: return data_12CC;
+	case FAKE_POINTER_data_12D6: return data_12D6;
+	case FAKE_POINTER_data_12E0: return data_12E0;
+	case FAKE_POINTER_data_12EA: return data_12EA;
+	case FAKE_POINTER_data_12F4: return data_12F4;
+	case FAKE_POINTER_data_1316: return data_1316;
+	case FAKE_POINTER_data_1320: return data_1320;
+	case FAKE_POINTER_data_132A: return data_132A;
+	case FAKE_POINTER_data_1334: return data_1334;
+	case FAKE_POINTER_data_133E: return data_133E;
+	case FAKE_POINTER_data_1348: return data_1348;
+	case FAKE_POINTER_data_136A: return data_136A;
+	case FAKE_POINTER_data_1374: return data_1374;
+	case FAKE_POINTER_data_137E: return data_137E;
+	case FAKE_POINTER_data_1388: return data_1388;
 	default:
 		return NULL;
 	}
@@ -639,6 +691,22 @@ WORD PointerToFakePointer(const WORD *ptr)
 	if (ptr == data_1196) return FAKE_POINTER_data_1196;
 	if (ptr == data_11A0) return FAKE_POINTER_data_11A0;
 	if (ptr == data_11AA) return FAKE_POINTER_data_11AA;
+	if (ptr == data_12C2) return FAKE_POINTER_data_12C2;
+	if (ptr == data_12CC) return FAKE_POINTER_data_12CC;
+	if (ptr == data_12D6) return FAKE_POINTER_data_12D6;
+	if (ptr == data_12E0) return FAKE_POINTER_data_12E0;
+	if (ptr == data_12EA) return FAKE_POINTER_data_12EA;
+	if (ptr == data_12F4) return FAKE_POINTER_data_12F4;
+	if (ptr == data_1316) return FAKE_POINTER_data_1316;
+	if (ptr == data_1320) return FAKE_POINTER_data_1320;
+	if (ptr == data_132A) return FAKE_POINTER_data_132A;
+	if (ptr == data_1334) return FAKE_POINTER_data_1334;
+	if (ptr == data_133E) return FAKE_POINTER_data_133E;
+	if (ptr == data_1348) return FAKE_POINTER_data_1348;
+	if (ptr == data_136A) return FAKE_POINTER_data_136A;
+	if (ptr == data_1374) return FAKE_POINTER_data_1374;
+	if (ptr == data_137E) return FAKE_POINTER_data_137E;
+	if (ptr == data_1388) return FAKE_POINTER_data_1388;
 	__debugbreak();
 	return 0;
 }
@@ -831,9 +899,67 @@ bool updateHUD() // returns true if the match has been won
 
 void main_1C28(BYTE arg)
 {
+	if (!arg)
+	{
+		arg = 0xFE;
+		data_350[0x7F2] = data_350[2];
+		data_350[0x7F3] = data_350[3];
+		data_350[0x7F4] = 0x16;
+		(WORD&)data_350[0x7F6] = FAKE_POINTER_data_12C2;
+		data_C72 = true;
+	}
+	data_34A = &data_350[arg * 8];
+	data_34A[0] = data_C6F;
+	data_C6F = arg;
+	const WORD *data_CC4 = FakePointerToPointer((WORD&)data_34A[6]);
+	BYTE data_CC8 = ((BYTE*)data_CC4)[0];
+	BYTE data_CC9 = ((BYTE*)data_CC4)[1];
+	BYTE *data_CC2 = data_34A;
+	if (data_CC8 == 2 && data_CC9 == 2)
+	{
+		(WORD&)data_CC2[6] = FAKE_POINTER_data_12C2;
+		data_34C = data_12C2;
+		data_CC2[4] = 0x16;
+		data_CC2[5] = 0;
+		main_25E2(0, 4);
+	}
+	if (data_CC8 == 1 && data_CC9 == 2)
+	{
+		(WORD&)data_CC2[6] = FAKE_POINTER_data_1316;
+		data_34C = data_1316;
+		data_CC2[4] = 0xC;
+		data_CC2[5] = 0;
+		main_25E2(0, 3);
+	}
+	if (data_CC8 == 1 && data_CC9 == 1)
+	{
+		(WORD&)data_CC2[6] = FAKE_POINTER_data_136A;
+		data_34C = data_136A;
+		data_CC2[4] = 0xB;
+		data_CC2[5] = 2;
+		main_25E2(2, 2);
+	}
+	main_D80();
 }
+
 void main_1D04(BYTE *arg1, BYTE arg2)
 {
+	BYTE data_CCA = arg1[0];
+	if (arg2 == data_CCA)
+	{
+		arg1[0] = data_350[arg2 * 8];
+		return;
+	}
+	for (;;)
+	{
+		BYTE data_CCB = data_350[data_CCA * 8];
+		if (!data_CCB)
+			return;
+		if (arg2 == data_CCB)
+			break;
+		data_CCA = data_CCB;
+	}
+	data_350[data_CCA * 8] = data_350[arg2 * 8];
 }
 
 void main_1E8F(BYTE *arg1, BYTE arg2)
@@ -1078,10 +1204,78 @@ void main_10C9()
 	}
 }
 
-BYTE main_198A()
+bool main_1A7B(BYTE arg)
 {
+	data_350[4] = arg << 1;
+	BYTE *di = data_34A;
+	if (data_350[4] & 1)
+		return data_CBF = true;
+	data_1CA = data_350[2] = data_C77;
+	data_1CC = data_350[3] = data_C78;
 	return false;
 }
+
+bool main_198A()
+{
+	BYTE data_CBE = data_350[4];
+	data_CBF = false;
+	switch (data_CBE)
+	{
+	case 1:
+		main_1A7B(1);
+		if (!(data_11E8[data_34A[3]] & 1))
+			goto main_1A5E;
+		if (main_1A7B(1))
+			goto main_1A5E;
+		if (!main_1A7B(0))
+			goto main_1A64;
+		goto main_1A2B;
+	case 3:
+		if (main_1A7B(2))
+			goto main_1A5A;
+		if (data_11E8[data_34A[3]] & 1)
+			main_1A7B(1);
+		goto main_1A5A;
+	case 4:
+		main_1A7B(2);
+		goto main_1A64;
+	case 5:
+		if (main_1A7B(2))
+			goto main_1A2B;
+		if (!(data_11E8[data_34A[3]] & 1))
+			goto main_1A2B;
+		main_1A7B(3);
+		// fall through
+	case 6:
+	main_1A2B:
+		main_1A7B(3);
+		goto main_1A64;
+	case 7:
+		main_1A7B(3);
+		if (!(data_11E8[data_34A[3]] & 1))
+			goto main_1A5E;
+		if (main_1A7B(3))
+			goto main_1A5E;
+		if (!main_1A7B(0))
+			goto main_1A64;
+		// fall through
+	case 2:
+	main_1A5A:
+		main_1A7B(1);
+		goto main_1A64;
+	case 0:
+	main_1A5E:
+		main_1A7B(0);
+	main_1A64:
+		if (!data_CBF)
+			main_D80();
+		data_350[4] = data_CBE;
+		return !data_CBF;
+	default:
+		__assume(0);
+	}
+}
+
 void main_1613(BYTE arg)
 {
 }
@@ -1138,7 +1332,7 @@ main_1B3C:
 	if (BYTE keyboardMove = keyboard_state & (KEYSTATE_MOVE_RIGHT | KEYSTATE_MOVE_LEFT | KEYSTATE_MOVE_DOWN | KEYSTATE_MOVE_UP))
 	{
 		data_350[4] = data_CAE[keyboardMove];
-		if (!(main_198A() & 1))
+		if (!main_198A())
 			goto main_1B85;
 		if (!spacebar_state)
 			goto main_1B8F;
@@ -1186,6 +1380,7 @@ main_1C03:
 	data_1CA = data_350[2];
 	data_1CC = data_350[3];
 	main_D80();
+	return false;
 }
 void main_1D64()
 {

@@ -5,7 +5,6 @@
 #include <wchar.h>
 #pragma comment(lib,"winmm.lib")
 
-typedef unsigned char Uchar;
 typedef unsigned int Uint;
 typedef unsigned long long QWORD;
 
@@ -79,7 +78,7 @@ static bool forfeit_match = false;
 static bool sound_enabled = true;
 static bool shooting_sound_enabled = false;
 static bool spacebar_state = false;
-static Uchar keyboard_state = 0;
+static BYTE keyboard_state = 0;
 Uint PollKeyboard()
 {
 	for (;;)
@@ -246,21 +245,21 @@ void ReadSkillLevel()
 		}
 }
 
-static Uchar skillThing1Table  ['Z'-'A'+1] = {2, 3, 4, 3, 4, 4, 3, 4, 3, 4, 4, 5, 3, 4, 3, 4, 3, 4, 3, 4, 4, 5, 4, 4, 5, 5};
+static BYTE skillThing1Table  ['Z'-'A'+1] = {2, 3, 4, 3, 4, 4, 3, 4, 3, 4, 4, 5, 3, 4, 3, 4, 3, 4, 3, 4, 4, 5, 4, 4, 5, 5};
 static bool  skillThing2Table  ['Z'-'A'+1] = {0, 0, 0, 1, 1, 1, 0, 0, 1, 1, 1, 1, 0, 0, 1, 1, 0, 0, 1, 1, 1, 1, 1, 1, 1, 1};
 static bool  rubberBulletTable ['Z'-'A'+1] = {0, 0, 0, 0, 0, 0, 1, 1, 1, 1, 1, 1, 0, 0, 0, 0, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1};
-static Uchar skillThing3Table  ['Z'-'A'+1] = {0x7F, 0x7F, 0x7F, 0x3F, 0x3F, 0x1F, 0x7F, 0x7F, 0x3F, 0x3F, 0x1F, 0x1F, 0x7F, 0x7F, 0x3F, 0x3F, 0x7F, 0x7F, 0x3F, 0x3F, 0x1F, 0x1F, 0x3F, 0x1F, 0x1F, 0x0F};
-static Uchar maxSnipesTable    ['9'-'1'+1] = { 10,  20,  30,  40,  60,  80, 100, 120, 150};
-static Uchar numGeneratorsTable['9'-'1'+1] = {  3,   3,   4,   4,   5,   5,   6,   8,  10};
-static Uchar numLivesTable     ['9'-'1'+1] = {  5,   5,   5,   5,   5,   4,   4,   3,   2};
+static BYTE skillThing3Table  ['Z'-'A'+1] = {0x7F, 0x7F, 0x7F, 0x3F, 0x3F, 0x1F, 0x7F, 0x7F, 0x3F, 0x3F, 0x1F, 0x1F, 0x7F, 0x7F, 0x3F, 0x3F, 0x7F, 0x7F, 0x3F, 0x3F, 0x1F, 0x1F, 0x3F, 0x1F, 0x1F, 0x0F};
+static BYTE maxSnipesTable    ['9'-'1'+1] = { 10,  20,  30,  40,  60,  80, 100, 120, 150};
+static BYTE numGeneratorsTable['9'-'1'+1] = {  3,   3,   4,   4,   5,   5,   6,   8,  10};
+static BYTE numLivesTable     ['9'-'1'+1] = {  5,   5,   5,   5,   5,   4,   4,   3,   2};
 
 bool enableElectricWalls, skillThing2, skillThing7, enableRubberBullets;
-Uchar skillThing1, skillThing3, maxSnipes, numGenerators, numLives;
+BYTE skillThing1, skillThing3, maxSnipes, numGenerators, numLives;
 
-Uchar data_2AA;
+BYTE data_2AA;
 WORD frame;
 static bool data_C75, data_C73, data_C72;
-static Uchar data_2B4, data_2B3, data_2B2, data_2C0, data_2AF, data_2B0, data_B38, data_C6C, data_C6D, data_C6F, data_C71, data_C6E, data_C70, data_C76, data_B65, data_B68, data_B67, data_B66, data_B64, data_C74, data_DF0, data_DF1, data_C96, data_B69;
+static BYTE data_2B4, data_2B3, data_2B2, data_2C0, data_2AF, data_2B0, data_B38, data_C6C, data_C6D, data_C6F, data_C71, data_C6E, data_C70, data_C76, data_B65, data_B68, data_B67, data_B66, data_B64, data_C74, data_DF0, data_DF1, data_C96, data_B69;
 static WORD data_290, data_28E, data_1EA, data_1E2, data_B58, data_348, data_346, data_1CA, data_1CC, data_B5C, data_29A;
 static SHORT data_1DE, data_1E0, data_1E4, data_1E6, data_1E8, data_292, data_34E;
 BYTE *data_34A;
@@ -414,8 +413,8 @@ main_283:
 	data_350[data_1DE] ^= data_EA3[data_2AF];
 	data_1E2 = data_1DE;
 main_30E:
-	data_2AF = (Uchar)GetRandomMasked(3);
-	data_2B0 = (Uchar)GetRandomMasked(3) + 1;
+	data_2AF = (BYTE)GetRandomMasked(3);
+	data_2B0 = (BYTE)GetRandomMasked(3) + 1;
 	data_1E0 = data_1E2;
 	for (;;)
 	{
@@ -435,7 +434,7 @@ main_372:
 	for (data_1DE = 1; data_1DE <= 0x40; data_1DE++)
 	{
 		data_1E0 = GetRandomRanged<data_350_size>();
-		data_2AF = (Uchar)GetRandomMasked(3);
+		data_2AF = (BYTE)GetRandomMasked(3);
 		data_350[data_1E0] &= ~data_EA3[data_2AF];
 		CreateMaze_helper();
 		data_350[data_1E0] &= ~data_EA7[data_2AF];
@@ -478,7 +477,7 @@ main_372:
 	}
 }
 
-Uchar main_CB0()
+BYTE main_CB0()
 {
 	data_C76 = data_C6C;
 	if (data_C76)
@@ -656,7 +655,7 @@ static const BYTE data_128C[] = {1, 2, 0x18, 0x1A, 0x19, 0x1B};
 static const BYTE data_1292[] = {0xB9, 0xBA, 0xBB, 0xBC, 0xC8, 0xC9, 0xCA, 0xCB, 0xCC, 0xCD, 0xCE};
 static const BYTE data_129D[] = {1, 2, 0x18, 0x1A, 0x19, 0x1B};
 
-void main_CCF(Uchar arg)
+void main_CCF(BYTE arg)
 {
 	data_350[arg * 8] = data_C6C;
 	data_C6C = arg;
@@ -664,13 +663,13 @@ void main_CCF(Uchar arg)
 
 bool main_CED(WORD arg1, BYTE arg2)
 {
-	Uchar data_C79 = ((BYTE*)data_34C)[0] - 1;
-	Uchar data_C7A = ((BYTE*)data_34C)[1] - 1;
+	BYTE data_C79 = ((BYTE*)data_34C)[0] - 1;
+	BYTE data_C7A = ((BYTE*)data_34C)[1] - 1;
 	WORD data_B50 = (WORD)arg1 * MAZE_WIDTH;
-	for (Uchar data_C7B = 0; data_C7B <= data_C79; data_C7B++)
+	for (BYTE data_C7B = 0; data_C7B <= data_C79; data_C7B++)
 	{
-		Uchar data_C7D = arg2;
-		for (Uchar data_C7C = 0; data_C7C <= data_C7A; data_C7C++)
+		BYTE data_C7D = arg2;
+		for (BYTE data_C7C = 0; data_C7C <= data_C7A; data_C7C++)
 		{
 			if ((BYTE&)maze[data_C7D + data_B50] != ' ')
 				return true;
@@ -686,14 +685,14 @@ bool main_CED(WORD arg1, BYTE arg2)
 
 void main_D80()
 {
-	Uchar data_C7E = ((BYTE*)data_34C)[0] - 1;
-	Uchar data_C7F = ((BYTE*)data_34C)[1] - 1;
-	Uchar data_C83 = 0;
+	BYTE data_C7E = ((BYTE*)data_34C)[0] - 1;
+	BYTE data_C7F = ((BYTE*)data_34C)[1] - 1;
+	BYTE data_C83 = 0;
 	WORD data_B52 = (WORD)data_34A[3] * MAZE_WIDTH;
-	for (Uchar data_C81 = 0; data_C81 <= data_C7E; data_C81++)
+	for (BYTE data_C81 = 0; data_C81 <= data_C7E; data_C81++)
 	{
 		BYTE data_C80 = data_34A[2];
-		for (Uchar data_C82 = 0; data_C82 <= data_C7F; data_C82++)
+		for (BYTE data_C82 = 0; data_C82 <= data_C7F; data_C82++)
 		{
 			maze[data_B52 + data_C80] = data_34C[data_C83 + 1];
 			data_C83++;
@@ -709,7 +708,7 @@ void main_D80()
 void main_F77()
 {
 	data_34A[2] = GetRandomMasked(0xF) * 8 + 4;
-	while (main_CED(data_34A[3] = (Uchar)GetRandomRanged<0x14>() * 6 + 3, data_34A[2])) {}
+	while (main_CED(data_34A[3] = (BYTE)GetRandomRanged<0x14>() * 6 + 3, data_34A[2])) {}
 }
 
 void CreateGenerators()
@@ -728,7 +727,7 @@ void CreateGenerators()
 	data_C70 = true;
 	for (data_B58 = 1; data_B58 <= numGenerators; data_B58++)
 	{
-		Uchar data_B5A = main_CB0();
+		BYTE data_B5A = main_CB0();
 		data_350[data_B5A * 8] = data_C70;
 		data_C70 = data_B5A;
 		data_34A = &data_350[data_B5A * 8];
@@ -736,7 +735,7 @@ void CreateGenerators()
 		data_34C = data_1002;
 		main_F77();
 		data_34A[1] = 0;
-		data_34A[5] = (Uchar)GetRandomMasked(0xF);
+		data_34A[5] = (BYTE)GetRandomMasked(0xF);
 		data_34A[4] = 1;
 		main_D80();
 	}
@@ -762,7 +761,7 @@ void CreateGenerators()
 	data_350[1] = 1;
 }
 
-void main_25E2(Uchar arg1, Uchar arg2)
+void main_25E2(BYTE arg1, BYTE arg2)
 {
 	if (data_DF0 != 0xFF && arg2 < data_DF0)
 		return;
@@ -799,7 +798,7 @@ bool updateHUD() // returns true if the match has been won
 	if (data_2C0 != data_B66)
 	{
 		data_2C0 = data_B66;
-		Uchar livesRemaining = numLives - data_2C0;
+		BYTE livesRemaining = numLives - data_2C0;
 		if (livesRemaining == 1)
 			outputText  (0x1C,   10, 2* 80, statusLine+71);
 		else
@@ -830,14 +829,14 @@ bool updateHUD() // returns true if the match has been won
 	return true;
 }
 
-void main_1C28(Uchar arg)
+void main_1C28(BYTE arg)
 {
 }
-void main_1D04(Uchar *arg1, Uchar arg2)
+void main_1D04(BYTE *arg1, BYTE arg2)
 {
 }
 
-void main_1E8F(Uchar *arg1, Uchar arg2)
+void main_1E8F(BYTE *arg1, BYTE arg2)
 {
 	if (!arg2)
 	{
@@ -853,7 +852,7 @@ void main_1E8F(Uchar *arg1, Uchar arg2)
 	main_CCF(arg2);
 }
 
-bool main_154F(Uchar arg)
+bool main_154F(BYTE arg)
 {
 	switch (data_C96 = arg)
 	{
@@ -895,8 +894,8 @@ bool main_154F(Uchar arg)
 
 void main_125C()
 {
-	Uchar data_C94 = 0;
-	Uchar data_C93 = data_C6D;
+	BYTE data_C94 = 0;
+	BYTE data_C93 = data_C6D;
 	for (;;)
 	{
 		if (!data_C93)
@@ -1049,15 +1048,15 @@ void main_10C9()
 		if (GetRandomMasked(0x1F >> (numGenerators + 1 - data_B65)))
 			goto main_1251;
 		data_34C = data_1112;
-		Uchar data_C91 = data_34A[2] + 2;
+		BYTE data_C91 = data_34A[2] + 2;
 		if (data_C91  > MAZE_WIDTH - 1)
 			data_C91 -= MAZE_WIDTH - 1;
-		Uchar data_C92 = data_34A[3];
+		BYTE data_C92 = data_34A[3];
 		if (main_CED(data_C92, data_C91))
 			goto main_1251;
 		if (data_B64 + data_B68 >= maxSnipes)
 		{
-			Uchar data_C90 = main_CB0();
+			BYTE data_C90 = main_CB0();
 			if (!data_C90)
 				goto main_1251;
 			data_B64++;
@@ -1079,11 +1078,11 @@ void main_10C9()
 	}
 }
 
-Uchar main_198A()
+BYTE main_198A()
 {
 	return false;
 }
-void main_1613(Uchar arg)
+void main_1613(BYTE arg)
 {
 }
 
@@ -1135,8 +1134,8 @@ bool main_1AB0() // returns true if the match has been lost
 	}
 main_1B3C:
 	main_E2A();
-	static const Uchar data_CAE[] = {0, 2, 6, 0, 4, 3, 5, 0, 0, 1, 7, 0, 0, 0, 0, 0};
-	if (Uchar keyboardMove = keyboard_state & (KEYSTATE_MOVE_RIGHT | KEYSTATE_MOVE_LEFT | KEYSTATE_MOVE_DOWN | KEYSTATE_MOVE_UP))
+	static const BYTE data_CAE[] = {0, 2, 6, 0, 4, 3, 5, 0, 0, 1, 7, 0, 0, 0, 0, 0};
+	if (BYTE keyboardMove = keyboard_state & (KEYSTATE_MOVE_RIGHT | KEYSTATE_MOVE_LEFT | KEYSTATE_MOVE_DOWN | KEYSTATE_MOVE_UP))
 	{
 		data_350[4] = data_CAE[keyboardMove];
 		if (!(main_198A() & 1))
@@ -1209,7 +1208,7 @@ void DrawViewport()
 		data_29E = MAZE_WIDTH - data_296;
 	else
 		data_29E = WINDOW_WIDTH;
-	for (Uchar data_2C2 = 0; data_2C2 <= 21; data_2C2++)
+	for (BYTE data_2C2 = 0; data_2C2 <= 21; data_2C2++)
 	{
 		WORD data_29C = data_298 * MAZE_WIDTH;
 		WriteTextMem(data_29E, data_29A, &maze[data_296 + data_29C]);

@@ -2,6 +2,7 @@
 #include <MMSystem.h>
 #include <stdio.h>
 #include <math.h>
+#include <wchar.h>
 #pragma comment(lib,"winmm.lib")
 
 typedef unsigned char Uchar;
@@ -254,11 +255,13 @@ bool enableElectricWalls, skillThing2, skillThing7, enableRubberBullets;
 Uchar skillThing1, skillThing3, maxSnipes, numGenerators, numLives;
 
 Uchar data_1D0, data_2AA;
-static Uchar data_2B4, data_2B3, data_2B2, data_2C0, data_2AF, data_2B0, data_B38, data_C6C, data_C6D, data_C6F, data_C71, data_C6E, data_C70, data_C76, data_B65, data_B68, data_B67, data_B66, data_B64, data_C75, data_C74, data_C73, data_C72;
+static Uchar data_2B4, data_2B3, data_2B2, data_2C0, data_2AF, data_2B0, data_B38, data_C6C, data_C6D, data_C6F, data_C71, data_C6E, data_C70, data_C76, data_B65, data_B68, data_B67, data_B66, data_B64, data_C75, data_C74, data_C73, data_C72, data_DF0, data_DF1, data_C96;
 static WORD data_290, data_28E, data_292, data_1EA, data_1E2, data_B58, data_348, data_346, data_34E, data_1CA, data_1CC;
 static SHORT data_1DE, data_1E0, data_1E4, data_1E6, data_1E8;
 BYTE *data_34A;
-WORD *data_34C;
+const WORD *data_34C;
+
+static BYTE data_B6C[0x100];
 
 const size_t data_350_size = 320;
 static BYTE data_350[2024];
@@ -468,24 +471,57 @@ Uchar main_CB0()
 
 #define SPRITE_SIZE(x,y) (((x)<<8)+(y))
 
-static WORD data_1002[] = {SPRITE_SIZE(2,2), 0x0FDA, 0x0EBF, 0x0DC0, 0x0CD9};
-static WORD data_100C[] = {SPRITE_SIZE(2,2), 0x0EFF, 0x0EFF, 0x0EFF, 0x0EFF};
-static WORD data_1016[] = {SPRITE_SIZE(2,2), 0x0EDA, 0x0EBF, 0x0EC0, 0x0ED9};
-static WORD data_1020[] = {SPRITE_SIZE(2,2), 0x0EFF, 0x0EFF, 0x0EFF, 0x0EFF};
-static WORD data_102A[] = {SPRITE_SIZE(2,2), 0x0DDA, 0x0DBF, 0x0DC0, 0x0DD9};
-static WORD data_1034[] = {SPRITE_SIZE(2,2), 0x0EFF, 0x0EFF, 0x0EFF, 0x0EFF};
-static WORD data_103E[] = {SPRITE_SIZE(2,2), 0x0CDA, 0x0CBF, 0x0CC0, 0x0CD9};
-static WORD data_1048[] = {SPRITE_SIZE(2,2), 0x0EFF, 0x0EFF, 0x0EFF, 0x0EFF};
-static WORD data_1052[] = {SPRITE_SIZE(2,2), 0x0BDA, 0x0BBF, 0x0BC0, 0x0BD9};
-static WORD data_105C[] = {SPRITE_SIZE(2,2), 0x0EFF, 0x0EFF, 0x0EFF, 0x0EFF};
-static WORD data_1066[] = {SPRITE_SIZE(2,2), 0x0ADA, 0x0ABF, 0x0AC0, 0x0AD9};
-static WORD data_1070[] = {SPRITE_SIZE(2,2), 0x0EFF, 0x0EFF, 0x0EFF, 0x0EFF};
-static WORD data_107A[] = {SPRITE_SIZE(2,2), 0x09DA, 0x09BF, 0x09C0, 0x09D9};
-static WORD data_1084[] = {SPRITE_SIZE(2,2), 0x0EFF, 0x0EFF, 0x0EFF, 0x0EFF};
-static WORD data_108E[] = {SPRITE_SIZE(2,2), 0x04DA, 0x04BF, 0x04C0, 0x04D9};
-static WORD data_1098[] = {SPRITE_SIZE(2,2), 0x0EFF, 0x0EFF, 0x0EFF, 0x0EFF};
-static WORD *data_10A2[] = {data_1002, data_100C, data_1016, data_1020, data_102A, data_1034, data_103E, data_1048, data_1052, data_105C, data_1066, data_1070, data_107A, data_1084, data_108E, data_1098};
-static WORD data_10E2[] = {SPRITE_SIZE(2,2), 0x0F93, 0x0F93, 0x0F11, 0x0F10};
+static const WORD data_1002[] = {SPRITE_SIZE(2,2), 0x0FDA, 0x0EBF, 0x0DC0, 0x0CD9};
+static const WORD data_100C[] = {SPRITE_SIZE(2,2), 0x0EFF, 0x0EFF, 0x0EFF, 0x0EFF};
+static const WORD data_1016[] = {SPRITE_SIZE(2,2), 0x0EDA, 0x0EBF, 0x0EC0, 0x0ED9};
+static const WORD data_1020[] = {SPRITE_SIZE(2,2), 0x0EFF, 0x0EFF, 0x0EFF, 0x0EFF};
+static const WORD data_102A[] = {SPRITE_SIZE(2,2), 0x0DDA, 0x0DBF, 0x0DC0, 0x0DD9};
+static const WORD data_1034[] = {SPRITE_SIZE(2,2), 0x0EFF, 0x0EFF, 0x0EFF, 0x0EFF};
+static const WORD data_103E[] = {SPRITE_SIZE(2,2), 0x0CDA, 0x0CBF, 0x0CC0, 0x0CD9};
+static const WORD data_1048[] = {SPRITE_SIZE(2,2), 0x0EFF, 0x0EFF, 0x0EFF, 0x0EFF};
+static const WORD data_1052[] = {SPRITE_SIZE(2,2), 0x0BDA, 0x0BBF, 0x0BC0, 0x0BD9};
+static const WORD data_105C[] = {SPRITE_SIZE(2,2), 0x0EFF, 0x0EFF, 0x0EFF, 0x0EFF};
+static const WORD data_1066[] = {SPRITE_SIZE(2,2), 0x0ADA, 0x0ABF, 0x0AC0, 0x0AD9};
+static const WORD data_1070[] = {SPRITE_SIZE(2,2), 0x0EFF, 0x0EFF, 0x0EFF, 0x0EFF};
+static const WORD data_107A[] = {SPRITE_SIZE(2,2), 0x09DA, 0x09BF, 0x09C0, 0x09D9};
+static const WORD data_1084[] = {SPRITE_SIZE(2,2), 0x0EFF, 0x0EFF, 0x0EFF, 0x0EFF};
+static const WORD data_108E[] = {SPRITE_SIZE(2,2), 0x04DA, 0x04BF, 0x04C0, 0x04D9};
+static const WORD data_1098[] = {SPRITE_SIZE(2,2), 0x0EFF, 0x0EFF, 0x0EFF, 0x0EFF};
+static const WORD *data_10A2[] = {data_1002, data_100C, data_1016, data_1020, data_102A, data_1034, data_103E, data_1048, data_1052, data_105C, data_1066, data_1070, data_107A, data_1084, data_108E, data_1098};
+static const WORD data_10E2[] = {SPRITE_SIZE(2,2), 0x0F93, 0x0F93, 0x0F11, 0x0F10};
+static const WORD data_10EC[] = {SPRITE_SIZE(2,2), 0x0F4F, 0x0F4F, 0x0F11, 0x0F10};
+static const WORD *data_10F6[] = {data_10E2, data_10EC};
+static const WORD data_10FE[] = {SPRITE_SIZE(1,1), 0x202};
+static const WORD data_1108[] = {SPRITE_SIZE(2,1), 0x201, 0x218};
+static const WORD data_1112[] = {SPRITE_SIZE(2,1), 0x201, 0x21A};
+static const WORD data_111C[] = {SPRITE_SIZE(2,1), 0x201, 0x219};
+static const WORD data_1126[] = {SPRITE_SIZE(2,1), 0x21B, 0x201};
+static const WORD *data_1130[] = {data_1108, data_1112, data_1112, data_1112, data_111C, data_1126, data_1126, data_1126};
+static const WORD data_1150[] = {SPRITE_SIZE(1,1), 0x0E09};
+static const WORD data_115A[] = {SPRITE_SIZE(1,1), 0x0B0F};
+static const WORD data_1164[] = {SPRITE_SIZE(1,1), 0x0A18};
+static const WORD data_116E[] = {SPRITE_SIZE(1,1), 0x0A2F};
+static const WORD data_1178[] = {SPRITE_SIZE(1,1), 0x0A1A};
+static const WORD data_1182[] = {SPRITE_SIZE(1,1), 0x0A5C};
+static const WORD data_118C[] = {SPRITE_SIZE(1,1), 0x0A19};
+static const WORD data_1196[] = {SPRITE_SIZE(1,1), 0x0A2F};
+static const WORD data_11A0[] = {SPRITE_SIZE(1,1), 0x0A1B};
+static const WORD data_11AA[] = {SPRITE_SIZE(1,1), 0x0A5C};
+static const WORD *data_11B4[] = {data_1164, data_116E, data_1178, data_1182, data_118C, data_1196, data_11A0, data_11AA};
+static const WORD *data_11D4[] = {data_1150, data_115A, data_1150, data_115A};
+
+static const BYTE data_11E8[] = {
+	0,1,0,0,1,0,0,1,0,0,1,0,0,1,0,0,1,0,0,1,0,0,1,0,0,1,0,0,1,0,0,1,0,0,1,0,0,1,0,0,1,0,
+	0,1,0,0,1,0,0,1,0,0,1,0,0,1,0,0,1,0,0,1,0,0,1,0,0,1,0,0,1,0,0,1,0,0,1,0,0,1,0,0,1,0,
+	0,1,0,0,1,0,0,1,0,0,1,0,0,1,0,0,1,0,0,1,0,0,1,0,0,1,0,0,1,0,0,1,0,0,1,0,0
+};
+
+static const BYTE data_1261[] = {4, 3, 4, 4, 4, 4, 4, 5, 6, 7, 6, 5, 6, 6, 6, 6, 0, 0, 0, 1, 0, 7, 0, 0, 2, 2, 2, 2, 2, 3, 2, 1};
+static const BYTE data_1281[] = {0xB9, 0xBA, 0xBB, 0xBC, 0xC8, 0xC9, 0xCA, 0xCB, 0xCC, 0xCD, 0xCE};
+static const BYTE data_128C[] = {1, 2, 0x18, 0x1A, 0x19, 0x1B};
+static const BYTE data_1292[] = {0xB9, 0xBA, 0xBB, 0xBC, 0xC8, 0xC9, 0xCA, 0xCB, 0xCC, 0xCD, 0xCE};
+static const BYTE data_129D[] = {1, 2, 0x18, 0x1A, 0x19, 0x1B};
+
 
 bool main_CED(WORD arg1, BYTE arg2)
 {
@@ -517,7 +553,7 @@ void main_D80()
 	WORD data_B52 = (WORD)data_34A[3] * MAZE_WIDTH;
 	for (Uchar data_C81 = 0; data_C81 <= data_C7E; data_C81++)
 	{
-		Uchar data_C80 = data_34A[2];
+		BYTE data_C80 = data_34A[2];
 		for (Uchar data_C82 = 0; data_C82 <= data_C7F; data_C82++)
 		{
 			maze[data_B52 + data_C80] = data_34C[data_C83 + 1];
@@ -587,16 +623,147 @@ void CreateGenerators()
 	data_350[1] = 1;
 }
 
-void main_25E2(Uchar a, Uchar b)
+void main_25E2(Uchar arg1, Uchar arg2)
 {
+	if (data_DF0 != 0xFF && arg2 < data_DF0)
+		return;
+	if (!shooting_sound_enabled && !arg2)
+		return;
+	data_DF1 = arg1;
+	data_DF0 = arg2;
 }
 bool main_81A()
 {
 	return false;
 }
-void main_125C()
+
+void main_1E8F(Uchar *arg1, Uchar arg2)
 {
 }
+
+bool main_154F(Uchar arg)
+{
+	return false;
+}
+
+void main_CCF(WORD arg)
+{
+}
+
+void main_125C()
+{
+	Uchar data_C94 = 0;
+	Uchar data_C93 = data_C6D;
+	for (;;)
+	{
+		if (!data_C93)
+			return;
+		data_34A = &data_350[data_C93 * 8];
+		WORD data_B5C = data_34A[3] * MAZE_WIDTH + data_34A[2];
+		if (maze[data_B5C] == 0xB2)
+		{
+			BYTE data_C95 = data_34A[0];
+			maze[data_B5C] = 0x920;
+			main_1E8F(&data_C6D, data_C93);
+			data_B67--;
+			data_C93 = data_C95;
+			continue;
+		}
+		maze[data_B5C] = 0x920;
+		switch (data_34A[4])
+		{
+		case 1:
+			if (main_154F(1) || data_11E8[data_34A[3]] && main_154F(1))
+				goto main_13EF;
+			goto main_1390;
+		case 3:
+			if (main_154F(2) || data_11E8[data_34A[3]] && main_154F(1))
+				goto main_13EF;
+			// fall through
+		case 2:
+			if (main_154F(1))
+				goto main_13EF;
+			goto main_139A;
+		case 4:
+			if (main_154F(2))
+				goto main_13EF;
+			goto main_139A;
+		case 5:
+			if (main_154F(2) || data_11E8[data_34A[3]] && main_154F(3))
+				goto main_13EF;
+			// fall through
+		case 6:
+			if (main_154F(3))
+				goto main_13EF;
+			goto main_139A;
+		case 7:
+			if (main_154F(3) || data_11E8[data_34A[3]] && main_154F(3))
+				goto main_13EF;
+			// fall through
+		case 0:
+		main_1390:
+			if (main_154F(0))
+				goto main_13EF;
+		main_139A:
+			if (data_34A[1] >= 6)
+			{
+//				data_34C = (WORD&)data_34A[6];
+			}
+			else
+			{
+				if (++data_34A[5] > 3)
+					data_34A[5] = 0;
+				data_34C = data_11D4[data_34A[5]];
+			}
+			maze[data_B5C] = data_34C[2];
+			data_C94 = data_C93;
+			data_C93 = data_34A[0];
+			continue;
+		}
+	main_13EF:
+		BYTE find_this = (BYTE&)maze[data_B5C];
+		if (!memchr(data_1281, find_this, _countof(data_1281)))
+		{
+			if (!data_34A[1])
+			{
+				if (memchr(data_128C, find_this, _countof(data_128C)))
+					data_34E++;
+				else
+					goto main_149B;
+				WORD find_this = maze[data_B5C];
+				if (!wmemchr((wchar_t*)data_1002+1, (wchar_t&)find_this, _countof(data_1002)-1) && (BYTE&)find_this != 0xFF)
+					goto main_149B;
+				data_34E += 50;
+				goto main_149B;
+			}
+			if (skillThing7)
+				goto main_149B;
+			WORD find_this = maze[data_B5C];
+			if (wmemchr((wchar_t*)data_1002+1, (wchar_t&)find_this, _countof(data_1002)-1) && (BYTE&)find_this != 0xFF)
+				goto main_150E;
+		main_149B:
+			maze[data_B5C] = 0x0FB2;
+			goto main_150E;
+		}
+		if (!enableRubberBullets || data_34A[1] || !data_B6C[data_C93] || !(data_34A[1] & 1))
+			goto main_150E;
+		data_B6C[data_C93]--;
+		data_34A[4] = data_1261[data_C96 * 8 + data_34A[4]];
+		main_25E2(1, 0);
+		main_154F((data_C96 + 2) & 3);
+		goto main_139A;
+	main_150E:
+		data_B67--;
+		if (!data_C94)
+			data_C6D = data_34A[0];
+		else
+			data_350[data_C94 * 8] = data_34A[0];
+		BYTE data_C95 = data_34A[0];
+		main_CCF(data_C93);
+		data_C93 = data_C95;
+	}
+}
+
 void main_2124()
 {
 }
@@ -723,10 +890,10 @@ int main(int argc, char* argv[])
 		CreateGenerators();
 		main_25E2(0, 0xFF);
 
-		FILE *f = fopen("mazey.bin", "wb");
+		/*FILE *f = fopen("mazey.bin", "wb");
 		for (Uint i=0; i<sizeof(maze)/2; i++)
 			fwrite(&maze[i], 1, 1, f);
-		fclose(f);
+		fclose(f);*/
 
 		/*StartTone(2711);
 		for (;;)

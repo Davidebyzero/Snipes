@@ -257,8 +257,10 @@ static Uchar numLivesTable     ['9'-'1'+1] = {  5,   5,   5,   5,   5,   4,   4,
 bool enableElectricWalls, skillThing2, skillThing7, enableRubberBullets;
 Uchar skillThing1, skillThing3, maxSnipes, numGenerators, numLives;
 
-Uchar data_1D0, data_2AA;
-static Uchar data_2B4, data_2B3, data_2B2, data_2C0, data_2AF, data_2B0, data_B38, data_C6C, data_C6D, data_C6F, data_C71, data_C6E, data_C70, data_C76, data_B65, data_B68, data_B67, data_B66, data_B64, data_C75, data_C74, data_C73, data_C72, data_DF0, data_DF1, data_C96;
+Uchar data_2AA;
+WORD frame;
+static bool data_C75, data_C73, data_C72;
+static Uchar data_2B4, data_2B3, data_2B2, data_2C0, data_2AF, data_2B0, data_B38, data_C6C, data_C6D, data_C6F, data_C71, data_C6E, data_C70, data_C76, data_B65, data_B68, data_B67, data_B66, data_B64, data_C74, data_DF0, data_DF1, data_C96, data_B69;
 static WORD data_290, data_28E, data_1EA, data_1E2, data_B58, data_348, data_346, data_1CA, data_1CC, data_B5C, data_29A;
 static SHORT data_1DE, data_1E0, data_1E4, data_1E6, data_1E8, data_292, data_34E;
 BYTE *data_34A;
@@ -294,7 +296,7 @@ void outputNumber(BYTE color, bool zeroPadding, WORD count, WORD dst, Uint numbe
 	outputText(color, count, dst, textbuf);
 }
 
-void eraseBottomTwoLines()
+void EraseBottomTwoLines()
 {
 	COORD pos;
 	pos.X = 0;
@@ -746,10 +748,10 @@ void CreateGenerators()
 	data_B66 = 0;
 	data_B64 = 0;
 	data_34E = 0;
-	data_C75 = 0;
+	data_C75 = false;
 	data_C74 = 0;
-	data_C73 = 0;
-	data_C72 = 0;
+	data_C73 = false;
+	data_C72 = false;
 	(WORD&)data_350[6] = FAKE_POINTER_data_10E2;
 	data_34C = data_10E2;
 	main_F77();
@@ -772,7 +774,7 @@ void main_25E2(Uchar arg1, Uchar arg2)
 
 bool updateHUD() // returns true if the match has been won
 {
-	data_1D0++;
+	frame++;
 	if (data_28E != data_346)
 		outputNumber(0x13, 0, 4, 2* 11, data_28E = data_346);
 	if (data_290 != data_348)
@@ -810,12 +812,12 @@ bool updateHUD() // returns true if the match has been won
 			}
 		}
 	}
-	outputNumber(0x17, 0, 5, 2*74, data_1D0); // Time
+	outputNumber(0x17, 0, 5, 2*74, frame); // Time
 
 	if (data_B64 || data_B65 || data_B68)
 		return false;
 
-	eraseBottomTwoLines();
+	EraseBottomTwoLines();
 
 	COORD pos;
 	pos.X = 0;
@@ -859,7 +861,7 @@ bool main_154F(Uchar arg)
 		data_B5C -= MAZE_WIDTH;
 		if (--data_34A[3] == 0xFF)
 		{
-			data_34A[3] = 0x77;
+			data_34A[3] = MAZE_WIDTH - MAZE_CELL_WIDTH - 1;
 			data_B5C += _countof(maze);
 		}
 		break;
@@ -1009,13 +1011,182 @@ void main_2124()
 void main_1EC1()
 {
 }
-void main_10C9()
+bool main_EB9()
+{
+	return false;
+}
+void main_E2A()
 {
 }
-bool main_1AB0()
+
+void main_10C9()
 {
-	keyboard_state = PollKeyboard();
+	BYTE data_C8F = data_C70;
+	while (data_C8F)
+	{
+		data_34A = &data_350[data_C8F * 8];
+		if (++data_34A[5] >= 15)
+			data_34A[5] = 0;
+		data_34C = data_10A2[data_34A[5]];
+		(WORD&)data_34A[6] = PointerToFakePointer(data_34C);
+		if (main_EB9())
+		{
+			BYTE data_C90 = data_34A[0];
+			main_1E8F(&data_C70, data_C8F);
+			data_C8F = data_C90;
+			data_B65--;
+			continue;
+		}
+		main_E2A();
+		main_D80();
+		if (--data_34A[4])
+			goto main_1251;
+		BYTE *di = data_34A;
+		if (frame >= 0xE00)
+			data_34A[4] = 5;
+		else
+			data_34A[4] = (data_B69 >> (frame/0x100 + 1)) + 5;
+		if (GetRandomMasked(0x1F >> (numGenerators + 1 - data_B65)))
+			goto main_1251;
+		data_34C = data_1112;
+		Uchar data_C91 = data_34A[2] + 2;
+		if (data_C91  > MAZE_WIDTH - 1)
+			data_C91 -= MAZE_WIDTH - 1;
+		Uchar data_C92 = data_34A[3];
+		if (main_CED(data_C92, data_C91))
+			goto main_1251;
+		if (data_B64 + data_B68 >= maxSnipes)
+		{
+			Uchar data_C90 = main_CB0();
+			if (!data_C90)
+				goto main_1251;
+			data_B64++;
+			data_C8F = data_34A[0];
+			data_34A = &data_350[data_C90 * 8];
+			data_34A[0] = data_C6E;
+			data_C6E = data_C90;
+			data_34A[2] = data_C91;
+			data_34A[3] = data_C92;
+			data_34A[4] = 2;
+			(WORD&)data_34A[6] = FAKE_POINTER_data_1112;
+			main_D80();
+			data_34A[1] = (BYTE)GetRandomMasked(1);
+			data_34A[5] = 4;
+			continue;
+		}
+	main_1251:
+		data_C8F = data_34A[0];
+	}
+}
+
+Uchar main_198A()
+{
 	return false;
+}
+void main_1613(Uchar arg)
+{
+}
+
+bool main_1AB0() // returns true if the match has been lost
+{
+	data_34A = data_350;
+	if (++data_C74 > 7)
+	{
+		data_C74 = 0;
+		data_C75 ^= true;
+	}
+	if (data_C75)
+		data_34C = data_10E2;
+	else
+		data_34C = data_10EC;
+	if (data_C73)
+	{
+		keyboard_state = PollKeyboard();
+		if (data_B66 >= numLives)
+		{
+			EraseBottomTwoLines();
+			COORD pos;
+			pos.X = 0;
+			pos.Y = 25-2;
+			SetConsoleCursorPosition(output, pos);
+			SetConsoleTextAttribute(output, FOREGROUND_BLUE | FOREGROUND_GREEN | FOREGROUND_RED);
+			SetConsoleMode(output, ENABLE_PROCESSED_OUTPUT);
+			DWORD operationSize;
+			WriteConsole(output, STRING_WITH_LEN("The SNIPES have triumphed!!!\r\n"), &operationSize, 0);
+			return true;
+		}
+		if (!data_C72)
+			goto main_1C03;
+		return false;
+	}
+	else
+	{
+		if (--data_350[5] == 0)
+		{
+			keyboard_state = PollKeyboard();
+			data_350[5] = 2;
+			if (main_EB9())
+				goto main_1BEE;
+			goto main_1B3C;
+		}
+		if (main_EB9())
+			goto main_1BEE;
+		return false;
+	}
+main_1B3C:
+	main_E2A();
+	static const Uchar data_CAE[] = {0, 2, 6, 0, 4, 3, 5, 0, 0, 1, 7, 0, 0, 0, 0, 0};
+	if (Uchar keyboardMove = keyboard_state & (KEYSTATE_MOVE_RIGHT | KEYSTATE_MOVE_LEFT | KEYSTATE_MOVE_DOWN | KEYSTATE_MOVE_UP))
+	{
+		data_350[4] = data_CAE[keyboardMove];
+		if (!(main_198A() & 1))
+			goto main_1B85;
+		if (!spacebar_state)
+			goto main_1B8F;
+		if (data_350[5] == 1)
+		{
+			main_E2A();
+			if (!main_198A())
+			{
+				if (enableElectricWalls)
+					goto main_1BEE;
+				main_D80();
+			}
+		}
+		data_350[5] = 1;
+		goto main_1B8F;
+	main_1B85:
+		if (enableElectricWalls)
+			goto main_1BEE;
+	}
+	main_D80();
+main_1B8F:
+	if (!spacebar_state && (keyboard_state & (KEYSTATE_FIRE_RIGHT | KEYSTATE_FIRE_LEFT | KEYSTATE_FIRE_DOWN | KEYSTATE_FIRE_UP)))
+	{
+		if (--data_350[1])
+			return false;
+		BYTE data_CC1 = data_350[4];
+		data_350[4] = data_CAE[keyboard_state >> 4];
+		main_1613(0);
+		main_25E2(0, 0);
+		data_350[4] = data_CC1;
+		data_350[1] = data_350[5] == 1 ? data_2AA<<1 : data_2AA;
+		return false;
+	}
+	data_350[1] = 1;
+	return false;
+main_1BEE:
+	main_1E8F(data_350, 0);
+	data_C73 = true;
+	data_B66++;
+	return false;
+main_1C03:
+	keyboard_state = PollKeyboard();
+	data_C73 = false;
+	main_F77();
+	data_1CA = data_350[2];
+	data_1CC = data_350[3];
+	main_D80();
 }
 void main_1D64()
 {
@@ -1146,7 +1317,7 @@ int main(int argc, char* argv[])
 		cursorInfo.bVisible = FALSE;
 		SetConsoleCursorInfo(output, &cursorInfo);
 
-		data_1D0 = 0;
+		frame = 0;
 		outputHUD();
 		CreateMaze();
 		CreateGenerators();
@@ -1173,7 +1344,7 @@ int main(int argc, char* argv[])
 		{
 			if (forfeit_match)
 			{
-				eraseBottomTwoLines();
+				EraseBottomTwoLines();
 				break;
 			}
 			if (updateHUD())

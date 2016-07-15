@@ -1028,7 +1028,7 @@ void main_125C()
 			return;
 		data_34A = &data_350[data_C93 * 8];
 		data_B5C = data_34A[3] * MAZE_WIDTH + data_34A[2];
-		if (maze[data_B5C] == 0xB2)
+		if ((BYTE&)maze[data_B5C] == 0xB2)
 		{
 			BYTE data_C95 = data_34A[0];
 			maze[data_B5C] = 0x920;

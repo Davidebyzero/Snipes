@@ -97,12 +97,15 @@ Uint PollKeyboard()
 		{
 			if (record.Event.KeyEvent.wVirtualKeyCode == VK_F1)
 				sound_enabled ^= true;
+			else
 			if (record.Event.KeyEvent.wVirtualKeyCode == VK_F2)
 				shooting_sound_enabled ^= true;
+			else
+			if (record.Event.KeyEvent.wVirtualKeyCode == VK_ESCAPE)
+				forfeit_match = true;
 		}
 	}
 	Uint state = 0;
-	forfeit_match = GetKeyState(VK_ESCAPE) < 0;
 	if (GetKeyState(VK_RIGHT) < 0) state |= KEYSTATE_MOVE_RIGHT;
 	if (GetKeyState(VK_LEFT ) < 0) state |= KEYSTATE_MOVE_LEFT;
 	if (GetKeyState(VK_DOWN ) < 0) state |= KEYSTATE_MOVE_DOWN;

@@ -782,10 +782,7 @@ void main_F77()
 void CreateGenerators()
 {
 	for (data_B58 = 0; data_B58 <= 0xFC; data_B58++)
-	{
 		data_350[(data_B58 + 1) * 8] = data_B58 + 2;
-		data_B58++;
-	}
 	data_350[2024] = 0;
 	data_C6C = true;
 	data_C6D = true;

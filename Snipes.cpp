@@ -256,7 +256,7 @@ Uchar skillThing1, skillThing3, maxSnipes, numGenerators, numLives;
 
 Uchar data_1D0, data_2AA;
 static Uchar data_2B4, data_2B3, data_2B2, data_2C0, data_2AF, data_2B0, data_B38, data_C6C, data_C6D, data_C6F, data_C71, data_C6E, data_C70, data_C76, data_B65, data_B68, data_B67, data_B66, data_B64, data_C75, data_C74, data_C73, data_C72, data_DF0, data_DF1, data_C96;
-static WORD data_290, data_28E, data_1EA, data_1E2, data_B58, data_348, data_346, data_1CA, data_1CC;
+static WORD data_290, data_28E, data_1EA, data_1E2, data_B58, data_348, data_346, data_1CA, data_1CC, data_B5C;
 static SHORT data_1DE, data_1E0, data_1E4, data_1E6, data_1E8, data_292, data_34E;
 BYTE *data_34A;
 const WORD *data_34C;
@@ -534,6 +534,11 @@ static const BYTE data_128C[] = {1, 2, 0x18, 0x1A, 0x19, 0x1B};
 static const BYTE data_1292[] = {0xB9, 0xBA, 0xBB, 0xBC, 0xC8, 0xC9, 0xCA, 0xCB, 0xCC, 0xCD, 0xCE};
 static const BYTE data_129D[] = {1, 2, 0x18, 0x1A, 0x19, 0x1B};
 
+void main_CCF(Uchar arg)
+{
+	data_350[arg * 8] = data_C6C;
+	data_C6C = arg;
+}
 
 bool main_CED(WORD arg1, BYTE arg2)
 {
@@ -703,17 +708,67 @@ bool updateHUD() // returns true if the match has been won
 	return true;
 }
 
+void main_1C28(Uchar arg)
+{
+}
+void main_1D04(Uchar *arg1, Uchar arg2)
+{
+}
+
 void main_1E8F(Uchar *arg1, Uchar arg2)
 {
+	if (!arg2)
+	{
+		main_1C28(0);
+		return;
+	}
+	main_1D04(arg1, arg2);
+	if (arg1 != &data_C6D)
+	{
+		main_1C28(arg2);
+		return;
+	}
+	main_CCF(arg2);
 }
 
 bool main_154F(Uchar arg)
 {
-	return false;
-}
-
-void main_CCF(WORD arg)
-{
+	switch (data_C96 = arg)
+	{
+	case 0:
+		data_B5C -= MAZE_WIDTH;
+		if (--data_34A[3] == 0xFF)
+		{
+			data_34A[3] = 0x77;
+			data_B5C += _countof(maze);
+		}
+		break;
+	case 1:
+		data_B5C++;
+		if (++data_34A[2] >= MAZE_WIDTH)
+		{
+			data_34A[2] = 0;
+			data_B5C -= MAZE_WIDTH;
+		}
+		break;
+	case 2:
+		data_B5C += MAZE_WIDTH;
+		if (++data_34A[3] >= MAZE_WIDTH - MAZE_CELL_WIDTH)
+		{
+			data_34A[3] = 0;
+			data_B5C -= _countof(maze);
+		}
+		break;
+	case 3:
+		data_B5C--;
+		if (--data_34A[2] == 0xFF)
+		{
+			data_34A[2] = MAZE_WIDTH - 1;
+			data_B5C += MAZE_WIDTH;
+		}
+		break;
+	}
+	return maze[data_B5C] != ' ';
 }
 
 void main_125C()

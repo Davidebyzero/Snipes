@@ -259,7 +259,7 @@ BYTE skillThing1, skillThing3, maxSnipes, numGenerators, numLives;
 BYTE data_2AA;
 WORD frame;
 static bool data_C75, data_C73, data_C72;
-static BYTE data_2B4, data_2B3, data_2B2, data_2C0, data_2AF, data_2B0, data_B38, data_C6C, data_C6D, data_C6F, data_C71, data_C6E, data_C70, data_C76, data_B65, data_B68, data_B67, data_B66, data_B64, data_C74, data_DF0, data_DF1, data_C96, data_B69;
+static BYTE data_2B4, data_2B3, data_2B2, data_2C0, data_2AF, data_2B0, data_C6C, data_C6D, data_C6F, data_C71, data_C6E, data_C70, data_C76, data_B65, data_B68, data_B67, data_B66, data_B64, data_C74, data_DF0, data_DF1, data_C96, data_B69;
 static WORD data_290, data_28E, data_1EA, data_1E2, data_B58, data_348, data_346, data_1CA, data_1CC, data_B5C, data_29A;
 static SHORT data_1DE, data_1E0, data_1E4, data_1E6, data_1E8, data_292, data_34E;
 BYTE *data_34A;
@@ -268,7 +268,7 @@ const WORD *data_34C;
 static BYTE data_B6C[0x100];
 
 const size_t data_350_size = 320;
-static BYTE data_350[2024];
+static BYTE data_350[0x800];
 
 #define MAZE_CELL_WIDTH  8
 #define MAZE_CELL_HEIGHT 6
@@ -718,7 +718,7 @@ void CreateGenerators()
 		data_350[(data_B58 + 1) * 8] = data_B58 + 2;
 		data_B58++;
 	}
-	data_B38 = 0;
+	data_350[2024] = 0;
 	data_C6C = true;
 	data_C6D = true;
 	data_C6F = true;

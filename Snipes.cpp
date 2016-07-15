@@ -256,8 +256,8 @@ Uchar skillThing1, skillThing3, maxSnipes, numGenerators, numLives;
 
 Uchar data_1D0, data_2AA;
 static Uchar data_2B4, data_2B3, data_2B2, data_2C0, data_2AF, data_2B0, data_B38, data_C6C, data_C6D, data_C6F, data_C71, data_C6E, data_C70, data_C76, data_B65, data_B68, data_B67, data_B66, data_B64, data_C75, data_C74, data_C73, data_C72, data_DF0, data_DF1, data_C96;
-static WORD data_290, data_28E, data_292, data_1EA, data_1E2, data_B58, data_348, data_346, data_34E, data_1CA, data_1CC;
-static SHORT data_1DE, data_1E0, data_1E4, data_1E6, data_1E8;
+static WORD data_290, data_28E, data_1EA, data_1E2, data_B58, data_348, data_346, data_1CA, data_1CC;
+static SHORT data_1DE, data_1E0, data_1E4, data_1E6, data_1E8, data_292, data_34E;
 BYTE *data_34A;
 const WORD *data_34C;
 
@@ -284,11 +284,23 @@ void outputText(BYTE color, WORD count, WORD dst, char *src)
 	WriteConsole(output, src, count, &operationSize, 0);
 }
 
-void outputNumber(BYTE color, WORD count, WORD dst, Uint number)
+void outputNumber(BYTE color, bool zeroPadding, WORD count, WORD dst, Uint number)
 {
 	char textbuf[strlength("4294967295")+1];
-	sprintf_s(textbuf, sizeof(textbuf), "%*u", count, number);
+	sprintf_s(textbuf, sizeof(textbuf), zeroPadding ? "%0*u" : "%*u", count, number);
 	outputText(color, count, dst, textbuf);
+}
+
+void eraseBottomTwoLines()
+{
+	COORD pos;
+	pos.X = 0;
+	pos.Y = WINDOW_HEIGHT - 2;
+	SetConsoleCursorPosition(output, pos);
+	SetConsoleTextAttribute(output, 7);
+	DWORD operationSize;
+	for (Uint i=0; i < WINDOW_WIDTH * 2; i++)
+		WriteConsole(output, " ", 1, &operationSize, 0);
 }
 
 static char statusLine[] = "\xDA\xBF\xB3\x01\x1A\xB3\x02\xB3""Skill""\xC0\xD9\xB3\x01\x1A\xB3\x02\xB3""Time  Men Left                 Score     0  0000001 Man Left\x65";
@@ -297,27 +309,27 @@ void outputHUD()
 {
 	char skillLetter = skillLevelLetter + 'A';
 	memset((char*)maze, ' ', 40);
-	outputText  (0x17, 40, 2* 0, (char*)maze);
-	outputText  (0x17, 40, 2*40, (char*)maze);
-	outputText  (0x17,  2, 2* 0, statusLine);
-	outputNumber(0x13,  2, 2* 3, 0);
-	outputText  (0x17,  1, 2* 6, statusLine+2);
-	outputText  (0x13,  2, 2* 8, statusLine+3);
-	outputNumber(0x13,  4, 2*11, 0);
-	outputText  (0x17,  1, 2*16, statusLine+5);
-	outputText  (0x13,  1, 2*18, statusLine+6);
-	outputNumber(0x13,  4, 2*20, 0);
-	outputText  (0x17,  1, 2*25, statusLine+7);
-	outputText  (0x17,  5, 2*27, statusLine+8);
-	outputNumber(0x17,  1, 2*38, skillLevelNumber);
-	outputText  (0x17,  1, 2*37, &skillLetter);
-	outputText  (0x17,  2, 2*40, statusLine+13);
-	outputText  (0x17,  1, 2*46, statusLine+15);
-	outputText  (0x17,  2, 2*48, statusLine+16);
-	outputText  (0x17,  1, 2*56, statusLine+18);
-	outputText  (0x17,  1, 2*58, statusLine+19);
-	outputText  (0x17,  1, 2*65, statusLine+20);
-	outputText  (0x17,  4, 2*67, statusLine+21);
+	outputText  (0x17,    40, 2* 0, (char*)maze);
+	outputText  (0x17,    40, 2*40, (char*)maze);
+	outputText  (0x17,     2, 2* 0, statusLine);
+	outputNumber(0x13,  0, 2, 2* 3, 0);
+	outputText  (0x17,     1, 2* 6, statusLine+2);
+	outputText  (0x13,     2, 2* 8, statusLine+3);
+	outputNumber(0x13,  0, 4, 2*11, 0);
+	outputText  (0x17,     1, 2*16, statusLine+5);
+	outputText  (0x13,     1, 2*18, statusLine+6);
+	outputNumber(0x13,  0, 4, 2*20, 0);
+	outputText  (0x17,     1, 2*25, statusLine+7);
+	outputText  (0x17,     5, 2*27, statusLine+8);
+	outputNumber(0x17,  0, 1, 2*38, skillLevelNumber);
+	outputText  (0x17,     1, 2*37, &skillLetter);
+	outputText  (0x17,     2, 2*40, statusLine+13);
+	outputText  (0x17,     1, 2*46, statusLine+15);
+	outputText  (0x17,     2, 2*48, statusLine+16);
+	outputText  (0x17,     1, 2*56, statusLine+18);
+	outputText  (0x17,     1, 2*58, statusLine+19);
+	outputText  (0x17,     1, 2*65, statusLine+20);
+	outputText  (0x17,     4, 2*67, statusLine+21);
 	memcpy(maze, statusLine+25, 40);
 	((char*)maze)[0] = numLives + '0';
 	((char*)maze)[1] = 0;
@@ -331,7 +343,7 @@ void outputHUD()
 	data_290 = 0xFFFF;
 	data_28E = 0xFFFF;
 	data_2C0 = 0xFF;
-	data_292 = 0xFFFF;
+	data_292 = -1;
 }
 
 void CreateMaze_helper()
@@ -632,9 +644,63 @@ void main_25E2(Uchar arg1, Uchar arg2)
 	data_DF1 = arg1;
 	data_DF0 = arg2;
 }
-bool main_81A()
+
+bool updateHUD() // returns true if the match has been won
 {
-	return false;
+	data_1D0++;
+	if (data_28E != data_346)
+		outputNumber(0x13, 0, 4, 2* 11, data_28E = data_346);
+	if (data_290 != data_348)
+		outputNumber(0x13, 0, 4, 2* 20, data_290 = data_348);
+	if (data_2B3 != data_B65)
+	{
+		outputNumber(0x17, 0, 2, 2* 43, data_2B3 = data_B65);
+		outputNumber(0x13, 0, 2, 2*  3, numGenerators - data_B65);
+	}
+	if (data_2B2 != data_B64)
+		outputNumber(0x17, 0, 3, 2* 52, data_2B2 = data_B64);
+	if (data_2B4 != data_B68)
+		outputNumber(0x17, 0, 3, 2* 61, data_2B4 = data_B68);
+	if (data_292 != data_34E)
+	{
+		data_292 = data_34E;
+		if (data_292 > 0)
+			outputNumber(0x17, 1, 5, 2*113, data_292);
+		else
+			outputText  (0x17,    6, 2*113, statusLine+65);
+	}
+	if (data_2C0 != data_B66)
+	{
+		data_2C0 = data_B66;
+		Uchar livesRemaining = numLives - data_2C0;
+		if (livesRemaining == 1)
+			outputText  (0x1C,   10, 2* 80, statusLine+71);
+		else
+		{
+			{}	outputNumber(0x17, 0, 1, 2* 80, livesRemaining);
+			if (!livesRemaining)
+			{
+				outputNumber(0x1C, 0, 1, 2* 80, 0);
+				outputText  (0x1C,    1, 2*113, statusLine+81);
+			}
+		}
+	}
+	outputNumber(0x17, 0, 5, 2*74, data_1D0); // Time
+
+	if (data_B64 || data_B65 || data_B68)
+		return false;
+
+	eraseBottomTwoLines();
+
+	COORD pos;
+	pos.X = 0;
+	pos.Y = 25-2;
+	SetConsoleCursorPosition(output, pos);
+	SetConsoleTextAttribute(output, FOREGROUND_BLUE | FOREGROUND_GREEN | FOREGROUND_RED);
+	SetConsoleMode(output, ENABLE_PROCESSED_OUTPUT);
+	DWORD operationSize;
+	WriteConsole(output, STRING_WITH_LEN("Congratulations --- YOU ACTUALLY WON!!!\r\n"), &operationSize, 0);
+	return true;
 }
 
 void main_1E8F(Uchar *arg1, Uchar arg2)
@@ -909,7 +975,12 @@ int main(int argc, char* argv[])
 
 		for (;;)
 		{
-			if (forfeit_match || main_81A())
+			if (forfeit_match)
+			{
+				eraseBottomTwoLines();
+				break;
+			}
+			if (updateHUD())
 				break;
 
 			for (;;)

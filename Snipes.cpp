@@ -256,7 +256,7 @@ Uchar skillThing1, skillThing3, maxSnipes, numGenerators, numLives;
 
 Uchar data_1D0, data_2AA;
 static Uchar data_2B4, data_2B3, data_2B2, data_2C0, data_2AF, data_2B0, data_B38, data_C6C, data_C6D, data_C6F, data_C71, data_C6E, data_C70, data_C76, data_B65, data_B68, data_B67, data_B66, data_B64, data_C75, data_C74, data_C73, data_C72, data_DF0, data_DF1, data_C96;
-static WORD data_290, data_28E, data_1EA, data_1E2, data_B58, data_348, data_346, data_1CA, data_1CC, data_B5C;
+static WORD data_290, data_28E, data_1EA, data_1E2, data_B58, data_348, data_346, data_1CA, data_1CC, data_B5C, data_29A;
 static SHORT data_1DE, data_1E0, data_1E4, data_1E6, data_1E8, data_292, data_34E;
 BYTE *data_34A;
 const WORD *data_34C;
@@ -905,8 +905,31 @@ void main_1D64()
 void main_260E()
 {
 }
-void main_9BB()
+
+void DrawViewport()
 {
+	data_29A = 240;
+	SHORT data_298 = data_1CC - 11;
+	if (data_298 < 0)
+		data_298 += 120;
+	SHORT data_296 = data_1CA - 20;
+	if (data_296 < 0)
+		data_296 += MAZE_WIDTH;
+	SHORT data_29E = 0;
+	if (data_296 + WINDOW_WIDTH >= MAZE_WIDTH)
+		data_29E = MAZE_WIDTH - data_296;
+	else
+		data_29E = WINDOW_WIDTH;
+	for (Uchar data_2C2 = 0; data_2C2 <= 21; data_2C2++)
+	{
+		WORD data_29C = data_298 * MAZE_WIDTH;
+		WriteTextMem(data_29E, data_29A, &maze[data_296 + data_29C]);
+		if (data_29E != WINDOW_WIDTH)
+			WriteTextMem(WINDOW_WIDTH - data_29E, data_29A + data_29E, &maze[data_29C]);
+		data_29A += WINDOW_WIDTH * 2;
+		if (++data_298 == MAZE_WIDTH - MAZE_CELL_WIDTH)
+			data_298 = 0;
+	}
 }
 
 int main(int argc, char* argv[])
@@ -1059,7 +1082,7 @@ int main(int argc, char* argv[])
 
 			main_1D64();
 			main_260E();
-			main_9BB();
+			DrawViewport();
 		}
 
 		ClearSound();

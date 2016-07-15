@@ -525,6 +525,123 @@ static const WORD data_11AA[] = {SPRITE_SIZE(1,1), 0x0A5C};
 static const WORD *data_11B4[] = {data_1164, data_116E, data_1178, data_1182, data_118C, data_1196, data_11A0, data_11AA};
 static const WORD *data_11D4[] = {data_1150, data_115A, data_1150, data_115A};
 
+// fake pointers - hacky, but they work for now; should definitely replace them with real pointers once the porting is complete
+
+#define FAKE_POINTER_data_1002 0x1002
+#define FAKE_POINTER_data_100C 0x100C
+#define FAKE_POINTER_data_1016 0x1016
+#define FAKE_POINTER_data_1020 0x1020
+#define FAKE_POINTER_data_102A 0x102A
+#define FAKE_POINTER_data_1034 0x1034
+#define FAKE_POINTER_data_103E 0x103E
+#define FAKE_POINTER_data_1048 0x1048
+#define FAKE_POINTER_data_1052 0x1052
+#define FAKE_POINTER_data_105C 0x105C
+#define FAKE_POINTER_data_1066 0x1066
+#define FAKE_POINTER_data_1070 0x1070
+#define FAKE_POINTER_data_107A 0x107A
+#define FAKE_POINTER_data_1084 0x1084
+#define FAKE_POINTER_data_108E 0x108E
+#define FAKE_POINTER_data_1098 0x1098
+#define FAKE_POINTER_data_10E2 0x10E2
+#define FAKE_POINTER_data_10EC 0x10EC
+#define FAKE_POINTER_data_10FE 0x10FE
+#define FAKE_POINTER_data_1108 0x1108
+#define FAKE_POINTER_data_1112 0x1112
+#define FAKE_POINTER_data_111C 0x111C
+#define FAKE_POINTER_data_1126 0x1126
+#define FAKE_POINTER_data_1150 0x1150
+#define FAKE_POINTER_data_115A 0x115A
+#define FAKE_POINTER_data_1164 0x1164
+#define FAKE_POINTER_data_116E 0x116E
+#define FAKE_POINTER_data_1178 0x1178
+#define FAKE_POINTER_data_1182 0x1182
+#define FAKE_POINTER_data_118C 0x118C
+#define FAKE_POINTER_data_1196 0x1196
+#define FAKE_POINTER_data_11A0 0x11A0
+#define FAKE_POINTER_data_11AA 0x11AA
+
+const WORD *FakePointerToPointer(WORD fakePtr)
+{
+	switch (fakePtr)
+	{
+	case FAKE_POINTER_data_1002: return data_1002;
+	case FAKE_POINTER_data_100C: return data_100C;
+	case FAKE_POINTER_data_1016: return data_1016;
+	case FAKE_POINTER_data_1020: return data_1020;
+	case FAKE_POINTER_data_102A: return data_102A;
+	case FAKE_POINTER_data_1034: return data_1034;
+	case FAKE_POINTER_data_103E: return data_103E;
+	case FAKE_POINTER_data_1048: return data_1048;
+	case FAKE_POINTER_data_1052: return data_1052;
+	case FAKE_POINTER_data_105C: return data_105C;
+	case FAKE_POINTER_data_1066: return data_1066;
+	case FAKE_POINTER_data_1070: return data_1070;
+	case FAKE_POINTER_data_107A: return data_107A;
+	case FAKE_POINTER_data_1084: return data_1084;
+	case FAKE_POINTER_data_108E: return data_108E;
+	case FAKE_POINTER_data_1098: return data_1098;
+	case FAKE_POINTER_data_10E2: return data_10E2;
+	case FAKE_POINTER_data_10EC: return data_10EC;
+	case FAKE_POINTER_data_10FE: return data_10FE;
+	case FAKE_POINTER_data_1108: return data_1108;
+	case FAKE_POINTER_data_1112: return data_1112;
+	case FAKE_POINTER_data_111C: return data_111C;
+	case FAKE_POINTER_data_1126: return data_1126;
+	case FAKE_POINTER_data_1150: return data_1150;
+	case FAKE_POINTER_data_115A: return data_115A;
+	case FAKE_POINTER_data_1164: return data_1164;
+	case FAKE_POINTER_data_116E: return data_116E;
+	case FAKE_POINTER_data_1178: return data_1178;
+	case FAKE_POINTER_data_1182: return data_1182;
+	case FAKE_POINTER_data_118C: return data_118C;
+	case FAKE_POINTER_data_1196: return data_1196;
+	case FAKE_POINTER_data_11A0: return data_11A0;
+	case FAKE_POINTER_data_11AA: return data_11AA;
+	default:
+		return NULL;
+	}
+}
+
+WORD PointerToFakePointer(const WORD *ptr)
+{
+	if (ptr == data_1002) return FAKE_POINTER_data_1002;
+	if (ptr == data_100C) return FAKE_POINTER_data_100C;
+	if (ptr == data_1016) return FAKE_POINTER_data_1016;
+	if (ptr == data_1020) return FAKE_POINTER_data_1020;
+	if (ptr == data_102A) return FAKE_POINTER_data_102A;
+	if (ptr == data_1034) return FAKE_POINTER_data_1034;
+	if (ptr == data_103E) return FAKE_POINTER_data_103E;
+	if (ptr == data_1048) return FAKE_POINTER_data_1048;
+	if (ptr == data_1052) return FAKE_POINTER_data_1052;
+	if (ptr == data_105C) return FAKE_POINTER_data_105C;
+	if (ptr == data_1066) return FAKE_POINTER_data_1066;
+	if (ptr == data_1070) return FAKE_POINTER_data_1070;
+	if (ptr == data_107A) return FAKE_POINTER_data_107A;
+	if (ptr == data_1084) return FAKE_POINTER_data_1084;
+	if (ptr == data_108E) return FAKE_POINTER_data_108E;
+	if (ptr == data_1098) return FAKE_POINTER_data_1098;
+	if (ptr == data_10E2) return FAKE_POINTER_data_10E2;
+	if (ptr == data_10EC) return FAKE_POINTER_data_10EC;
+	if (ptr == data_10FE) return FAKE_POINTER_data_10FE;
+	if (ptr == data_1108) return FAKE_POINTER_data_1108;
+	if (ptr == data_1112) return FAKE_POINTER_data_1112;
+	if (ptr == data_111C) return FAKE_POINTER_data_111C;
+	if (ptr == data_1126) return FAKE_POINTER_data_1126;
+	if (ptr == data_1150) return FAKE_POINTER_data_1150;
+	if (ptr == data_115A) return FAKE_POINTER_data_115A;
+	if (ptr == data_1164) return FAKE_POINTER_data_1164;
+	if (ptr == data_116E) return FAKE_POINTER_data_116E;
+	if (ptr == data_1178) return FAKE_POINTER_data_1178;
+	if (ptr == data_1182) return FAKE_POINTER_data_1182;
+	if (ptr == data_118C) return FAKE_POINTER_data_118C;
+	if (ptr == data_1196) return FAKE_POINTER_data_1196;
+	if (ptr == data_11A0) return FAKE_POINTER_data_11A0;
+	if (ptr == data_11AA) return FAKE_POINTER_data_11AA;
+	__debugbreak();
+	return 0;
+}
+
 static const BYTE data_11E8[] = {
 	0,1,0,0,1,0,0,1,0,0,1,0,0,1,0,0,1,0,0,1,0,0,1,0,0,1,0,0,1,0,0,1,0,0,1,0,0,1,0,0,1,0,
 	0,1,0,0,1,0,0,1,0,0,1,0,0,1,0,0,1,0,0,1,0,0,1,0,0,1,0,0,1,0,0,1,0,0,1,0,0,1,0,0,1,0,
@@ -613,7 +730,7 @@ void CreateGenerators()
 		data_350[data_B5A * 8] = data_C70;
 		data_C70 = data_B5A;
 		data_34A = &data_350[data_B5A * 8];
-//		(WORD&)data_34A[6] = 0x1002;
+		(WORD&)data_34A[6] = FAKE_POINTER_data_1002;
 		data_34C = data_1002;
 		main_F77();
 		data_34A[1] = 0;
@@ -633,7 +750,7 @@ void CreateGenerators()
 	data_C74 = 0;
 	data_C73 = 0;
 	data_C72 = 0;
-//	(WORD&)data_350[6] = 0x10E2;
+	(WORD&)data_350[6] = FAKE_POINTER_data_10E2;
 	data_34C = data_10E2;
 	main_F77();
 	main_D80();
@@ -830,9 +947,7 @@ void main_125C()
 				goto main_13EF;
 		main_139A:
 			if (data_34A[1] >= 6)
-			{
-//				data_34C = (WORD&)data_34A[6];
-			}
+				data_34C = FakePointerToPointer((WORD&)data_34A[6]);
 			else
 			{
 				if (++data_34A[5] > 3)

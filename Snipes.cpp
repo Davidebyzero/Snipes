@@ -125,11 +125,23 @@ Uint PollKeyboard()
 	return state;
 }
 
-#define WINDOW_WIDTH  40
-#define WINDOW_HEIGHT 25
+//#define OMNISCIENCE_CHEAT
+
+#define MAZE_CELL_WIDTH  8
+#define MAZE_CELL_HEIGHT 6
+#define MAZE_WIDTH  (MAZE_CELL_WIDTH  * 16)
+#define MAZE_HEIGHT (MAZE_CELL_HEIGHT * 20)
+
+#ifdef OMNISCIENCE_CHEAT
+ #define WINDOW_WIDTH  MAZE_WIDTH
+ #define WINDOW_HEIGHT MAZE_HEIGHT
+#else
+ #define WINDOW_WIDTH  40
+ #define WINDOW_HEIGHT 25
+#endif
 
 #define VIEWPORT_ROW    3
-#define VIEWPORT_HEIGHT 22
+#define VIEWPORT_HEIGHT (WINDOW_HEIGHT - VIEWPORT_ROW)
 
 void WriteTextMem(Uint count, Uint dst, WORD *src)
 {
@@ -287,11 +299,6 @@ static BYTE data_B6C[MAX_OBJECTS];
 const size_t data_350_size = 8 * 40;
 static BYTE data_350[8 * MAX_OBJECTS];
 
-#define MAZE_CELL_WIDTH  8
-#define MAZE_CELL_HEIGHT 6
-#define MAZE_WIDTH  (MAZE_CELL_WIDTH  * 16)
-#define MAZE_HEIGHT (MAZE_CELL_HEIGHT * 20)
-
 static WORD maze[MAZE_WIDTH * MAZE_HEIGHT];
 
 void outputText(BYTE color, WORD count, WORD dst, char *src)
@@ -331,34 +338,35 @@ static char statusLine[] = "\xDA\xBF\xB3\x01\x1A\xB3\x02\xB3""Skill""\xC0\xD9\xB
 void outputHUD()
 {
 	char skillLetter = skillLevelLetter + 'A';
-	memset((char*)maze, ' ', 40);
-	outputText  (0x17,    40, 2* 0, (char*)maze);
-	outputText  (0x17,    40, 2*40, (char*)maze);
-	outputText  (0x17,     2, 2* 0, statusLine);
-	outputNumber(0x13,  0, 2, 2* 3, 0);
-	outputText  (0x17,     1, 2* 6, statusLine+2);
-	outputText  (0x13,     2, 2* 8, statusLine+3);
-	outputNumber(0x13,  0, 4, 2*11, 0);
-	outputText  (0x17,     1, 2*16, statusLine+5);
-	outputText  (0x13,     1, 2*18, statusLine+6);
-	outputNumber(0x13,  0, 4, 2*20, 0);
-	outputText  (0x17,     1, 2*25, statusLine+7);
-	outputText  (0x17,     5, 2*27, statusLine+8);
-	outputNumber(0x17,  0, 1, 2*38, skillLevelNumber);
-	outputText  (0x17,     1, 2*37, &skillLetter);
-	outputText  (0x17,     2, 2*40, statusLine+13);
-	outputText  (0x17,     1, 2*46, statusLine+15);
-	outputText  (0x17,     2, 2*48, statusLine+16);
-	outputText  (0x17,     1, 2*56, statusLine+18);
-	outputText  (0x17,     1, 2*58, statusLine+19);
-	outputText  (0x17,     1, 2*65, statusLine+20);
-	outputText  (0x17,     4, 2*67, statusLine+21);
+	memset((char*)maze, ' ', WINDOW_WIDTH);
+	outputText  (0x17, WINDOW_WIDTH, 2*(WINDOW_WIDTH*0), (char*)maze);
+	outputText  (0x17, WINDOW_WIDTH, 2*(WINDOW_WIDTH*1), (char*)maze);
+	outputText  (0x17, WINDOW_WIDTH, 2*(WINDOW_WIDTH*2), (char*)maze);
+	outputText  (0x17,     2, 2*(WINDOW_WIDTH*0 +  0), statusLine);
+	outputNumber(0x13,  0, 2, 2*(WINDOW_WIDTH*0 +  3), 0);
+	outputText  (0x17,     1, 2*(WINDOW_WIDTH*0 +  6), statusLine+2);
+	outputText  (0x13,     2, 2*(WINDOW_WIDTH*0 +  8), statusLine+3);
+	outputNumber(0x13,  0, 4, 2*(WINDOW_WIDTH*0 + 11), 0);
+	outputText  (0x17,     1, 2*(WINDOW_WIDTH*0 + 16), statusLine+5);
+	outputText  (0x13,     1, 2*(WINDOW_WIDTH*0 + 18), statusLine+6);
+	outputNumber(0x13,  0, 4, 2*(WINDOW_WIDTH*0 + 20), 0);
+	outputText  (0x17,     1, 2*(WINDOW_WIDTH*0 + 25), statusLine+7);
+	outputText  (0x17,     5, 2*(WINDOW_WIDTH*0 + 27), statusLine+8);
+	outputNumber(0x17,  0, 1, 2*(WINDOW_WIDTH*0 + 38), skillLevelNumber);
+	outputText  (0x17,     1, 2*(WINDOW_WIDTH*0 + 37), &skillLetter);
+	outputText  (0x17,     2, 2*(WINDOW_WIDTH*1 +  0), statusLine+13);
+	outputText  (0x17,     1, 2*(WINDOW_WIDTH*1 +  6), statusLine+15);
+	outputText  (0x17,     2, 2*(WINDOW_WIDTH*1 +  8), statusLine+16);
+	outputText  (0x17,     1, 2*(WINDOW_WIDTH*1 + 16), statusLine+18);
+	outputText  (0x17,     1, 2*(WINDOW_WIDTH*1 + 18), statusLine+19);
+	outputText  (0x17,     1, 2*(WINDOW_WIDTH*1 + 25), statusLine+20);
+	outputText  (0x17,     4, 2*(WINDOW_WIDTH*1 + 27), statusLine+21);
 	memcpy(maze, statusLine+25, 40);
 	((char*)maze)[0] = numLives + '0';
 	((char*)maze)[1] = 0;
 	if (numLives == 1)
 		((char*)maze)[6] = 'a';
-	outputText  (0x17, 40, 2*80, (char*)maze);
+	outputText  (0x17, 40, 2*(WINDOW_WIDTH*2 +  0), (char*)maze);
 
 	data_2B4 = 0xFF;
 	data_2B3 = 0xFF;
@@ -868,43 +876,43 @@ bool updateHUD() // returns true if the match has been won
 {
 	frame++;
 	if (data_28E != data_346)
-		outputNumber(0x13, 0, 4, 2* 11, data_28E = data_346);
+		outputNumber(0x13, 0, 4, 2* (WINDOW_WIDTH*0 + 11), data_28E = data_346);
 	if (data_290 != data_348)
-		outputNumber(0x13, 0, 4, 2* 20, data_290 = data_348);
+		outputNumber(0x13, 0, 4, 2* (WINDOW_WIDTH*0 + 20), data_290 = data_348);
 	if (data_2B3 != data_B65)
 	{
-		outputNumber(0x17, 0, 2, 2* 43, data_2B3 = data_B65);
-		outputNumber(0x13, 0, 2, 2*  3, numGenerators - data_B65);
+		outputNumber(0x17, 0, 2, 2* (WINDOW_WIDTH*1 +  3), data_2B3 = data_B65);
+		outputNumber(0x13, 0, 2, 2* (WINDOW_WIDTH*0 +  3), numGenerators - data_B65);
 	}
 	if (data_2B2 != data_B64)
-		outputNumber(0x17, 0, 3, 2* 52, data_2B2 = data_B64);
+		outputNumber(0x17, 0, 3, 2* (WINDOW_WIDTH*1 + 12), data_2B2 = data_B64);
 	if (data_2B4 != data_B68)
-		outputNumber(0x17, 0, 3, 2* 61, data_2B4 = data_B68);
+		outputNumber(0x17, 0, 3, 2* (WINDOW_WIDTH*1 + 21), data_2B4 = data_B68);
 	if (data_292 != data_34E)
 	{
 		data_292 = data_34E;
 		if (data_292 > 0)
-			outputNumber(0x17, 1, 5, 2*113, data_292);
+			outputNumber(0x17, 1, 5, 2*(WINDOW_WIDTH*2 + 33), data_292);
 		else
-			outputText  (0x17,    6, 2*113, statusLine+65);
+			outputText  (0x17,    6, 2*(WINDOW_WIDTH*2 + 33), statusLine+65);
 	}
 	if (data_2C0 != data_B66)
 	{
 		data_2C0 = data_B66;
 		BYTE livesRemaining = numLives - data_2C0;
 		if (livesRemaining == 1)
-			outputText  (0x1C,   10, 2* 80, statusLine+71);
+			outputText  (0x1C,   10, 2*(WINDOW_WIDTH*2 +  0), statusLine+71);
 		else
 		{
-			{}	outputNumber(0x17, 0, 1, 2* 80, livesRemaining);
+			{}	outputNumber(0x17, 0, 1, 2*(WINDOW_WIDTH*2 +  0), livesRemaining);
 			if (!livesRemaining)
 			{
-				outputNumber(0x1C, 0, 1, 2* 80, 0);
-				outputText  (0x1C,    1, 2*113, statusLine+81);
+				outputNumber(0x1C, 0, 1, 2*(WINDOW_WIDTH*2 +  0), 0);
+				outputText  (0x1C,    1, 2*(WINDOW_WIDTH*2 + 33), statusLine+81);
 			}
 		}
 	}
-	outputNumber(0x17, 0, 5, 2*74, frame); // Time
+	outputNumber(0x17, 0, 5, 2*(WINDOW_WIDTH*1 + 34), frame); // Time
 
 	if (data_B64 || data_B65 || data_B68)
 		return false;
@@ -913,7 +921,7 @@ bool updateHUD() // returns true if the match has been won
 
 	COORD pos;
 	pos.X = 0;
-	pos.Y = 25-2;
+	pos.Y = WINDOW_HEIGHT-2;
 	SetConsoleCursorPosition(output, pos);
 	SetConsoleTextAttribute(output, FOREGROUND_BLUE | FOREGROUND_GREEN | FOREGROUND_RED);
 	SetConsoleMode(output, ENABLE_PROCESSED_OUTPUT | ENABLE_WRAP_AT_EOL_OUTPUT);
@@ -1991,7 +1999,7 @@ bool main_1AB0() // returns true if the match has been lost
 			EraseBottomTwoLines();
 			COORD pos;
 			pos.X = 0;
-			pos.Y = 25-2;
+			pos.Y = WINDOW_HEIGHT-2;
 			SetConsoleCursorPosition(output, pos);
 			SetConsoleTextAttribute(output, FOREGROUND_BLUE | FOREGROUND_GREEN | FOREGROUND_RED);
 			SetConsoleMode(output, ENABLE_PROCESSED_OUTPUT | ENABLE_WRAP_AT_EOL_OUTPUT);
@@ -2341,7 +2349,7 @@ int main(int argc, char* argv[])
 		SetConsoleCursorInfo(output, &cursorInfo);
 		COORD pos;
 		pos.X = 0;
-		pos.Y = 25-1;
+		pos.Y = WINDOW_HEIGHT-1;
 		SetConsoleCursorPosition(output, pos);
 		SetConsoleTextAttribute(output, FOREGROUND_BLUE | FOREGROUND_GREEN | FOREGROUND_RED);
 		SetConsoleMode(output, ENABLE_PROCESSED_OUTPUT | ENABLE_WRAP_AT_EOL_OUTPUT);

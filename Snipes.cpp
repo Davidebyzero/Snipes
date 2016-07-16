@@ -842,7 +842,7 @@ void CreateGenerators()
 	data_350[1] = 1;
 }
 
-void main_25E2(BYTE arg1, BYTE arg2)
+void SetSoundEffectState(BYTE arg1, BYTE arg2)
 {
 	if (data_DF0 != 0xFF && arg2 < data_DF0)
 		return;
@@ -934,7 +934,7 @@ void main_1C28(BYTE arg)
 		data_34C = data_12C2;
 		data_CC2[4] = 0x16;
 		data_CC2[5] = 0;
-		main_25E2(0, 4);
+		SetSoundEffectState(0, 4);
 	}
 	if (data_CC8 == 1 && data_CC9 == 2)
 	{
@@ -942,7 +942,7 @@ void main_1C28(BYTE arg)
 		data_34C = data_1316;
 		data_CC2[4] = 0xC;
 		data_CC2[5] = 0;
-		main_25E2(0, 3);
+		SetSoundEffectState(0, 3);
 	}
 	if (data_CC8 == 1 && data_CC9 == 1)
 	{
@@ -950,7 +950,7 @@ void main_1C28(BYTE arg)
 		data_34C = data_136A;
 		data_CC2[4] = 0xB;
 		data_CC2[5] = 2;
-		main_25E2(2, 2);
+		SetSoundEffectState(2, 2);
 	}
 	PlotObjectToMaze();
 }
@@ -1128,7 +1128,7 @@ void main_125C()
 			goto main_150E;
 		data_B6C[data_C93]--;
 		data_34A[4] = data_1261[data_C96 * 8 + data_34A[4]];
-		main_25E2(1, 0);
+		SetSoundEffectState(1, 0);
 		main_154F((data_C96 + 2) & 3);
 		goto main_139A;
 	main_150E:
@@ -1449,7 +1449,7 @@ BYTE main_18A3()
 	if (GetRandomMasked(0xFFFF >> (15 - data_C9C)))
 		return 0;
 	main_1613(6);
-	main_25E2(0, 1);
+	SetSoundEffectState(0, 1);
 	return 0xFF;
 }
 
@@ -2039,7 +2039,7 @@ main_1B8F:
 		BYTE data_CC1 = data_350[4];
 		data_350[4] = data_CAE[keyboard_state >> 4];
 		main_1613(0);
-		main_25E2(0, 0);
+		SetSoundEffectState(0, 0);
 		data_350[4] = data_CC1;
 		data_350[1] = data_350[5] == 1 ? data_2AA<<1 : data_2AA;
 		return false;
@@ -2092,7 +2092,7 @@ main_1DF4:
 		goto main_1E32;
 	if (data_CC6[5] <= 5)
 		goto main_1E32;
-	main_25E2(11 - data_CC6[5], 4);
+	SetSoundEffectState(11 - data_CC6[5], 4);
 	goto main_1E84;
 main_1E32:
 	al = 4;
@@ -2111,7 +2111,7 @@ main_1E36:
 	data_34C = data_1392[data_CCE];
 	al = 2;
 main_1E7C:
-	main_25E2(data_CCE, al);
+	SetSoundEffectState(data_CCE, al);
 main_1E84:
 	PlotObjectToMaze();
 main_1E87:
@@ -2119,9 +2119,13 @@ main_1E87:
 	goto main_1D6A;
 }
 
+static const WORD sound1[] = {100, 100, 1400, 1800, 1600, 1200};
+static const WORD sound2[] = {2200, 6600, 1800, 4400, 8400, 1100};
+static const WORD sound3[] = {2000, 8000, 6500, 4000, 2500, 1000};
+
 void UpdateSound()
 {
-	if (!sound_enabled || data_DF0 != 0xFF)
+	if (!sound_enabled || data_DF0 == 0xFF)
 	{
 		ClearSound();
 		return;
@@ -2129,17 +2133,25 @@ void UpdateSound()
 	switch (data_DF0)
 	{
 	case 0:
+		if (!data_DF1)
+			PlayTone(1900);
+		else
+			PlayTone(1400);
 		break;
 	case 1:
+		PlayTone(1600);
 		break;
 	case 2:
+		PlayTone(sound1[data_DF1]);
 		break;
 	case 3:
+		PlayTone(sound2[data_DF1]);
 		break;
 	case 4:
+		PlayTone(sound3[data_DF1]);
 		break;
 	}
-	;;;
+	data_DF0 = 0xFF;
 }
 
 void DrawViewport()
@@ -2264,7 +2276,7 @@ int main(int argc, char* argv[])
 		outputHUD();
 		CreateMaze();
 		CreateGenerators();
-		main_25E2(0, 0xFF);
+		SetSoundEffectState(0, 0xFF);
 
 		/*FILE *f = fopen("mazey.bin", "wb");
 		for (Uint i=0; i<sizeof(maze)/2; i++)

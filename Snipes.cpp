@@ -716,6 +716,11 @@ static const BYTE data_11E8[] = {
 	0,1,0,0,1,0,0,1,0,0,1,0,0,1,0,0,1,0,0,1,0,0,1,0,0,1,0,0,1,0,0,1,0,0,1,0,0,1,0,0,1,0,
 	0,1,0,0,1,0,0,1,0,0,1,0,0,1,0,0,1,0,0,1,0,0,1,0,0,1,0,0,1,0,0,1,0,0,1,0,0
 };
+static const BYTE data_CE5[] = {
+	1,2,1,1,2,1,1,2,1,1,2,1,1,2,1,1,2,1,1,2,1,1,2,1,1,2,1,1,2,1,1,2,1,1,2,1,1,2,1,1,2,1,
+	1,2,1,1,2,1,1,2,1,1,2,1,1,2,1,1,2,1,1,2,1,1,2,1,1,2,1,1,2,1,1,2,1,1,2,1,1,2,1,1,2,1,
+	1,2,1,1,2,1,1,2,1,1,2,1,1,2,1,1,2,1,1,2,1,1,2,1,1,2,1,1,2,1,1,2,1,1,2,1,1
+};
 
 static const BYTE data_1261[] = {4, 3, 4, 4, 4, 4, 4, 5, 6, 7, 6, 5, 6, 6, 6, 6, 0, 0, 0, 1, 0, 7, 0, 0, 2, 2, 2, 2, 2, 3, 2, 1};
 static const BYTE data_1281[] = {0xB9, 0xBA, 0xBB, 0xBC, 0xC8, 0xC9, 0xCA, 0xCB, 0xCC, 0xCD, 0xCE};
@@ -784,12 +789,12 @@ void CreateGenerators()
 	for (data_B58 = 0; data_B58 <= 0xFC; data_B58++)
 		data_350[(data_B58 + 1) * 8] = data_B58 + 2;
 	data_350[2024] = 0;
-	data_C6C = true;
-	data_C6D = true;
-	data_C6F = true;
-	data_C71 = true;
-	data_C6E = true;
-	data_C70 = true;
+	data_C6C = 1;
+	data_C6D = 0;
+	data_C6F = 0;
+	data_C71 = 0;
+	data_C6E = 0;
+	data_C70 = 0;
 	for (data_B58 = 1; data_B58 <= numGenerators; data_B58++)
 	{
 		BYTE data_B5A = main_CB0();
@@ -941,10 +946,10 @@ void main_1C28(BYTE arg)
 
 void main_1D04(BYTE *arg1, BYTE arg2)
 {
-	BYTE data_CCA = arg1[0];
+	BYTE data_CCA = *arg1;
 	if (arg2 == data_CCA)
 	{
-		arg1[0] = data_350[arg2 * 8];
+		*arg1 = data_350[arg2 * 8];
 		return;
 	}
 	for (;;)
@@ -983,7 +988,7 @@ bool main_154F(BYTE arg)
 		data_B5C -= MAZE_WIDTH;
 		if (--data_34A[3] == 0xFF)
 		{
-			data_34A[3] = MAZE_WIDTH - MAZE_CELL_WIDTH - 1;
+			data_34A[3] = MAZE_HEIGHT - 1;
 			data_B5C += _countof(maze);
 		}
 		break;
@@ -997,7 +1002,7 @@ bool main_154F(BYTE arg)
 		break;
 	case 2:
 		data_B5C += MAZE_WIDTH;
-		if (++data_34A[3] >= MAZE_WIDTH - MAZE_CELL_WIDTH)
+		if (++data_34A[3] >= MAZE_HEIGHT)
 		{
 			data_34A[3] = 0;
 			data_B5C -= _countof(maze);
@@ -1127,9 +1132,297 @@ void main_125C()
 	}
 }
 
+BYTE main_2381(BYTE *di, WORD &cx)
+{
+	SHORT bx = 1;
+	SHORT ax = di[2] - data_1CA;
+	if (ax <= 0)
+	{
+		bx = 0;
+		ax = -ax;
+	}
+	if (ax > 0x3F)
+	{
+		bx ^= 1;
+		ax = -ax + MAZE_WIDTH;
+	}
+	(BYTE&)cx = (BYTE&)ax;
+	(BYTE&)ax = di[3];
+	ax -= data_1CC;
+	if (ax < 0)
+	{
+		bx |= 2;
+		ax = -ax;
+	}
+	if (ax > 0x3B)
+	{
+		bx |= 2;
+		ax = -ax + MAZE_HEIGHT;
+	}
+	((BYTE*)&cx)[1] = (BYTE&)ax;
+	data_B69 = (BYTE&)ax += (BYTE&)cx;
+	if (!(BYTE&)cx)
+		return (BYTE&)bx * 2;
+	if (!((BYTE*)&cx)[1])
+		return (BYTE&)bx * 4 + 2;
+	static const BYTE data_CD1[] = {1, 7, 3, 5};
+	return data_CD1[bx];
+}
+
+struct main_227E_retval {bool al; BYTE ah;};
+main_227E_retval main_227E(BYTE *di)
+{
+	union
+	{
+		WORD ax;
+		struct {BYTE al, ah;};
+	};
+	union
+	{
+		WORD cx;
+		struct {BYTE cl, ch;};
+	};
+	union
+	{
+		WORD dx;
+		struct {BYTE dl, dh;};
+	};
+	cx = (WORD&)di[2];
+	ax = cx;
+	dx = 0;
+	int tmp;
+	switch (di[4])
+	{
+	case 1:
+		tmp = cl + data_CE5[ch];
+		if (tmp >= MAZE_WIDTH)
+			tmp -= MAZE_WIDTH;
+		cl = tmp;
+		// fall through
+	case 0:
+		dh++;
+		tmp = ch-1;
+		if (tmp < 0)
+			tmp = MAZE_HEIGHT - 1;
+		ch = tmp;
+		ah = ch;
+		break;
+	case 2:
+		dl++;
+		tmp = cl + 1;
+		if (tmp >= MAZE_WIDTH)
+			tmp = 0;
+		cl = tmp;
+		break;
+	case 3:
+		dh++;
+		tmp = ch + 1;
+		if (tmp >= MAZE_HEIGHT)
+			tmp = 0;
+		ch = tmp;
+		dl = data_CE5[ch];
+		tmp = cl + dl;
+		if (tmp >= MAZE_WIDTH)
+			tmp -= MAZE_WIDTH;
+		cl = tmp;
+		break;
+	case 4:
+		dh++;
+		tmp = ch + 1;
+		if (tmp >= MAZE_HEIGHT)
+			tmp = 0;
+		ch = tmp;
+		break;
+	case 5:
+		dh++;
+		tmp = ch + 1;
+		if (tmp >= MAZE_HEIGHT)
+			tmp = 0;
+		ch = tmp;
+		dl = data_CE5[ch];
+		tmp = cl - dl;
+		if (tmp < 0)
+			tmp += MAZE_WIDTH;
+		cl = tmp;
+		al = cl;
+		break;
+	case 6:
+		dl++;
+		tmp = cl - 1;
+		if (tmp < 0)
+			tmp = MAZE_WIDTH - 1;
+		cl = tmp;
+		al = cl;
+		break;
+	case 7:
+		dl = data_CE5[ch];
+		tmp = cl - dl;
+		if (tmp < 0)
+			tmp += MAZE_WIDTH;
+		cl = tmp;
+		dh++;
+		tmp = ch - 1;
+		if (tmp < 0)
+			tmp = MAZE_HEIGHT - 1;
+		ch = tmp;
+		ax = cx;
+		break;
+	}
+	const WORD *ptr = FakePointerToPointer((WORD&)di[6]);
+	dl += ((BYTE*)ptr)[1];
+	dh += ((BYTE*)ptr)[0];
+	WORD *si = &maze[ah * MAZE_WIDTH];
+main_233B:
+	size_t bx = al + ah * MAZE_WIDTH;
+main_2343:
+	if ((BYTE&)si[bx] != ' ')
+	{
+		main_227E_retval retval;
+		retval.al = true;
+		retval.ah = (BYTE&)si[bx];
+		return retval;
+	}
+	if (--ah)
+	{
+		if (++bx >= MAZE_WIDTH)
+			bx = 0;
+		goto main_2343;
+	}
+	if (--dh)
+	{
+		si += MAZE_WIDTH;
+		if (si >= &maze[_countof(maze)])
+			si -=       _countof(maze);
+		goto main_233B;
+	}
+	data_C77 = cl;
+	data_C78 = ch;
+	main_227E_retval retval;
+	retval.al = false;
+	retval.ah = 0;
+	return retval;
+}
+
 void main_2124()
 {
+	BYTE dl = data_C71;
+	while (dl)
+	{
+		BYTE *di = &data_350[dl * 8];
+		WORD &bx_si = maze[di[3] * MAZE_WIDTH + di[2]];
+		if ((BYTE&)bx_si != 0xB2)
+		{
+			if (--di[5])
+			{
+				dl = di[0];
+				continue;
+			}
+		}
+		else
+		{
+	main_2158:
+			BYTE tmp = di[0];
+			main_1E8F(&data_C71, dl);
+			dl = tmp;
+			data_B68--;
+			data_348--;
+			continue;
+		}
+		bx_si = 0x920;
+		BYTE data_CD0 = dl;
+		if (di[1] & 2)
+			goto main_2228;
+		WORD cx;
+		BYTE al = main_2381(di, cx);
+		if (data_B69 > 4)
+			goto main_21C5;
+		di[4] = al;
+		{
+			main_227E_retval ax = main_227E(di);
+			if (!ax.al)
+				goto main_21C5;
+			if (di[4] & 1)
+				goto main_21C5;
+			if (al & 1)
+			{
+				if (ax.ah == 0x93 || ax.ah == 0x4F || ax.ah == 0x11 || ax.ah == 0x10) // player character sprite
+				{
+					if (GetRandomMasked(skillThing3) == 0)
+					{
+						dl = data_CD0;
+						(BYTE&)bx_si = 0xB2;
+						goto main_2158;
+					}
+				}
+			}
+		}
+	main_21C5:
+		if (((BYTE*)&cx)[1] < 1)
+			goto main_21D8;
+		if (((BYTE*)&cx)[1] > 1)
+			goto main_21EC;
+		BYTE tmp = al;
+		al = 2;
+		if (tmp >= 4)
+			al = 6;
+		goto main_220B;
+	main_21D8:
+		di[4] = ++al;
+		{
+			main_227E_retval ax = main_227E(di);
+			if (!ax.al)
+				goto main_225A;
+		}
+		al -= 2;
+		goto main_220B;
+	main_21EC:
+		if ((BYTE&)cx == 1)
+			al = (al + 1) & 4;
+		else
+		if ((BYTE&)cx > 1)
+		{
+			di[4] = al += 2;
+			main_227E_retval ax = main_227E(di);
+			if (!ax.al)
+				goto main_225A;
+			al = (al - 4) & 7;
+		}
+	main_220B:
+		di[4] = al;
+		{
+			main_227E_retval ax = main_227E(di);
+			if (!ax.al)
+				goto main_225A;
+		}
+		if (data_B69 >= 0x14)
+			di[1] |= 2;
+		di[4] = (BYTE)GetRandomMasked(7);
+	main_2228:
+		cx = 8;
+		do
+		{
+			main_227E_retval ax = main_227E(di);
+			if (!ax.al)
+				goto main_225A;
+			di[1] &= ~2;
+			al = di[4];
+			if (di[1] & 1)
+				al = (al - 1) & 7;
+			else
+				al = (al + 1) & 7;
+			di[4] = al;
+		}
+		while (--cx);
+		goto main_225D;
+	main_225A:
+		(WORD&)di[2] = cx;
+	main_225D:
+		maze[di[3] * MAZE_WIDTH + di[2]] = 0x502;
+		di[5] = 3;
+		dl = di[0];
+	}
 }
+
 void main_1EC1()
 {
 }
@@ -1379,6 +1672,7 @@ main_1C03:
 	main_D80();
 	return false;
 }
+
 void main_1D64()
 {
 }
@@ -1407,7 +1701,7 @@ void DrawViewport()
 		if (data_29E != WINDOW_WIDTH)
 			WriteTextMem(WINDOW_WIDTH - data_29E, data_29A + data_29E, &maze[data_29C]);
 		data_29A += WINDOW_WIDTH * 2;
-		if (++data_298 == MAZE_WIDTH - MAZE_CELL_WIDTH)
+		if (++data_298 == MAZE_HEIGHT)
 			data_298 = 0;
 	}
 }

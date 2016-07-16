@@ -746,13 +746,13 @@ void main_CCF(BYTE arg)
 
 bool main_CED(WORD arg1, BYTE arg2)
 {
-	BYTE data_C79 = ((BYTE*)data_34C)[0] - 1;
-	BYTE data_C7A = ((BYTE*)data_34C)[1] - 1;
+	BYTE data_C79 = ((BYTE*)data_34C)[0];
+	BYTE data_C7A = ((BYTE*)data_34C)[1];
 	WORD data_B50 = (WORD)arg1 * MAZE_WIDTH;
-	for (BYTE data_C7B = 0; data_C7B <= data_C79; data_C7B++)
+	for (BYTE data_C7B = 0; data_C7B < data_C79; data_C7B++)
 	{
 		BYTE data_C7D = arg2;
-		for (BYTE data_C7C = 0; data_C7C <= data_C7A; data_C7C++)
+		for (BYTE data_C7C = 0; data_C7C < data_C7A; data_C7C++)
 		{
 			if ((BYTE&)maze[data_C7D + data_B50] != ' ')
 				return true;
@@ -1779,17 +1779,17 @@ void main_2124()
 
 bool main_EB9()
 {
-	BYTE data_C89 = ((BYTE*)data_34C)[0] - 1;
-	BYTE data_C8A = ((BYTE*)data_34C)[1] - 1;
+	BYTE data_C89 = ((BYTE*)data_34C)[0];
+	BYTE data_C8A = ((BYTE*)data_34C)[1];
 	WORD data_B56 = data_34A[3] * MAZE_WIDTH;
 	BYTE data_C8C = 0;
 main_EE4:
-	if (data_C8C > data_C89)
+	if (data_C8C >= data_C89)
 		return false;
 	BYTE data_C8B = data_34A[2];
 	BYTE data_C8D = 0;
 main_EFC:
-	if (data_C8D <= data_C8A)
+	if (data_C8D < data_C8A)
 	{
 		if ((BYTE&)maze[data_B56 + data_C8B] == 0xB2)
 			return true;
@@ -1809,13 +1809,13 @@ main_EFC:
 
 void main_E2A()
 {
-	BYTE data_C84 = ((BYTE*)data_34C)[0] - 1;
-	BYTE data_C85 = ((BYTE*)data_34C)[1] - 1;
+	BYTE data_C84 = ((BYTE*)data_34C)[0];
+	BYTE data_C85 = ((BYTE*)data_34C)[1];
 	WORD data_B54 = data_34A[3] * MAZE_WIDTH;
-	for (BYTE data_C87 = 0; data_C87 <= data_C84; data_C87++)
+	for (BYTE data_C87 = 0; data_C87 < data_C84; data_C87++)
 	{
 		BYTE data_C86 = data_34A[2];
-		for (BYTE data_C88 = 0; data_C88 <= data_C85; data_C88++)
+		for (BYTE data_C88 = 0; data_C88 < data_C85; data_C88++)
 		{
 			maze[data_B54 + data_C86] = 0x920;
 			if (++data_C86 >= MAZE_WIDTH)

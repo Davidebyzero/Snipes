@@ -833,6 +833,7 @@ void CreateGenerators()
 	data_C72 = false;
 	(WORD&)data_350[6] = FAKE_POINTER_data_10E2;
 	data_34C = data_10E2;
+	data_34A = data_350;
 	main_F77();
 	PlotObjectToMaze();
 	data_1CA = data_350[2];

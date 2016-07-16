@@ -175,7 +175,7 @@ DWORD ReadConsole_wrapper(char buffer[], DWORD bufsize)
 	return numreadWithoutNewline;
 }
 
-WORD random_seed_lo, random_seed_hi;
+static WORD random_seed_lo = 33, random_seed_hi = 467;
 WORD GetRandomMasked(WORD mask)
 {
 	random_seed_lo *= 2;
@@ -262,7 +262,7 @@ BYTE skillThing1, skillThing3, maxSnipes, numGenerators, numLives;
 BYTE data_2AA;
 WORD frame;
 static bool data_C75, data_C73, data_C72, data_CBF;
-static BYTE data_2B4, data_2B3, data_2B2, data_2C0, data_2AF, data_2B0, data_C6C, data_C6D, data_C6F, data_C71, data_C6E, data_C70, data_C76, data_B65, data_B68, data_B67, data_B66, data_B64, data_C74, data_DF0, data_DF1, data_C96, data_B69, data_C77, data_C78;
+static BYTE data_2B4, data_2B3, data_2B2, data_2C0, data_2AF, data_2B0, data_C6C, data_C6D, data_C6F, data_C71, data_C6E, data_C70, data_C76, data_B65, data_B68, data_B67, data_B66, data_B64, data_C74, data_DF0 = 0xFF, data_DF1, data_C96, data_B69, data_C77, data_C78;
 static WORD data_290, data_28E, data_1EA, data_1E2, data_B58, data_348, data_346, data_1CA, data_1CC, data_B5C;
 static SHORT data_1DE, data_1E0, data_1E4, data_1E6, data_1E8, data_292, data_34E;
 BYTE *data_34A;
@@ -1773,7 +1773,31 @@ void main_2124()
 
 bool main_EB9()
 {
-	//__debugbreak();
+	BYTE data_C89 = ((BYTE*)data_34C)[0] - 1;
+	BYTE data_C8A = ((BYTE*)data_34C)[1] - 1;
+	WORD data_B56 = data_34A[3] * MAZE_WIDTH;
+	BYTE data_C8C = 0;
+main_EE4:
+	if (data_C8C > data_C89)
+		return false;
+	BYTE data_C8B = data_34A[2];
+	BYTE data_C8D = 0;
+main_EFC:
+	if (data_C8D <= data_C8A)
+	{
+		if (maze[data_B56 + data_C8B] == 0xB2)
+			return true;
+		data_C8B++;
+		if (data_C8B >= MAZE_WIDTH)
+			data_C8B = 0;
+		if (++data_C8D)
+			goto main_EFC;
+	}
+	data_B56 += MAZE_WIDTH;
+	if (data_B56 >= _countof(maze))
+		data_B56 -= _countof(maze);
+	if (++data_C8C)
+		goto main_EE4;
 	return false;
 }
 
@@ -2090,9 +2114,27 @@ main_1E87:
 	goto main_1D6A;
 }
 
-void main_260E()
+void UpdateSound()
 {
-	//__debugbreak();
+	if (!sound_enabled || data_DF0 != 0xFF)
+	{
+		ClearSound();
+		return;
+	}
+	switch (data_DF0)
+	{
+	case 0:
+		break;
+	case 1:
+		break;
+	case 2:
+		break;
+	case 3:
+		break;
+	case 4:
+		break;
+	}
+	;;;
 }
 
 void DrawViewport()
@@ -2258,7 +2300,7 @@ int main(int argc, char* argv[])
 				break;
 
 			main_1D64();
-			main_260E();
+			UpdateSound();
 			DrawViewport();
 		}
 

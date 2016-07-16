@@ -1201,7 +1201,7 @@ BYTE main_2381(BYTE *di, WORD &cx)
 	return data_CD1[bx];
 }
 
-struct main_227E_retval {bool al; BYTE ah; WORD cx;};
+struct main_227E_retval {bool al; BYTE ah; WORD cx; WORD *bx_si;};
 main_227E_retval main_227E(BYTE *di)
 {
 	union
@@ -1314,6 +1314,7 @@ main_2343:
 		retval.al = true;
 		retval.ah = (BYTE&)si[bx];
 		retval.cx = cx;
+		retval.bx_si = &si[bx];
 		return retval;
 	}
 	if (--ah)
@@ -1505,10 +1506,14 @@ void main_1EC1()
 		if (di[2] < MAZE_WIDTH-1)
 			bx_si++;
 		else
-			bx_si = &maze[di[3] * MAZE_WIDTH];
+			bx_si -= MAZE_WIDTH-1;
 		goto main_1F33;
 	main_1F27:
-		;
+		*bx_si = 0x920;
+		if (di[2])
+			bx_si--;
+		else
+			bx_si += MAZE_WIDTH-1;
 	main_1F33:
 		if (!(skillThing2 & 1))
 			goto main_1FB9;
@@ -1708,29 +1713,23 @@ void main_2124()
 			goto main_2228;
 		WORD cx;
 		BYTE al = main_2381(di, cx);
-		if (data_B69 > 4)
-			goto main_21C5;
-		di[4] = al;
+		if (data_B69 <= 4)
 		{
-			main_227E_retval ax = main_227E(di);
-			if (!ax.al)
-				goto main_21C5;
-			if (di[4] & 1)
-				goto main_21C5;
-			if (al & 1)
-			{
-				if (ax.ah == 0x93 || ax.ah == 0x4F || ax.ah == 0x11 || ax.ah == 0x10) // player character sprite
+			di[4] = al;
+			main_227E_retval result = main_227E(di);
+			al = di[4];
+			if (result.al && (di[4] & 1))
+				if (result.ah == 0x93 || result.ah == 0x4F || result.ah == 0x11 || result.ah == 0x10) // player character sprite
 				{
 					if (GetRandomMasked(skillThing3) == 0)
 					{
 						dl = data_CD0;
-						(BYTE&)bx_si = 0xB2;
+						*(BYTE*)result.bx_si = 0xB2;
 						goto main_2158;
 					}
 				}
-			}
 		}
-	main_21C5:
+	//main_21C5:
 		if (((BYTE*)&cx)[1] < 1)
 			goto main_21D8;
 		if (((BYTE*)&cx)[1] > 1)
@@ -1743,8 +1742,9 @@ void main_2124()
 	main_21D8:
 		di[4] = ++al;
 		{
-			main_227E_retval ax = main_227E(di);
-			if (!ax.al)
+			main_227E_retval result = main_227E(di);
+			cx = result.cx;
+			if (!result.al)
 				goto main_225A;
 		}
 		al -= 2;
@@ -1756,16 +1756,18 @@ void main_2124()
 		if ((BYTE&)cx > 1)
 		{
 			di[4] = al += 2;
-			main_227E_retval ax = main_227E(di);
-			if (!ax.al)
+			main_227E_retval result = main_227E(di);
+			cx = result.cx;
+			if (!result.al)
 				goto main_225A;
 			al = (al - 4) & 7;
 		}
 	main_220B:
 		di[4] = al;
 		{
-			main_227E_retval ax = main_227E(di);
-			if (!ax.al)
+			main_227E_retval result = main_227E(di);
+			cx = result.cx;
+			if (!result.al)
 				goto main_225A;
 		}
 		if (data_B69 >= 0x14)
@@ -1775,8 +1777,8 @@ void main_2124()
 		cx = 8;
 		do
 		{
-			main_227E_retval ax = main_227E(di);
-			if (!ax.al)
+			main_227E_retval result = main_227E(di);
+			if (!result.al)
 				goto main_225A;
 			di[1] &= ~2;
 			al = di[4];

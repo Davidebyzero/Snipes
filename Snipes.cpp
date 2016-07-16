@@ -1125,7 +1125,7 @@ void main_125C()
 			maze[data_B5C] = 0x0FB2;
 			goto main_150E;
 		}
-		if (!enableRubberBullets || data_34A[1] || !data_B6C[data_C93] || !(data_34A[1] & 1))
+		if (!enableRubberBullets || data_34A[1] || !data_B6C[data_C93] || !(data_34A[4] & 1))
 			goto main_150E;
 		data_B6C[data_C93]--;
 		data_34A[4] = data_1261[data_C96 * 8 + data_34A[4]];

@@ -1110,7 +1110,7 @@ void main_125C()
 				else
 					goto main_149B;
 				WORD find_this = maze[data_B5C];
-				if (!wmemchr((wchar_t*)data_1002+1, (wchar_t&)find_this, _countof(data_1002)-1) && (BYTE&)find_this != 0xFF)
+				if (!wmemchr((wchar_t*)&data_1002[1], (wchar_t&)find_this, _countof(data_1002)-1) && (BYTE&)find_this != 0xFF)
 					goto main_149B;
 				data_34E += 50;
 				goto main_149B;
@@ -1118,7 +1118,7 @@ void main_125C()
 			if (skillThing7)
 				goto main_149B;
 			WORD find_this = maze[data_B5C];
-			if (wmemchr((wchar_t*)data_1002+1, (wchar_t&)find_this, _countof(data_1002)-1) && (BYTE&)find_this != 0xFF)
+			if (wmemchr((wchar_t*)&data_1002[1], (wchar_t&)find_this, _countof(data_1002)-1) && (BYTE&)find_this != 0xFF)
 				goto main_150E;
 		main_149B:
 			maze[data_B5C] = 0x0FB2;
@@ -1381,7 +1381,7 @@ void main_1613(BYTE arg)
 		data_34E++;
 		goto main_17B4;
 	}
-	if (!memchr(&data_1002[1], (BYTE&)maze[data_B5E], _countof(data_1002)-1))
+	if (!wmemchr((wchar_t*)&data_1002[1], (wchar_t&)maze[data_B5E], _countof(data_1002)-1))
 	{
 		if ((BYTE&)maze[data_B5E] != 0xFF)
 			goto main_17B4;
@@ -1391,7 +1391,7 @@ void main_1613(BYTE arg)
 main_1786:
 	if (skillThing7)
 		goto main_17B4;
-	if (memchr(&data_1002[1], (BYTE&)maze[data_B5E], _countof(data_1002)-1))
+	if (wmemchr((wchar_t*)&data_1002[1], (wchar_t&)maze[data_B5E], _countof(data_1002)-1))
 		goto main_1899;
 	if ((BYTE&)maze[data_B5E] == 0xFF)
 		goto main_1899;

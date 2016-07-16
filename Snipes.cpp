@@ -525,6 +525,7 @@ static const WORD data_1126[] = {SPRITE_SIZE(2,1), 0x21B, 0x201};
 static const WORD *data_1130[] = {data_1108, data_1112, data_1112, data_1112, data_111C, data_1126, data_1126, data_1126};
 static const WORD data_1150[] = {SPRITE_SIZE(1,1), 0x0E09};
 static const WORD data_115A[] = {SPRITE_SIZE(1,1), 0x0B0F};
+static const WORD *data_11D4[] = {data_1150, data_115A, data_1150, data_115A};
 static const WORD data_1164[] = {SPRITE_SIZE(1,1), 0x0A18};
 static const WORD data_116E[] = {SPRITE_SIZE(1,1), 0x0A2F};
 static const WORD data_1178[] = {SPRITE_SIZE(1,1), 0x0A1A};
@@ -534,7 +535,6 @@ static const WORD data_1196[] = {SPRITE_SIZE(1,1), 0x0A2F};
 static const WORD data_11A0[] = {SPRITE_SIZE(1,1), 0x0A1B};
 static const WORD data_11AA[] = {SPRITE_SIZE(1,1), 0x0A5C};
 static const WORD *data_11B4[] = {data_1164, data_116E, data_1178, data_1182, data_118C, data_1196, data_11A0, data_11AA};
-static const WORD *data_11D4[] = {data_1150, data_115A, data_1150, data_115A};
 
 static const WORD data_12C2[] = {SPRITE_SIZE(2,2), 0x0FB0, 0x0FB2, 0x0FB2, 0x0FB0};
 static const WORD data_12CC[] = {SPRITE_SIZE(2,2), 0x0BB2, 0x0BB0, 0x0BB0, 0x0BB2};
@@ -1465,7 +1465,7 @@ void main_1EC1()
 			goto main_1F15;
 		if (di[2] >= MAZE_WIDTH-1)
 			goto main_1F06;
-		if (bx_si[1] == 0xB2)
+		if ((BYTE&)bx_si[1] == 0xB2)
 			goto main_1F27;
 		if (--di[5])
 		{
@@ -1474,7 +1474,7 @@ void main_1EC1()
 		}
 		goto main_1F84;
 	main_1F06:
-		if (maze[di[3] * MAZE_WIDTH] == 0xB2)
+		if ((BYTE&)maze[di[3] * MAZE_WIDTH] == 0xB2)
 			goto main_1F27;
 		if (--di[5] == 0)
 			goto main_1F8F;
@@ -1791,7 +1791,7 @@ main_EE4:
 main_EFC:
 	if (data_C8D <= data_C8A)
 	{
-		if (maze[data_B56 + data_C8B] == 0xB2)
+		if ((BYTE&)maze[data_B56 + data_C8B] == 0xB2)
 			return true;
 		data_C8B++;
 		if (data_C8B >= MAZE_WIDTH)

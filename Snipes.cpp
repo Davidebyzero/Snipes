@@ -1863,7 +1863,7 @@ void main_10C9()
 		BYTE data_C92 = data_34A[3];
 		if (main_CED(data_C92, data_C91))
 			goto main_1251;
-		if (data_B64 + data_B68 >= maxSnipes)
+		if (data_B64 + data_B68 < maxSnipes)
 		{
 			BYTE data_C90 = main_CB0();
 			if (!data_C90)

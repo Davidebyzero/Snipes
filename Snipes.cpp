@@ -128,6 +128,9 @@ Uint PollKeyboard()
 #define WINDOW_WIDTH  40
 #define WINDOW_HEIGHT 25
 
+#define VIEWPORT_ROW    3
+#define VIEWPORT_HEIGHT 22
+
 void WriteTextMem(Uint count, Uint dst, WORD *src)
 {
 	COORD pos;
@@ -260,7 +263,7 @@ BYTE data_2AA;
 WORD frame;
 static bool data_C75, data_C73, data_C72, data_CBF;
 static BYTE data_2B4, data_2B3, data_2B2, data_2C0, data_2AF, data_2B0, data_C6C, data_C6D, data_C6F, data_C71, data_C6E, data_C70, data_C76, data_B65, data_B68, data_B67, data_B66, data_B64, data_C74, data_DF0, data_DF1, data_C96, data_B69, data_C77, data_C78;
-static WORD data_290, data_28E, data_1EA, data_1E2, data_B58, data_348, data_346, data_1CA, data_1CC, data_B5C, data_29A;
+static WORD data_290, data_28E, data_1EA, data_1E2, data_B58, data_348, data_346, data_1CA, data_1CC, data_B5C;
 static SHORT data_1DE, data_1E0, data_1E4, data_1E6, data_1E8, data_292, data_34E;
 BYTE *data_34A;
 const WORD *data_34C;
@@ -297,14 +300,16 @@ void outputNumber(BYTE color, bool zeroPadding, WORD count, WORD dst, Uint numbe
 
 void EraseBottomTwoLines()
 {
+	SetConsoleTextAttribute(output, 7);
 	COORD pos;
 	pos.X = 0;
-	pos.Y = WINDOW_HEIGHT - 2;
-	SetConsoleCursorPosition(output, pos);
-	SetConsoleTextAttribute(output, 7);
-	DWORD operationSize;
-	for (Uint i=0; i < WINDOW_WIDTH * 2; i++)
-		WriteConsole(output, " ", 1, &operationSize, 0);
+	for (pos.Y = WINDOW_HEIGHT-2; pos.Y < WINDOW_HEIGHT; pos.Y++)
+	{
+		SetConsoleCursorPosition(output, pos);
+		DWORD operationSize;
+		for (Uint i=0; i < WINDOW_WIDTH; i++)
+			WriteConsole(output, " ", 1, &operationSize, 0);
+	}
 }
 
 static char statusLine[] = "\xDA\xBF\xB3\x01\x1A\xB3\x02\xB3""Skill""\xC0\xD9\xB3\x01\x1A\xB3\x02\xB3""Time  Men Left                 Score     0  0000001 Man Left\x65";
@@ -893,7 +898,7 @@ bool updateHUD() // returns true if the match has been won
 	pos.Y = 25-2;
 	SetConsoleCursorPosition(output, pos);
 	SetConsoleTextAttribute(output, FOREGROUND_BLUE | FOREGROUND_GREEN | FOREGROUND_RED);
-	SetConsoleMode(output, ENABLE_PROCESSED_OUTPUT);
+	SetConsoleMode(output, ENABLE_PROCESSED_OUTPUT | ENABLE_WRAP_AT_EOL_OUTPUT);
 	DWORD operationSize;
 	WriteConsole(output, STRING_WITH_LEN("Congratulations --- YOU ACTUALLY WON!!!\r\n"), &operationSize, 0);
 	return true;
@@ -1430,8 +1435,25 @@ bool main_EB9()
 {
 	return false;
 }
+
 void main_E2A()
 {
+	BYTE data_C84 = ((BYTE*)data_34C)[0] - 1;
+	BYTE data_C85 = ((BYTE*)data_34C)[1] - 1;
+	WORD data_B54 = data_34A[3] * MAZE_WIDTH;
+	for (BYTE data_C87 = 0; data_C87 <= data_C84; data_C87++)
+	{
+		BYTE data_C86 = data_34A[2];
+		for (BYTE data_C88 = 0; data_C88 <= data_C85; data_C88++)
+		{
+			maze[data_B54 + data_C86] = 0x920;
+			if (++data_C86 >= MAZE_WIDTH)
+				data_C86 = 0;
+		}
+		data_B54 += MAZE_WIDTH;
+		if (data_B54 >= _countof(maze))
+			data_B54 -= _countof(maze);
+	}
 }
 
 void main_10C9()
@@ -1593,7 +1615,7 @@ bool main_1AB0() // returns true if the match has been lost
 			pos.Y = 25-2;
 			SetConsoleCursorPosition(output, pos);
 			SetConsoleTextAttribute(output, FOREGROUND_BLUE | FOREGROUND_GREEN | FOREGROUND_RED);
-			SetConsoleMode(output, ENABLE_PROCESSED_OUTPUT);
+			SetConsoleMode(output, ENABLE_PROCESSED_OUTPUT | ENABLE_WRAP_AT_EOL_OUTPUT);
 			DWORD operationSize;
 			WriteConsole(output, STRING_WITH_LEN("The SNIPES have triumphed!!!\r\n"), &operationSize, 0);
 			return true;
@@ -1682,11 +1704,11 @@ void main_260E()
 
 void DrawViewport()
 {
-	data_29A = 240;
-	SHORT data_298 = data_1CC - 11;
+	WORD data_29A = 2*(WINDOW_WIDTH * VIEWPORT_ROW);
+	SHORT data_298 = data_1CC - VIEWPORT_HEIGHT / 2;
 	if (data_298 < 0)
-		data_298 += 120;
-	SHORT data_296 = data_1CA - 20;
+		data_298 += MAZE_HEIGHT;
+	SHORT data_296 = data_1CA - WINDOW_WIDTH / 2;
 	if (data_296 < 0)
 		data_296 += MAZE_WIDTH;
 	SHORT data_29E = 0;
@@ -1694,12 +1716,12 @@ void DrawViewport()
 		data_29E = MAZE_WIDTH - data_296;
 	else
 		data_29E = WINDOW_WIDTH;
-	for (BYTE data_2C2 = 0; data_2C2 <= 21; data_2C2++)
+	for (Uint row = 0; row < VIEWPORT_HEIGHT; row++)
 	{
 		WORD data_29C = data_298 * MAZE_WIDTH;
 		WriteTextMem(data_29E, data_29A, &maze[data_296 + data_29C]);
 		if (data_29E != WINDOW_WIDTH)
-			WriteTextMem(WINDOW_WIDTH - data_29E, data_29A + data_29E, &maze[data_29C]);
+			WriteTextMem(WINDOW_WIDTH - data_29E, data_29A + 2*data_29E, &maze[data_29C]);
 		data_29A += WINDOW_WIDTH * 2;
 		if (++data_298 == MAZE_HEIGHT)
 			data_298 = 0;
@@ -1773,8 +1795,6 @@ int main(int argc, char* argv[])
 	WriteConsole(output, STRING_WITH_LEN("Enter skill level (A-Z)(1-9): "), &operationSize, 0);
 	ReadSkillLevel();
 
-	//WriteTextMem(5, 80, (WORD*)"H\x48""e\x39""l\x2A""l\x1B""o\x0C");
-
 	WORD tick_count = GetTickCountWord();
 	random_seed_lo = (BYTE)tick_count;
 	if (!random_seed_lo)
@@ -1785,8 +1805,6 @@ int main(int argc, char* argv[])
 
 	for (;;)
 	{
-		//printf("Skill: %c%c\n", skillLevelLetter + 'A', skillLevelNumber + '0');
-
 		enableElectricWalls = skillLevelLetter >= 'M'-'A';
 		skillThing1           = skillThing1Table  [skillLevelLetter];
 		skillThing2           = skillThing2Table  [skillLevelLetter];
@@ -1816,14 +1834,6 @@ int main(int argc, char* argv[])
 		/*StartTone(2711);
 		for (;;)
 			Sleep(1000);*/
-
-		/*COORD moveto;
-		moveto.X = 2;
-		moveto.Y = 2;
-		CHAR_INFO backgroundFill;
-		backgroundFill.Char.AsciiChar = ' ';
-		backgroundFill.Attributes = FOREGROUND_BLUE | FOREGROUND_GREEN | FOREGROUND_RED | BACKGROUND_BLUE;
-		ScrollConsoleScreenBuffer(output, &window, NULL, moveto, &backgroundFill);*/
 
 		for (;;)
 		{
@@ -1869,7 +1879,7 @@ int main(int argc, char* argv[])
 		pos.Y = 25-1;
 		SetConsoleCursorPosition(output, pos);
 		SetConsoleTextAttribute(output, FOREGROUND_BLUE | FOREGROUND_GREEN | FOREGROUND_RED);
-		SetConsoleMode(output, ENABLE_PROCESSED_OUTPUT);
+		SetConsoleMode(output, ENABLE_PROCESSED_OUTPUT | ENABLE_WRAP_AT_EOL_OUTPUT);
 		for (;;)
 		{
 			SetConsoleMode(input, ENABLE_PROCESSED_INPUT | ENABLE_LINE_INPUT | ENABLE_ECHO_INPUT);

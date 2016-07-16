@@ -262,9 +262,9 @@ BYTE skillThing1, skillThing3, maxSnipes, numGenerators, numLives;
 BYTE data_2AA;
 WORD frame;
 static bool data_C75, data_C73, data_C72, data_CBF;
-static BYTE data_2B4, data_2B3, data_2B2, data_2C0, data_2AF, data_2B0, data_C6C, data_C6D, data_C6F, data_C71, data_C6E, data_C70, data_C76, data_B65, data_B68, data_B67, data_B66, data_B64, data_C74, data_DF0 = 0xFF, data_DF1, data_C96, data_B69, data_C77, data_C78;
-static WORD data_290, data_28E, data_1EA, data_1E2, data_B58, data_348, data_346, data_1CA, data_1CC, data_B5C;
-static SHORT data_1DE, data_1E0, data_1E4, data_1E6, data_1E8, data_292, data_34E;
+static BYTE data_2B4, data_2B3, data_2B2, data_2C0, data_C6C, data_C6D, data_C6F, data_C71, data_C6E, data_C70, data_B65, data_B68, data_B67, data_B66, data_B64, data_C74, data_DF0 = 0xFF, data_DF1, data_C96, data_B69, data_C77, data_C78;
+static WORD data_290, data_28E, data_348, data_346, data_1CA, data_1CC, data_B5C;
+static SHORT data_292, data_34E;
 BYTE *data_34A;
 const WORD *data_34C;
 
@@ -357,7 +357,7 @@ void outputHUD()
 	data_292 = -1;
 }
 
-void CreateMaze_helper()
+void CreateMaze_helper(SHORT &data_1E0, BYTE &data_2AF)
 {
 	switch (data_2AF)
 	{
@@ -388,6 +388,9 @@ void CreateMaze_helper()
 
 void CreateMaze()
 {
+	static WORD data_1DE, data_1E0, data_1E2, data_1E4, data_1E6, data_1EA;
+	static BYTE data_2AF, data_2B0;
+
 	memset(data_350, 0xF, data_350_size);
 	data_350[0] = 0xE;
 	data_350[1] = 0xD;
@@ -407,7 +410,7 @@ main_283:
 			goto main_283;
 		data_2AF = data_1E2 & 3;
 		data_1E0 = data_1DE;
-		CreateMaze_helper();
+		CreateMaze_helper((SHORT&)data_1E0, data_2AF);
 		if (data_350[data_1E0] != 0xF)
 			break;
 		data_1E2++;
@@ -425,7 +428,7 @@ main_30E:
 	data_1E0 = data_1E2;
 	for (;;)
 	{
-		CreateMaze_helper();
+		CreateMaze_helper((SHORT&)data_1E0, data_2AF);
 		if (!data_2B0 || data_350[data_1E0] != 0xF)
 			break;
 		data_350[data_1E0] ^= data_EA7[data_2AF];
@@ -443,7 +446,7 @@ main_372:
 		data_1E0 = GetRandomRanged<data_350_size>();
 		data_2AF = (BYTE)GetRandomMasked(3);
 		data_350[data_1E0] &= ~data_EA3[data_2AF];
-		CreateMaze_helper();
+		CreateMaze_helper((SHORT&)data_1E0, data_2AF);
 		data_350[data_1E0] &= ~data_EA7[data_2AF];
 	}
 	for (Uint i=0; i<_countof(maze); i++)
@@ -460,7 +463,7 @@ main_372:
 			if (data_350[data_1E2] & 2)
 			{
 				data_1E6 = data_1E4 + MAZE_WIDTH;
-				for (data_1E8 = 1; data_1E8 <= MAZE_CELL_HEIGHT-1; data_1E8++)
+				for (WORD data_1E8 = 1; data_1E8 <= MAZE_CELL_HEIGHT-1; data_1E8++)
 				{
 					maze[data_1E6] = 0x9BA;
 					data_1E6 += MAZE_WIDTH;
@@ -486,7 +489,7 @@ main_372:
 
 BYTE main_CB0()
 {
-	data_C76 = data_C6C;
+	BYTE data_C76 = data_C6C;
 	if (data_C76)
 		data_C6C = data_350[data_C76 * 8];
 	return data_C76;
@@ -793,7 +796,7 @@ void main_F77()
 
 void CreateGenerators()
 {
-	for (data_B58 = 0; data_B58 <= 0xFC; data_B58++)
+	for (WORD data_B58 = 0; data_B58 <= 0xFC; data_B58++)
 		data_350[(data_B58 + 1) * 8] = data_B58 + 2;
 	data_350[2024] = 0;
 	data_C6C = 1;
@@ -802,7 +805,7 @@ void CreateGenerators()
 	data_C71 = 0;
 	data_C6E = 0;
 	data_C70 = 0;
-	for (data_B58 = 1; data_B58 <= numGenerators; data_B58++)
+	for (WORD data_B58 = 1; data_B58 <= numGenerators; data_B58++)
 	{
 		BYTE data_B5A = main_CB0();
 		data_350[data_B5A * 8] = data_C70;

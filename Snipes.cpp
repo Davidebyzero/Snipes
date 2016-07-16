@@ -137,12 +137,24 @@ void WriteTextMem(Uint count, Uint dst, WORD *src)
 	pos.X = dst / 2 % WINDOW_WIDTH;
 	pos.Y = dst / 2 / WINDOW_WIDTH;
 	SetConsoleCursorPosition(output, pos);
-	while (count--)
+	static BYTE buf[WINDOW_WIDTH];
+	for (Uint i=0;;)
 	{
-		SetConsoleTextAttribute(output, ((BYTE*)src)[1]);
+		BYTE color = ((BYTE*)&src[i])[1];
+		SetConsoleTextAttribute(output, color);
+		Uint start = i;
+		for (;;)
+		{
+			buf[i] = (BYTE&)src[i];
+			if (++i >= count)
+				break;
+			if (((BYTE*)&src[i])[1] != color)
+				break;
+		}
 		DWORD operationSize;
-		WriteConsole(output, (BYTE*)src, 1, &operationSize, 0);
-		src++;
+		WriteConsole(output, (BYTE*)buf + start, i - start, &operationSize, 0);
+		if (i >= count)
+			break;
 	}
 }
 

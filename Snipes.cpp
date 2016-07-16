@@ -1889,8 +1889,8 @@ void main_10C9()
 bool main_1A7B(BYTE arg)
 {
 	data_350[4] = arg << 1;
-	main_227E(data_34A);
-	if (data_350[4] & 1)
+	main_227E_retval result = main_227E(data_34A);
+	if (result.al)
 		return data_CBF = true;
 	data_1CA = data_350[2] = data_C77;
 	data_1CC = data_350[3] = data_C78;

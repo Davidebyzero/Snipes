@@ -1773,6 +1773,7 @@ void main_2124()
 
 bool main_EB9()
 {
+	//__debugbreak();
 	return false;
 }
 
@@ -2033,9 +2034,65 @@ main_1C03:
 
 void main_1D64()
 {
+	BYTE al = data_C6F;
+main_1D6A:
+	BYTE data_CCC = al;
+	if (!al)
+		return;
+	BYTE *data_CC6 = data_34A = &data_350[al * 8];
+	data_34C = FakePointerToPointer((WORD&)data_CC6[6]);
+	main_E2A();
+	BYTE data_CCE = (data_CC6[5] + 1) % 6;
+	BYTE data_CCD = data_CC6[0];
+	BYTE data_CCF = data_CCC == 0xFE ? 11 : 5;
+	data_CC6[5]++;
+	if (data_CC6[5] <= data_CCF)
+		goto main_1DF4;
+	main_1D04(&data_C6F, data_CCC);
+	if (data_CCC != 0xFE)
+		main_CCF(data_CCC);
+	else
+		data_C72 = 0;
+	goto main_1E87;
+main_1DF4:
+	if (data_CC6[4] != 22)
+		goto main_1E36;
+	(WORD&)data_CC6[6] = PointerToFakePointer(data_12FE[data_CCE]);
+	data_34C = data_12FE[data_CCE];
+	if (data_CCC != 0xFE)
+		goto main_1E32;
+	if (data_CC6[5] <= 5)
+		goto main_1E32;
+	main_25E2(11 - data_CC6[5], 4);
+	goto main_1E84;
+main_1E32:
+	al = 4;
+	goto main_1E7C;
+main_1E36:
+	if (data_CC6[4] == 12)
+	{
+		(WORD&)data_CC6[6] = PointerToFakePointer(data_1352[data_CCE]);
+		data_34C = data_1352[data_CCE];
+		al = 3;
+		goto main_1E7C;
+	}
+	if (data_CC6[4] != 11)
+		goto main_1E84;
+	(WORD&)data_CC6[6] = PointerToFakePointer(data_1392[data_CCE]);
+	data_34C = data_1392[data_CCE];
+	al = 2;
+main_1E7C:
+	main_25E2(data_CCE, al);
+main_1E84:
+	PlotObjectToMaze();
+main_1E87:
+	al = data_CCD;
+	goto main_1D6A;
 }
+
 void main_260E()
 {
+	//__debugbreak();
 }
 
 void DrawViewport()

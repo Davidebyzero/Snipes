@@ -249,8 +249,8 @@ void ReadSkillLevel()
 }
 
 static BYTE skillThing1Table  ['Z'-'A'+1] = {2, 3, 4, 3, 4, 4, 3, 4, 3, 4, 4, 5, 3, 4, 3, 4, 3, 4, 3, 4, 4, 5, 4, 4, 5, 5};
-static bool  skillThing2Table  ['Z'-'A'+1] = {0, 0, 0, 1, 1, 1, 0, 0, 1, 1, 1, 1, 0, 0, 1, 1, 0, 0, 1, 1, 1, 1, 1, 1, 1, 1};
-static bool  rubberBulletTable ['Z'-'A'+1] = {0, 0, 0, 0, 0, 0, 1, 1, 1, 1, 1, 1, 0, 0, 0, 0, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1};
+static bool skillThing2Table  ['Z'-'A'+1] = {0, 0, 0, 1, 1, 1, 0, 0, 1, 1, 1, 1, 0, 0, 1, 1, 0, 0, 1, 1, 1, 1, 1, 1, 1, 1};
+static bool rubberBulletTable ['Z'-'A'+1] = {0, 0, 0, 0, 0, 0, 1, 1, 1, 1, 1, 1, 0, 0, 0, 0, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1};
 static BYTE skillThing3Table  ['Z'-'A'+1] = {0x7F, 0x7F, 0x7F, 0x3F, 0x3F, 0x1F, 0x7F, 0x7F, 0x3F, 0x3F, 0x1F, 0x1F, 0x7F, 0x7F, 0x3F, 0x3F, 0x7F, 0x7F, 0x3F, 0x3F, 0x1F, 0x1F, 0x3F, 0x1F, 0x1F, 0x0F};
 static BYTE maxSnipesTable    ['9'-'1'+1] = { 10,  20,  30,  40,  60,  80, 100, 120, 150};
 static BYTE numGeneratorsTable['9'-'1'+1] = {  3,   3,   4,   4,   5,   5,   6,   8,  10};
@@ -1028,7 +1028,7 @@ bool main_154F(BYTE arg)
 		}
 		break;
 	}
-	return maze[data_B5C] != ' ';
+	return (BYTE&)maze[data_B5C] != ' ';
 }
 
 void main_125C()
@@ -1094,7 +1094,7 @@ void main_125C()
 					data_34A[5] = 0;
 				data_34C = data_11D4[data_34A[5]];
 			}
-			maze[data_B5C] = data_34C[2];
+			maze[data_B5C] = data_34C[1];
 			data_C94 = data_C93;
 			data_C93 = data_34A[0];
 			continue;
@@ -1106,9 +1106,10 @@ void main_125C()
 			if (!data_34A[1])
 			{
 				if (memchr(data_128C, find_this, _countof(data_128C)))
+				{
 					data_34E++;
-				else
 					goto main_149B;
+				}
 				WORD find_this = maze[data_B5C];
 				if (!wmemchr((wchar_t*)&data_1002[1], (wchar_t&)find_this, _countof(data_1002)-1) && (BYTE&)find_this != 0xFF)
 					goto main_149B;
@@ -1396,7 +1397,7 @@ main_1786:
 	if ((BYTE&)maze[data_B5E] == 0xFF)
 		goto main_1899;
 main_17B4:
-	maze[data_B5E] = 0xFB2;
+	maze[data_B5E] = 0x0FB2;
 	goto main_1899;
 main_17C3:
 	BYTE data_C9B = main_CB0();

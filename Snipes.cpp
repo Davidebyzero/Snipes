@@ -1173,27 +1173,26 @@ BYTE main_2381(BYTE *di, WORD &cx)
 		bx = 0;
 		ax = -ax;
 	}
-	if (ax > 0x3F)
+	if (ax >= MAZE_WIDTH/2)
 	{
 		bx ^= 1;
-		ax = -ax + MAZE_WIDTH;
+		ax = MAZE_WIDTH - ax;
 	}
-	(BYTE&)cx = (BYTE&)ax;
-	(BYTE&)ax = di[3];
-	ax -= data_1CC;
+	((BYTE*)&cx)[0] = (BYTE&)ax;
+	ax = di[3] - data_1CC;
 	if (ax < 0)
 	{
 		bx |= 2;
 		ax = -ax;
 	}
-	if (ax > 0x3B)
+	if (ax >= MAZE_HEIGHT/2)
 	{
 		bx |= 2;
-		ax = -ax + MAZE_HEIGHT;
+		ax = MAZE_HEIGHT - ax;
 	}
 	((BYTE*)&cx)[1] = (BYTE&)ax;
-	data_B69 = (BYTE&)ax += (BYTE&)cx;
-	if (!(BYTE&)cx)
+	data_B69 = (BYTE&)ax += ((BYTE*)&cx)[0];
+	if (!((BYTE*)&cx)[0])
 		return (BYTE&)bx * 2;
 	if (!((BYTE*)&cx)[1])
 		return (BYTE&)bx * 4 + 2;
@@ -1482,7 +1481,7 @@ void main_1EC1()
 	{
 		BYTE *di = &data_350[dl * 8];
 		WORD *bx_si = &maze[di[3] * MAZE_WIDTH + di[2]];
-		if (*(BYTE*)bx_si == 0xB2)
+		if ((BYTE&)bx_si[0] == 0xB2)
 			goto main_1F15;
 		if (di[2] >= MAZE_WIDTH-1)
 			goto main_1F06;
@@ -1495,12 +1494,16 @@ void main_1EC1()
 		}
 		goto main_1F84;
 	main_1F06:
-		if ((BYTE&)maze[di[3] * MAZE_WIDTH] == 0xB2)
+		if (di[2] != MAZE_WIDTH-1)
+			__debugbreak();
+		if ((BYTE&)bx_si[-(MAZE_WIDTH-1)] == 0xB2)
 			goto main_1F27;
-		if (--di[5] == 0)
-			goto main_1F8F;
-		dl = di[0];
-		continue;
+		if (--di[5])
+		{
+			dl = di[0];
+			continue;
+		}
+		goto main_1F8F;
 	main_1F15:
 		*bx_si = 0x920;
 		if (di[2] < MAZE_WIDTH-1)
@@ -1517,7 +1520,7 @@ void main_1EC1()
 	main_1F33:
 		if (!(skillThing2 & 1))
 			goto main_1FB9;
-		if (*(BYTE*)bx_si != 1)
+		if ((BYTE&)bx_si[0] != 0x01)
 			goto main_1FB9;
 		*bx_si = 0x502;
 		di[2] = bx_si - &maze[di[3] * MAZE_WIDTH];
@@ -1548,7 +1551,9 @@ void main_1EC1()
 		goto main_1F97;
 	main_1F8F:
 		*bx_si = 0x920;
-		bx_si = &maze[di[3] * MAZE_WIDTH + MAZE_WIDTH-1];
+		if (bx_si != &maze[di[3] * MAZE_WIDTH + MAZE_WIDTH-1])
+			__debugbreak();
+		//bx_si = &maze[di[3] * MAZE_WIDTH + MAZE_WIDTH-1];
 	main_1F97:
 		*bx_si = 0x920;
 		if (GetRandomMasked(3) == 0)
@@ -1611,9 +1616,9 @@ void main_1EC1()
 		BYTE ah = di[4];
 		if (al != ah)
 			goto main_209E;
-		if (!((BYTE*)&cx)[1] || !(BYTE&)cx)
+		if (!((BYTE*)&cx)[1] || !((BYTE*)&cx)[0])
 			goto main_2083;
-		if (abs((int)!(BYTE&)cx * MAZE_CELL_HEIGHT - (int)!((BYTE*)&cx)[1] * MAZE_CELL_WIDTH) >= MAZE_CELL_WIDTH)
+		if (abs((int)!((BYTE*)&cx)[0] * MAZE_CELL_HEIGHT - (int)!((BYTE*)&cx)[1] * MAZE_CELL_WIDTH) >= MAZE_CELL_WIDTH)
 			goto main_20F4;
 		al = di[4];
 	main_2083:
@@ -1642,7 +1647,7 @@ void main_1EC1()
 			goto main_2083;
 		}
 	main_20C3:
-		if ((BYTE&)cx > 2)
+		if (((BYTE*)&cx)[0] > 2)
 			goto main_20F4;
 		al = (al + 1) & 7;
 		if (al == 7 || al == 3)
@@ -1750,10 +1755,10 @@ void main_2124()
 		al -= 2;
 		goto main_220B;
 	main_21EC:
-		if ((BYTE&)cx == 1)
+		if (((BYTE*)&cx)[0] == 1)
 			al = (al + 1) & 4;
 		else
-		if ((BYTE&)cx > 1)
+		if (((BYTE*)&cx)[0] > 1)
 		{
 			di[4] = al += 2;
 			main_227E_retval result = main_227E(di);

@@ -1284,7 +1284,8 @@ main_227E_retval main_227E(BYTE *di)
 	dh += ((BYTE*)ptr)[0];
 	WORD *si = &maze[ah * MAZE_WIDTH];
 main_233B:
-	size_t bx = al + ah * MAZE_WIDTH;
+	size_t bx = al;
+	ah = dl;
 main_2343:
 	if ((BYTE&)si[bx] != ' ')
 	{
@@ -1888,7 +1889,7 @@ void main_10C9()
 bool main_1A7B(BYTE arg)
 {
 	data_350[4] = arg << 1;
-	BYTE *di = data_34A;
+	main_227E(data_34A);
 	if (data_350[4] & 1)
 		return data_CBF = true;
 	data_1CA = data_350[2] = data_C77;

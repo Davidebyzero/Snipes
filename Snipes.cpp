@@ -2204,7 +2204,7 @@ void DrawViewport()
 	}
 }
 
-int main(int argc, char* argv[])
+int __cdecl main(int argc, char* argv[])
 {
 	input  = GetStdHandle(STD_INPUT_HANDLE);
 	output = GetStdHandle(STD_OUTPUT_HANDLE);

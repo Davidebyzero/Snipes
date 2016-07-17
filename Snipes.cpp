@@ -524,8 +524,16 @@ BYTE CreateNewObject()
 	return object;
 }
 
+enum ExplosionType
+{
+	ExplosionType_Ghost             = 11,
+	ExplosionType_Snipe             = 12,
+	ExplosionType_PlayerOrGenerator = 22,
+};
+
 #define SPRITE_SIZE(x,y) (((x)<<8)+(y))
 
+// generator
 static const WORD data_1002[] = {SPRITE_SIZE(2,2), 0x0FDA, 0x0EBF, 0x0DC0, 0x0CD9};
 static const WORD data_100C[] = {SPRITE_SIZE(2,2), 0x0EFF, 0x0EFF, 0x0EFF, 0x0EFF};
 static const WORD data_1016[] = {SPRITE_SIZE(2,2), 0x0EDA, 0x0EBF, 0x0EC0, 0x0ED9};
@@ -543,18 +551,23 @@ static const WORD data_1084[] = {SPRITE_SIZE(2,2), 0x0EFF, 0x0EFF, 0x0EFF, 0x0EF
 static const WORD data_108E[] = {SPRITE_SIZE(2,2), 0x04DA, 0x04BF, 0x04C0, 0x04D9};
 static const WORD data_1098[] = {SPRITE_SIZE(2,2), 0x0EFF, 0x0EFF, 0x0EFF, 0x0EFF};
 static const WORD *data_10A2[] = {data_1002, data_100C, data_1016, data_1020, data_102A, data_1034, data_103E, data_1048, data_1052, data_105C, data_1066, data_1070, data_107A, data_1084, data_108E, data_1098};
+// player
 static const WORD data_10E2[] = {SPRITE_SIZE(2,2), 0x0F93, 0x0F93, 0x0F11, 0x0F10};
 static const WORD data_10EC[] = {SPRITE_SIZE(2,2), 0x0F4F, 0x0F4F, 0x0F11, 0x0F10};
 static const WORD *data_10F6[] = {data_10E2, data_10EC};
+// ghost
 static const WORD data_10FE[] = {SPRITE_SIZE(1,1), 0x202};
+// snipe
 static const WORD data_1108[] = {SPRITE_SIZE(2,1), 0x201, 0x218};
 static const WORD data_1112[] = {SPRITE_SIZE(2,1), 0x201, 0x21A};
 static const WORD data_111C[] = {SPRITE_SIZE(2,1), 0x201, 0x219};
 static const WORD data_1126[] = {SPRITE_SIZE(2,1), 0x21B, 0x201};
 static const WORD *data_1130[] = {data_1108, data_1112, data_1112, data_1112, data_111C, data_1126, data_1126, data_1126};
+// player bullet
 static const WORD data_1150[] = {SPRITE_SIZE(1,1), 0x0E09};
 static const WORD data_115A[] = {SPRITE_SIZE(1,1), 0x0B0F};
 static const WORD *data_11D4[] = {data_1150, data_115A, data_1150, data_115A};
+// snipe bullet
 static const WORD data_1164[] = {SPRITE_SIZE(1,1), 0x0A18};
 static const WORD data_116E[] = {SPRITE_SIZE(1,1), 0x0A2F};
 static const WORD data_1178[] = {SPRITE_SIZE(1,1), 0x0A1A};
@@ -564,7 +577,7 @@ static const WORD data_1196[] = {SPRITE_SIZE(1,1), 0x0A2F};
 static const WORD data_11A0[] = {SPRITE_SIZE(1,1), 0x0A1B};
 static const WORD data_11AA[] = {SPRITE_SIZE(1,1), 0x0A5C};
 static const WORD *data_11B4[] = {data_1164, data_116E, data_1178, data_1182, data_118C, data_1196, data_11A0, data_11AA};
-
+// player or generator explosion
 static const WORD data_12C2[] = {SPRITE_SIZE(2,2), 0x0FB0, 0x0FB2, 0x0FB2, 0x0FB0};
 static const WORD data_12CC[] = {SPRITE_SIZE(2,2), 0x0BB2, 0x0BB0, 0x0BB0, 0x0BB2};
 static const WORD data_12D6[] = {SPRITE_SIZE(2,2), 0x0CB0, 0x0CB2, 0x0CB2, 0x0CB0};
@@ -572,6 +585,7 @@ static const WORD data_12E0[] = {SPRITE_SIZE(2,2), 0x04B2, 0x04B0, 0x04B0, 0x04B
 static const WORD data_12EA[] = {SPRITE_SIZE(2,2), 0x062A, 0x060F, 0x062A, 0x060F};
 static const WORD data_12F4[] = {SPRITE_SIZE(2,2), 0x0807, 0x0820, 0x0807, 0x0820};
 static const WORD *data_12FE[] = {data_12C2, data_12CC, data_12D6, data_12E0, data_12EA, data_12F4};
+// snipe explosion
 static const WORD data_1316[] = {SPRITE_SIZE(2,1), 0x0FB0, 0x0FB2};
 static const WORD data_1320[] = {SPRITE_SIZE(2,1), 0x0BB2, 0x0BB0};
 static const WORD data_132A[] = {SPRITE_SIZE(2,1), 0x0CB0, 0x0CB2};
@@ -579,6 +593,7 @@ static const WORD data_1334[] = {SPRITE_SIZE(2,1), 0x04B2, 0x04B0};
 static const WORD data_133E[] = {SPRITE_SIZE(2,1), 0x062A, 0x060F};
 static const WORD data_1348[] = {SPRITE_SIZE(2,1), 0x0807, 0x0820};
 static const WORD *data_1352[] = {data_1316, data_1320, data_132A, data_1334, data_133E, data_1348};
+// ghost explosion
 static const WORD data_136A[] = {SPRITE_SIZE(1,1), 0x0FB2};
 static const WORD data_1374[] = {SPRITE_SIZE(1,1), 0x0B0F};
 static const WORD data_137E[] = {SPRITE_SIZE(1,1), 0x0C09};
@@ -961,7 +976,7 @@ void ExplodeObject(BYTE arg)
 	{
 		(WORD&)data_CC2[6] = FAKE_POINTER_data_12C2;
 		data_34C = data_12C2;
-		data_CC2[4] = 0x16;
+		data_CC2[4] = ExplosionType_PlayerOrGenerator;
 		data_CC2[5] = 0;
 		SetSoundEffectState(0, 4);
 	}
@@ -969,7 +984,7 @@ void ExplodeObject(BYTE arg)
 	{
 		(WORD&)data_CC2[6] = FAKE_POINTER_data_1316;
 		data_34C = data_1316;
-		data_CC2[4] = 0xC;
+		data_CC2[4] = ExplosionType_Snipe;
 		data_CC2[5] = 0;
 		SetSoundEffectState(0, 3);
 	}
@@ -977,7 +992,7 @@ void ExplodeObject(BYTE arg)
 	{
 		(WORD&)data_CC2[6] = FAKE_POINTER_data_136A;
 		data_34C = data_136A;
-		data_CC2[4] = 0xB;
+		data_CC2[4] = ExplosionType_Ghost;
 		data_CC2[5] = 2;
 		SetSoundEffectState(2, 2);
 	}
@@ -1139,8 +1154,7 @@ void UpdateBullets()
 					data_34E++;
 					goto main_149B;
 				}
-				WORD find_this = maze[data_B5C];
-				if (!wmemchr((wchar_t*)&data_1002[1], (wchar_t&)find_this, _countof(data_1002)-1) && (BYTE&)find_this != 0xFF)
+				if (!(wmemchr((wchar_t*)&data_1002[1], (wchar_t&)maze[data_B5C], _countof(data_1002)-1) || (BYTE&)maze[data_B5C] == 0xFF))
 					goto main_149B;
 				data_34E += 50;
 				goto main_149B;
@@ -1344,7 +1358,7 @@ main_2343:
 	return retval;
 }
 
-void FireBullet(BYTE arg)
+void FireBullet(BYTE bulletType)
 {
 	BYTE data_C97 = data_34A[4];
 	BYTE data_C98 = data_34A[2];
@@ -1401,18 +1415,15 @@ void FireBullet(BYTE arg)
 	WORD data_B5E = data_C99 * MAZE_WIDTH + data_C98;
 	if (memchr(data_1292, (BYTE&)maze[data_B5E], _countof(data_1292)))
 		goto main_1899;
-	if (arg)
+	if (bulletType)
 		goto main_1786;
 	if (memchr(data_129D, (BYTE&)maze[data_B5E], _countof(data_129D)))
 	{
 		data_34E++;
 		goto main_17B4;
 	}
-	if (!wmemchr((wchar_t*)&data_1002[1], (wchar_t&)maze[data_B5E], _countof(data_1002)-1))
-	{
-		if ((BYTE&)maze[data_B5E] != 0xFF)
-			goto main_17B4;
-	}
+	if (!(wmemchr((wchar_t*)&data_1002[1], (wchar_t&)maze[data_B5E], _countof(data_1002)-1) || (BYTE&)maze[data_B5E] == 0xFF))
+		goto main_17B4;
 	data_34E += 50;
 	goto main_17B4;
 main_1786:
@@ -1444,7 +1455,7 @@ main_17C3:
 	objects[data_C9A * 8] = data_C9B;
 main_182D:
 	data_34A[0] = 0;
-	if (arg < 6)
+	if (bulletType < 6)
 	{
 		(WORD&)data_34A[6] = FAKE_POINTER_data_1150;
 		goto main_1854;
@@ -1455,7 +1466,7 @@ main_1854:
 	data_34A[3] = data_C99;
 	data_34A[4] = data_C97;
 	data_34A[5] = 0;
-	data_34A[1] = arg;
+	data_34A[1] = bulletType;
 	data_B6C[data_C9B] = (BYTE)GetRandomMasked(7) + 1;
 	data_34C = FakePointerToPointer((WORD&)data_34A[6]);
 	PlotObjectToMaze();
@@ -2067,60 +2078,52 @@ main_1C03:
 
 void UpdateExplosions()
 {
-	BYTE al = objectHead_explosions;
-main_1D6A:
-	BYTE data_CCC = al;
-	if (!al)
-		return;
-	BYTE *data_CC6 = data_34A = &objects[al * 8];
-	data_34C = FakePointerToPointer((WORD&)data_CC6[6]);
-	main_E2A();
-	BYTE data_CCE = (data_CC6[5] + 1) % 6;
-	BYTE data_CCD = data_CC6[0];
-	BYTE data_CCF = data_CCC == 0xFE ? 11 : 5;
-	data_CC6[5]++;
-	if (data_CC6[5] <= data_CCF)
-		goto main_1DF4;
-	FreeObjectInList_worker(&objectHead_explosions, data_CCC);
-	if (data_CCC != 0xFE)
-		FreeObject(data_CCC);
-	else
-		data_C72 = 0;
-	goto main_1E87;
-main_1DF4:
-	if (data_CC6[4] != 22)
-		goto main_1E36;
-	(WORD&)data_CC6[6] = PointerToFakePointer(data_12FE[data_CCE]);
-	data_34C = data_12FE[data_CCE];
-	if (data_CCC != 0xFE)
-		goto main_1E32;
-	if (data_CC6[5] <= 5)
-		goto main_1E32;
-	SetSoundEffectState(11 - data_CC6[5], 4);
-	goto main_1E84;
-main_1E32:
-	al = 4;
-	goto main_1E7C;
-main_1E36:
-	if (data_CC6[4] == 12)
+	for (BYTE object = objectHead_explosions; object;)
 	{
-		(WORD&)data_CC6[6] = PointerToFakePointer(data_1352[data_CCE]);
-		data_34C = data_1352[data_CCE];
-		al = 3;
-		goto main_1E7C;
+		BYTE *data_CC6 = data_34A = &objects[object * 8];
+		data_34C = FakePointerToPointer((WORD&)data_CC6[6]);
+		main_E2A();
+		BYTE data_CCE = (data_CC6[5] + 1) % 6;
+		BYTE data_CCD = data_CC6[0];
+		BYTE data_CCF = object == OBJECT_PLAYEREXPLOSION ? 11 : 5;
+		data_CC6[5]++;
+		if (data_CC6[5] > data_CCF)
+		{
+			FreeObjectInList_worker(&objectHead_explosions, object);
+			if (object != OBJECT_PLAYEREXPLOSION)
+				FreeObject(object);
+			else
+				data_C72 = 0;
+		}
+		else
+		{
+			if (data_CC6[4] == ExplosionType_PlayerOrGenerator)
+			{
+				(WORD&)data_CC6[6] = PointerToFakePointer(data_12FE[data_CCE]);
+				data_34C = data_12FE[data_CCE];
+				if (object == OBJECT_PLAYEREXPLOSION && data_CC6[5] > 5)
+					SetSoundEffectState(11 - data_CC6[5], 4);
+				else
+					SetSoundEffectState(data_CCE, 4);
+			}
+			else
+			if (data_CC6[4] == ExplosionType_Snipe)
+			{
+				(WORD&)data_CC6[6] = PointerToFakePointer(data_1352[data_CCE]);
+				data_34C = data_1352[data_CCE];
+				SetSoundEffectState(data_CCE, 3);
+			}
+			else
+			if (data_CC6[4] == ExplosionType_Ghost)
+			{
+				(WORD&)data_CC6[6] = PointerToFakePointer(data_1392[data_CCE]);
+				data_34C = data_1392[data_CCE];
+				SetSoundEffectState(data_CCE, 2);
+			}
+			PlotObjectToMaze();
+		}
+		object = data_CCD;
 	}
-	if (data_CC6[4] != 11)
-		goto main_1E84;
-	(WORD&)data_CC6[6] = PointerToFakePointer(data_1392[data_CCE]);
-	data_34C = data_1392[data_CCE];
-	al = 2;
-main_1E7C:
-	SetSoundEffectState(data_CCE, al);
-main_1E84:
-	PlotObjectToMaze();
-main_1E87:
-	al = data_CCD;
-	goto main_1D6A;
 }
 
 static const WORD sound1[] = {100, 100, 1400, 1800, 1600, 1200};

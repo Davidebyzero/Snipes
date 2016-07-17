@@ -1488,16 +1488,16 @@ main_1899:
 	data_34C = data_B60;
 }
 
-BYTE FireSnipeBullet()
+bool FireSnipeBullet()
 {
 	BYTE data_C9C = data_B69 >> snipeShootingAccuracy;
 	if (data_C9C > 10)
-		return 0;
+		return false;
 	if (GetRandomMasked(0xFFFF >> (15 - data_C9C)))
-		return 0;
+		return false;
 	FireBullet(6);
 	SetSoundEffectState(0, 1);
-	return 0xFF;
+	return true;
 }
 
 void UpdateSnipes()
@@ -1636,7 +1636,7 @@ void UpdateSnipes()
 			goto main_20C3;
 		if (al > 4)
 			goto main_20BA;
-		if (!ah || ah > 3)
+		if (ah == 0 || ah > 3)
 			goto main_20C3;
 		al = 2;
 		goto main_2083;
@@ -1670,11 +1670,9 @@ void UpdateSnipes()
 		dl = di[0];
 		continue;
 	main_20F9:
-		BYTE tmp = al & 1;
-		al >>= 1;
-		if (!tmp)
+		if (!al)
 			goto main_20F4;
-		if ((BYTE&)maze[di[3] * MAZE_WIDTH + di[2]] != 1)
+		if ((BYTE&)maze[di[3] * MAZE_WIDTH + di[2]] != 0x01)
 			maze[di[3] * MAZE_WIDTH + di[2]] = 0x9FF;
 		else
 		{

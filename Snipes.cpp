@@ -1145,10 +1145,7 @@ void UpdateBullets()
 				data_34E += 50;
 				goto main_149B;
 			}
-			if (!generatorsResistSnipeBullets)
-				goto main_149B;
-			WORD find_this = maze[data_B5C];
-			if (wmemchr((wchar_t*)&data_1002[1], (wchar_t&)find_this, _countof(data_1002)-1) && (BYTE&)find_this != 0xFF)
+			if (generatorsResistSnipeBullets && wmemchr((wchar_t*)&data_1002[1], (wchar_t&)maze[data_B5C], _countof(data_1002)-1) || (BYTE&)maze[data_B5C] == 0xFF)
 				goto main_150E;
 		main_149B:
 			maze[data_B5C] = 0x0FB2;
@@ -1419,11 +1416,7 @@ void FireBullet(BYTE arg)
 	data_34E += 50;
 	goto main_17B4;
 main_1786:
-	if (!generatorsResistSnipeBullets)
-		goto main_17B4;
-	if (wmemchr((wchar_t*)&data_1002[1], (wchar_t&)maze[data_B5E], _countof(data_1002)-1))
-		goto main_1899;
-	if ((BYTE&)maze[data_B5E] == 0xFF)
+	if (generatorsResistSnipeBullets && wmemchr((wchar_t*)&data_1002[1], (wchar_t&)maze[data_B5E], _countof(data_1002)-1) || (BYTE&)maze[data_B5E] == 0xFF)
 		goto main_1899;
 main_17B4:
 	maze[data_B5E] = 0x0FB2;

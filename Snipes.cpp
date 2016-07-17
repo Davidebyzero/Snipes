@@ -34,13 +34,14 @@ HANDLE output;
 HWAVEOUT waveOutput;
 WAVEHDR waveHeader[WAVE_BUFFER_COUNT];
 static double toneFreq = 0;
+Uint currentFreqnum = 0;
 Uint tonePhase;
 SHORT toneBuf[WAVE_BUFFER_LENGTH * WAVE_BUFFER_COUNT];
 void CALLBACK WaveOutProc(HWAVEOUT hwo, UINT uMsg, DWORD_PTR dwInstance, DWORD_PTR dwParam1, DWORD_PTR dwParam2)
 {
 	if (uMsg != WOM_DONE)
 		return;
-	if (toneFreq == 0.)
+	if (currentFreqnum == 0)
 		return;
 	WAVEHDR *currentWaveHeader = (WAVEHDR*)dwParam1;
 	for (Uint i=0; i<WAVE_BUFFER_LENGTH; i++)
@@ -52,7 +53,10 @@ void CALLBACK WaveOutProc(HWAVEOUT hwo, UINT uMsg, DWORD_PTR dwInstance, DWORD_P
 }
 void PlayTone(Uint freqnum)
 {
-	bool soundAlreadyPlaying = toneFreq != 0.;
+	if (currentFreqnum == freqnum)
+		return;
+	BOOL soundAlreadyPlaying = currentFreqnum;
+	currentFreqnum = freqnum;
 	toneFreq = (13125000. / (TONE_SAMPLE_RATE * 11)) / freqnum;
 	tonePhase = 0;
 	if (soundAlreadyPlaying)
@@ -62,7 +66,7 @@ void PlayTone(Uint freqnum)
 }
 void ClearSound()
 {
-	toneFreq = 0.;
+	currentFreqnum = 0;
 }
 
 #define KEYSTATE_MOVE_RIGHT (1<<0)

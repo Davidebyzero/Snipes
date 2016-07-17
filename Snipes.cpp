@@ -272,16 +272,16 @@ void ReadSkillLevel()
 		}
 }
 
-static BYTE skillThing1Table  ['Z'-'A'+1] = {2, 3, 4, 3, 4, 4, 3, 4, 3, 4, 4, 5, 3, 4, 3, 4, 3, 4, 3, 4, 4, 5, 4, 4, 5, 5};
-static bool skillThing2Table  ['Z'-'A'+1] = {0, 0, 0, 1, 1, 1, 0, 0, 1, 1, 1, 1, 0, 0, 1, 1, 0, 0, 1, 1, 1, 1, 1, 1, 1, 1};
-static bool rubberBulletTable ['Z'-'A'+1] = {0, 0, 0, 0, 0, 0, 1, 1, 1, 1, 1, 1, 0, 0, 0, 0, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1};
-static BYTE skillThing3Table  ['Z'-'A'+1] = {0x7F, 0x7F, 0x7F, 0x3F, 0x3F, 0x1F, 0x7F, 0x7F, 0x3F, 0x3F, 0x1F, 0x1F, 0x7F, 0x7F, 0x3F, 0x3F, 0x7F, 0x7F, 0x3F, 0x3F, 0x1F, 0x1F, 0x3F, 0x1F, 0x1F, 0x0F};
-static BYTE maxSnipesTable    ['9'-'1'+1] = { 10,  20,  30,  40,  60,  80, 100, 120, 150};
-static BYTE numGeneratorsTable['9'-'1'+1] = {  3,   3,   4,   4,   5,   5,   6,   8,  10};
-static BYTE numLivesTable     ['9'-'1'+1] = {  5,   5,   5,   5,   5,   4,   4,   3,   2};
+static BYTE snipeShootingAccuracyTable['Z'-'A'+1] = {2, 3, 4, 3, 4, 4, 3, 4, 3, 4, 4, 5, 3, 4, 3, 4, 3, 4, 3, 4, 4, 5, 4, 4, 5, 5};
+static bool enableGhostSnipesTable    ['Z'-'A'+1] = {0, 0, 0, 1, 1, 1, 0, 0, 1, 1, 1, 1, 0, 0, 1, 1, 0, 0, 1, 1, 1, 1, 1, 1, 1, 1};
+static bool rubberBulletTable         ['Z'-'A'+1] = {0, 0, 0, 0, 0, 0, 1, 1, 1, 1, 1, 1, 0, 0, 0, 0, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1};
+static BYTE ghostBitingAccuracyTable  ['Z'-'A'+1] = {0x7F, 0x7F, 0x7F, 0x3F, 0x3F, 0x1F, 0x7F, 0x7F, 0x3F, 0x3F, 0x1F, 0x1F, 0x7F, 0x7F, 0x3F, 0x3F, 0x7F, 0x7F, 0x3F, 0x3F, 0x1F, 0x1F, 0x3F, 0x1F, 0x1F, 0x0F};
+static BYTE maxSnipesTable            ['9'-'1'+1] = { 10,  20,  30,  40,  60,  80, 100, 120, 150};
+static BYTE numGeneratorsTable        ['9'-'1'+1] = {  3,   3,   4,   4,   5,   5,   6,   8,  10};
+static BYTE numLivesTable             ['9'-'1'+1] = {  5,   5,   5,   5,   5,   4,   4,   3,   2};
 
-bool enableElectricWalls, skillThing2, skillThing7, enableRubberBullets;
-BYTE skillThing1, skillThing3, maxSnipes, numGenerators, numLives;
+bool enableElectricWalls, enableGhostSnipes, skillThing7, enableRubberBullets;
+BYTE snipeShootingAccuracy, ghostBitingAccuracy, maxSnipes, numGenerators, numLives;
 
 BYTE data_2AA;
 WORD frame;
@@ -1464,7 +1464,7 @@ main_1899:
 
 BYTE main_18A3()
 {
-	BYTE data_C9C = data_B69 << skillThing1;
+	BYTE data_C9C = data_B69 << snipeShootingAccuracy;
 	if (data_C9C > 10)
 		return 0;
 	if (GetRandomMasked(0xFFFF >> (15 - data_C9C)))
@@ -1518,7 +1518,7 @@ void main_1EC1()
 		else
 			bx_si += MAZE_WIDTH-1;
 	main_1F33:
-		if (!(skillThing2 & 1))
+		if (!(enableGhostSnipes & 1))
 			goto main_1FB9;
 		if ((BYTE&)bx_si[0] != 0x01)
 			goto main_1FB9;
@@ -1726,7 +1726,7 @@ void main_2124()
 			if (result.al && (di[4] & 1))
 				if (result.ah == 0x93 || result.ah == 0x4F || result.ah == 0x11 || result.ah == 0x10) // player character sprite
 				{
-					if (GetRandomMasked(skillThing3) == 0)
+					if (GetRandomMasked(ghostBitingAccuracy) == 0)
 					{
 						dl = data_CD0;
 						*(BYTE*)result.bx_si = 0xB2;
@@ -2286,12 +2286,12 @@ int main(int argc, char* argv[])
 	for (;;)
 	{
 		enableElectricWalls = skillLevelLetter >= 'M'-'A';
-		skillThing1           = skillThing1Table  [skillLevelLetter];
-		skillThing2           = skillThing2Table  [skillLevelLetter];
-		skillThing3           = skillThing3Table  [skillLevelLetter];
-		maxSnipes             = maxSnipesTable    [skillLevelNumber-1];
-		numGenerators         = numGeneratorsTable[skillLevelNumber-1];
-		numLives              = numLivesTable     [skillLevelNumber-1];
+		snipeShootingAccuracy = snipeShootingAccuracyTable[skillLevelLetter];
+		enableGhostSnipes     = enableGhostSnipesTable    [skillLevelLetter];
+		ghostBitingAccuracy   = ghostBitingAccuracyTable  [skillLevelLetter];
+		maxSnipes             = maxSnipesTable            [skillLevelNumber-1];
+		numGenerators         = numGeneratorsTable        [skillLevelNumber-1];
+		numLives              = numLivesTable             [skillLevelNumber-1];
 		skillThing7           = skillLevelLetter < 'W'-'A';
 		data_2AA              = 2;
 		enableRubberBullets   = rubberBulletTable [skillLevelLetter];

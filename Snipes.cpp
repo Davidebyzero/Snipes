@@ -1878,8 +1878,9 @@ void UpdateGenerators()
 		PlotObjectToMaze();
 		if (--currentObject[4])
 			goto main_1251;
-		BYTE *di = currentObject;
-		if (frame >= 0xE00)
+		WORD dummy;
+		main_2381(currentObject, dummy);
+		if (frame >= 0xF00)
 			currentObject[4] = 5;
 		else
 			currentObject[4] = 5 + (data_B69 >> (frame/0x100 + 1));

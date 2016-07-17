@@ -1209,8 +1209,8 @@ BYTE main_2381(BYTE *di, WORD &cx)
 	return data_CD1[bx];
 }
 
-struct main_227E_retval {bool al; BYTE ah; WORD cx; WORD *bx_si;};
-main_227E_retval main_227E(BYTE *di)
+struct MoveObject_retval {bool al; BYTE ah; WORD cx; WORD *bx_si;};
+MoveObject_retval MoveObject(BYTE *di)
 {
 	union
 	{
@@ -1241,7 +1241,7 @@ main_227E_retval main_227E(BYTE *di)
 		// fall through
 	case 0:
 		dh++;
-		tmp = ch-1;
+		tmp = ch - 1;
 		if (tmp < 0)
 			tmp = MAZE_HEIGHT - 1;
 		ch = tmp;
@@ -1318,7 +1318,7 @@ main_233B:
 main_2343:
 	if ((BYTE&)si[bx] != ' ')
 	{
-		main_227E_retval retval;
+		MoveObject_retval retval;
 		retval.al = true;
 		retval.ah = (BYTE&)si[bx];
 		retval.cx = cx;
@@ -1340,7 +1340,7 @@ main_2343:
 	}
 	data_C77 = cl;
 	data_C78 = ch;
-	main_227E_retval retval;
+	MoveObject_retval retval;
 	retval.al = false;
 	retval.ah = 0;
 	retval.cx = cx;
@@ -1503,8 +1503,6 @@ void UpdateSnipes()
 		}
 		goto main_1F84;
 	main_1F06:
-		if (di[2] != MAZE_WIDTH-1)
-			__debugbreak();
 		if ((BYTE&)bx_si[-(MAZE_WIDTH-1)] == 0xB2)
 			goto main_1F27;
 		if (--di[5])
@@ -1514,24 +1512,24 @@ void UpdateSnipes()
 		}
 		goto main_1F8F;
 	main_1F15:
-		*bx_si = 0x920;
+		bx_si[0] = 0x920;
 		if (di[2] < MAZE_WIDTH-1)
 			bx_si++;
 		else
 			bx_si -= MAZE_WIDTH-1;
 		goto main_1F33;
 	main_1F27:
-		*bx_si = 0x920;
+		bx_si[0] = 0x920;
 		if (di[2])
 			bx_si--;
 		else
 			bx_si += MAZE_WIDTH-1;
 	main_1F33:
-		if (!(enableGhostSnipes & 1))
+		if (!enableGhostSnipes)
 			goto main_1FB9;
 		if ((BYTE&)bx_si[0] != 0x01)
 			goto main_1FB9;
-		*bx_si = 0x502;
+		bx_si[0] = 0x502;
 		di[2] = bx_si - &maze[di[3] * MAZE_WIDTH];
 		BYTE *bx = &objectHead_snipes;
 		BYTE *si;
@@ -1560,11 +1558,11 @@ void UpdateSnipes()
 	main_1F8F:
 		bx_si[-(MAZE_WIDTH-1)] = 0x920;
 	main_1F97:
-		*bx_si = 0x920;
+		bx_si[0] = 0x920;
 		if (GetRandomMasked(3) == 0)
 			goto main_1FCF;
 		{
-			main_227E_retval result = main_227E(di);
+			MoveObject_retval result = MoveObject(di);
 			if (result.al)
 				goto main_1FCF;
 			(WORD&)di[2] = result.cx;
@@ -1594,7 +1592,7 @@ void UpdateSnipes()
 			WORD cx = 8;
 			do
 			{
-				main_227E_retval result = main_227E(di);
+				MoveObject_retval result = MoveObject(di);
 				if (!result.al)
 					break;
 				BYTE al = di[4];
@@ -1726,7 +1724,7 @@ void UpdateGhosts()
 		if (data_B69 <= 4)
 		{
 			di[4] = al;
-			main_227E_retval result = main_227E(di);
+			MoveObject_retval result = MoveObject(di);
 			al = di[4];
 			if (result.al && (di[4] & 1))
 				if (result.ah == 0x93 || result.ah == 0x4F || result.ah == 0x11 || result.ah == 0x10) // player character sprite
@@ -1752,7 +1750,7 @@ void UpdateGhosts()
 	main_21D8:
 		di[4] = ++al;
 		{
-			main_227E_retval result = main_227E(di);
+			MoveObject_retval result = MoveObject(di);
 			cx = result.cx;
 			if (!result.al)
 				goto main_225A;
@@ -1766,7 +1764,7 @@ void UpdateGhosts()
 		if (((BYTE*)&cx)[0] > 1)
 		{
 			di[4] = al += 2;
-			main_227E_retval result = main_227E(di);
+			MoveObject_retval result = MoveObject(di);
 			cx = result.cx;
 			if (!result.al)
 				goto main_225A;
@@ -1775,7 +1773,7 @@ void UpdateGhosts()
 	main_220B:
 		di[4] = al;
 		{
-			main_227E_retval result = main_227E(di);
+			MoveObject_retval result = MoveObject(di);
 			cx = result.cx;
 			if (!result.al)
 				goto main_225A;
@@ -1787,7 +1785,7 @@ void UpdateGhosts()
 		cx = 8;
 		do
 		{
-			main_227E_retval result = main_227E(di);
+			MoveObject_retval result = MoveObject(di);
 			if (!result.al)
 				goto main_225A;
 			di[1] &= ~2;
@@ -1922,7 +1920,7 @@ void UpdateGenerators()
 bool main_1A7B(BYTE arg)
 {
 	objects[OBJECT_PLAYER * 8 + 4] = arg << 1;
-	main_227E_retval result = main_227E(data_34A);
+	MoveObject_retval result = MoveObject(data_34A);
 	if (result.al)
 		return data_CBF = true;
 	data_1CA = objects[OBJECT_PLAYER * 8 + 2] = data_C77;

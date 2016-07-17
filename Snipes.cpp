@@ -1464,9 +1464,9 @@ main_1899:
 	data_34C = data_B60;
 }
 
-BYTE main_18A3()
+BYTE FireSnipeBullet()
 {
-	BYTE data_C9C = data_B69 << snipeShootingAccuracy;
+	BYTE data_C9C = data_B69 >> snipeShootingAccuracy;
 	if (data_C9C > 10)
 		return 0;
 	if (GetRandomMasked(0xFFFF >> (15 - data_C9C)))
@@ -1603,7 +1603,7 @@ void UpdateSnipes()
 			di[4] = al;
 			data_34A = di;
 			data_34C = FakePointerToPointer((WORD&)di[6]);
-			al = main_18A3();
+			al = FireSnipeBullet();
 			di[4] = tmp;
 		}
 		goto main_20F9;

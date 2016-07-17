@@ -143,11 +143,11 @@ Uint PollKeyboard()
 #define VIEWPORT_ROW    3
 #define VIEWPORT_HEIGHT (WINDOW_HEIGHT - VIEWPORT_ROW)
 
-void WriteTextMem(Uint count, Uint dst, WORD *src)
+void WriteTextMem(Uint count, WORD row, WORD column, WORD *src)
 {
 	COORD pos;
-	pos.X = dst / 2 % WINDOW_WIDTH;
-	pos.Y = dst / 2 / WINDOW_WIDTH;
+	pos.X = column;
+	pos.Y = row;
 	SetConsoleCursorPosition(output, pos);
 	static BYTE buf[WINDOW_WIDTH];
 	for (Uint i=0;;)
@@ -304,22 +304,22 @@ static BYTE objects[8 * MAX_OBJECTS];
 
 static WORD maze[MAZE_WIDTH * MAZE_HEIGHT];
 
-void outputText(BYTE color, WORD count, WORD dst, char *src)
+void outputText(BYTE color, WORD count, WORD row, WORD column, const char *src)
 {
 	COORD pos;
-	pos.X = dst / 2 % WINDOW_WIDTH;
-	pos.Y = dst / 2 / WINDOW_WIDTH;
+	pos.X = column;
+	pos.Y = row;
 	SetConsoleCursorPosition(output, pos);
 	SetConsoleTextAttribute(output, color);
 	DWORD operationSize;
 	WriteConsole(output, src, count, &operationSize, 0);
 }
 
-void outputNumber(BYTE color, bool zeroPadding, WORD count, WORD dst, Uint number)
+void outputNumber(BYTE color, bool zeroPadding, WORD count, WORD row, WORD column, Uint number)
 {
 	char textbuf[strlength("4294967295")+1];
 	sprintf_s(textbuf, sizeof(textbuf), zeroPadding ? "%0*u" : "%*u", count, number);
-	outputText(color, count, dst, textbuf);
+	outputText(color, count, row, column, textbuf);
 }
 
 void EraseBottomTwoLines()
@@ -336,40 +336,42 @@ void EraseBottomTwoLines()
 	}
 }
 
-static char statusLine[] = "\xDA\xBF\xB3\x01\x1A\xB3\x02\xB3""Skill""\xC0\xD9\xB3\x01\x1A\xB3\x02\xB3""Time  Men Left                 Score     0  0000001 Man Left\x65";
+static const char statusLine[] = "\xDA\xBF\xB3\x01\x1A\xB3\x02\xB3""Skill""\xC0\xD9\xB3\x01\x1A\xB3\x02\xB3""Time  Men Left                 Score     0  0000001 Man Left""e";
 
 void outputHUD()
 {
+	char (&scratchBuffer)[WINDOW_WIDTH] = (char(&)[WINDOW_WIDTH])maze;
+
 	char skillLetter = skillLevelLetter + 'A';
-	memset((char*)maze, ' ', WINDOW_WIDTH);
-	outputText  (0x17, WINDOW_WIDTH, 2*(WINDOW_WIDTH*0), (char*)maze);
-	outputText  (0x17, WINDOW_WIDTH, 2*(WINDOW_WIDTH*1), (char*)maze);
-	outputText  (0x17, WINDOW_WIDTH, 2*(WINDOW_WIDTH*2), (char*)maze);
-	outputText  (0x17,     2, 2*(WINDOW_WIDTH*0 +  0), statusLine);
-	outputNumber(0x13,  0, 2, 2*(WINDOW_WIDTH*0 +  3), 0);
-	outputText  (0x17,     1, 2*(WINDOW_WIDTH*0 +  6), statusLine+2);
-	outputText  (0x13,     2, 2*(WINDOW_WIDTH*0 +  8), statusLine+3);
-	outputNumber(0x13,  0, 4, 2*(WINDOW_WIDTH*0 + 11), 0);
-	outputText  (0x17,     1, 2*(WINDOW_WIDTH*0 + 16), statusLine+5);
-	outputText  (0x13,     1, 2*(WINDOW_WIDTH*0 + 18), statusLine+6);
-	outputNumber(0x13,  0, 4, 2*(WINDOW_WIDTH*0 + 20), 0);
-	outputText  (0x17,     1, 2*(WINDOW_WIDTH*0 + 25), statusLine+7);
-	outputText  (0x17,     5, 2*(WINDOW_WIDTH*0 + 27), statusLine+8);
-	outputNumber(0x17,  0, 1, 2*(WINDOW_WIDTH*0 + 38), skillLevelNumber);
-	outputText  (0x17,     1, 2*(WINDOW_WIDTH*0 + 37), &skillLetter);
-	outputText  (0x17,     2, 2*(WINDOW_WIDTH*1 +  0), statusLine+13);
-	outputText  (0x17,     1, 2*(WINDOW_WIDTH*1 +  6), statusLine+15);
-	outputText  (0x17,     2, 2*(WINDOW_WIDTH*1 +  8), statusLine+16);
-	outputText  (0x17,     1, 2*(WINDOW_WIDTH*1 + 16), statusLine+18);
-	outputText  (0x17,     1, 2*(WINDOW_WIDTH*1 + 18), statusLine+19);
-	outputText  (0x17,     1, 2*(WINDOW_WIDTH*1 + 25), statusLine+20);
-	outputText  (0x17,     4, 2*(WINDOW_WIDTH*1 + 27), statusLine+21);
-	memcpy(maze, statusLine+25, 40);
-	((char*)maze)[0] = numLives + '0';
-	((char*)maze)[1] = 0;
+	memset(scratchBuffer, ' ', WINDOW_WIDTH);
+	outputText  (0x17, WINDOW_WIDTH, 0, 0, scratchBuffer);
+	outputText  (0x17, WINDOW_WIDTH, 1, 0, scratchBuffer);
+	outputText  (0x17, WINDOW_WIDTH, 2, 0, scratchBuffer);
+	outputText  (0x17,     2, 0,  0, statusLine);
+	outputNumber(0x13,  0, 2, 0,  3, 0);
+	outputText  (0x17,     1, 0,  6, statusLine+2);
+	outputText  (0x13,     2, 0,  8, statusLine+3);
+	outputNumber(0x13,  0, 4, 0, 11, 0);
+	outputText  (0x17,     1, 0, 16, statusLine+5);
+	outputText  (0x13,     1, 0, 18, statusLine+6);
+	outputNumber(0x13,  0, 4, 0, 20, 0);
+	outputText  (0x17,     1, 0, 25, statusLine+7);
+	outputText  (0x17,     5, 0, 27, statusLine+8);
+	outputNumber(0x17,  0, 1, 0, 38, skillLevelNumber);
+	outputText  (0x17,     1, 0, 37, &skillLetter);
+	outputText  (0x17,     2, 1,  0, statusLine+13);
+	outputText  (0x17,     1, 1,  6, statusLine+15);
+	outputText  (0x17,     2, 1,  8, statusLine+16);
+	outputText  (0x17,     1, 1, 16, statusLine+18);
+	outputText  (0x17,     1, 1, 18, statusLine+19);
+	outputText  (0x17,     1, 1, 25, statusLine+20);
+	outputText  (0x17,     4, 1, 27, statusLine+21);
+	memcpy(scratchBuffer, statusLine+25, 40);
+	scratchBuffer[0] = numLives + '0';
+	scratchBuffer[1] = 0;
 	if (numLives == 1)
-		((char*)maze)[6] = 'a';
-	outputText  (0x17, 40, 2*(WINDOW_WIDTH*2 +  0), (char*)maze);
+		scratchBuffer[6] = 'a';
+	outputText  (0x17, 40, 2,  0, scratchBuffer);
 
 	data_2B4 = 0xFF;
 	data_2B3 = 0xFF;
@@ -883,43 +885,43 @@ bool updateHUD() // returns true if the match has been won
 {
 	frame++;
 	if (data_28E != data_346)
-		outputNumber(0x13, 0, 4, 2* (WINDOW_WIDTH*0 + 11), data_28E = data_346);
+		outputNumber(0x13, 0, 4, 0, 11, data_28E = data_346);
 	if (data_290 != data_348)
-		outputNumber(0x13, 0, 4, 2* (WINDOW_WIDTH*0 + 20), data_290 = data_348);
+		outputNumber(0x13, 0, 4, 0, 20, data_290 = data_348);
 	if (data_2B3 != data_B65)
 	{
-		outputNumber(0x17, 0, 2, 2* (WINDOW_WIDTH*1 +  3), data_2B3 = data_B65);
-		outputNumber(0x13, 0, 2, 2* (WINDOW_WIDTH*0 +  3), numGenerators - data_B65);
+		outputNumber(0x17, 0, 2, 1,  3, data_2B3 = data_B65);
+		outputNumber(0x13, 0, 2, 0,  3, numGenerators - data_B65);
 	}
 	if (data_2B2 != data_B64)
-		outputNumber(0x17, 0, 3, 2* (WINDOW_WIDTH*1 + 12), data_2B2 = data_B64);
+		outputNumber(0x17, 0, 3, 1, 12, data_2B2 = data_B64);
 	if (data_2B4 != data_B68)
-		outputNumber(0x17, 0, 3, 2* (WINDOW_WIDTH*1 + 21), data_2B4 = data_B68);
+		outputNumber(0x17, 0, 3, 1, 21, data_2B4 = data_B68);
 	if (data_292 != data_34E)
 	{
 		data_292 = data_34E;
 		if (data_292 > 0)
-			outputNumber(0x17, 1, 5, 2*(WINDOW_WIDTH*2 + 33), data_292);
+			outputNumber(0x17, 1, 5, 2, 33, data_292);
 		else
-			outputText  (0x17,    6, 2*(WINDOW_WIDTH*2 + 33), statusLine+65);
+			outputText  (0x17,    6, 2, 33, statusLine+65);
 	}
 	if (data_2C0 != data_B66)
 	{
 		data_2C0 = data_B66;
 		BYTE livesRemaining = numLives - data_2C0;
 		if (livesRemaining == 1)
-			outputText  (0x1C,   10, 2*(WINDOW_WIDTH*2 +  0), statusLine+71);
+			outputText  (0x1C,   10, 2,  0, statusLine+71);
 		else
 		{
-			{}	outputNumber(0x17, 0, 1, 2*(WINDOW_WIDTH*2 +  0), livesRemaining);
+			{}	outputNumber(0x17, 0, 1, 2,  0, livesRemaining);
 			if (!livesRemaining)
 			{
-				outputNumber(0x1C, 0, 1, 2*(WINDOW_WIDTH*2 +  0), 0);
-				outputText  (0x1C,    1, 2*(WINDOW_WIDTH*2 + 33), statusLine+81);
+				outputNumber(0x1C, 0, 1, 2,  0, 0);
+				outputText  (0x1C,    1, 2, 33, statusLine+81);
 			}
 		}
 	}
-	outputNumber(0x17, 0, 5, 2*(WINDOW_WIDTH*1 + 34), frame); // Time
+	outputNumber(0x17, 0, 5, 1, 34, frame); // Time
 
 	if (data_B64 || data_B65 || data_B68)
 		return false;
@@ -2191,25 +2193,25 @@ void UpdateSound()
 
 void DrawViewport()
 {
-	WORD data_29A = 2*(WINDOW_WIDTH * VIEWPORT_ROW);
+	WORD outputRow = VIEWPORT_ROW;
 	SHORT data_298 = data_1CC - VIEWPORT_HEIGHT / 2;
 	if (data_298 < 0)
 		data_298 += MAZE_HEIGHT;
 	SHORT data_296 = data_1CA - WINDOW_WIDTH / 2;
 	if (data_296 < 0)
 		data_296 += MAZE_WIDTH;
-	SHORT data_29E = 0;
+	SHORT wrappingColumn = 0;
 	if (data_296 + WINDOW_WIDTH >= MAZE_WIDTH)
-		data_29E = MAZE_WIDTH - data_296;
+		wrappingColumn = MAZE_WIDTH - data_296;
 	else
-		data_29E = WINDOW_WIDTH;
+		wrappingColumn = WINDOW_WIDTH;
 	for (Uint row = 0; row < VIEWPORT_HEIGHT; row++)
 	{
 		WORD data_29C = data_298 * MAZE_WIDTH;
-		WriteTextMem(data_29E, data_29A, &maze[data_296 + data_29C]);
-		if (data_29E != WINDOW_WIDTH)
-			WriteTextMem(WINDOW_WIDTH - data_29E, data_29A + 2*data_29E, &maze[data_29C]);
-		data_29A += WINDOW_WIDTH * 2;
+		WriteTextMem(wrappingColumn, outputRow, 0, &maze[data_296 + data_29C]);
+		if (wrappingColumn != WINDOW_WIDTH)
+			WriteTextMem(WINDOW_WIDTH - wrappingColumn, outputRow, wrappingColumn, &maze[data_29C]);
+		outputRow++;
 		if (++data_298 == MAZE_HEIGHT)
 			data_298 = 0;
 	}

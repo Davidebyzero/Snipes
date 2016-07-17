@@ -1719,7 +1719,6 @@ void UpdateGhosts()
 		{
 			di[4] = al;
 			MoveObject_retval result = MoveObject(di);
-			al = di[4];
 			if (result.al && (di[4] & 1))
 				if (result.ah == 0x93 || result.ah == 0x4F || result.ah == 0x11 || result.ah == 0x10) // player character sprite
 				{
@@ -1732,16 +1731,16 @@ void UpdateGhosts()
 				}
 		}
 	//main_21C5:
-		if (((BYTE*)&cx)[1] < 1)
-			goto main_21D8;
 		if (((BYTE*)&cx)[1] > 1)
 			goto main_21EC;
+		if (((BYTE*)&cx)[1] < 1)
+			goto main_21DA;
 		BYTE tmp = al;
 		al = 2;
 		if (tmp >= 4)
 			al = 6;
 		goto main_220B;
-	main_21D8:
+	main_21DA:
 		di[4] = ++al;
 		{
 			MoveObject_retval result = MoveObject(di);
@@ -1755,7 +1754,7 @@ void UpdateGhosts()
 		if (((BYTE*)&cx)[0] == 1)
 			al = (al + 1) & 4;
 		else
-		if (((BYTE*)&cx)[0] > 1)
+		if (((BYTE*)&cx)[0] < 1)
 		{
 			di[4] = al += 2;
 			MoveObject_retval result = MoveObject(di);
@@ -1776,10 +1775,10 @@ void UpdateGhosts()
 			di[1] |= 2;
 		di[4] = (BYTE)GetRandomMasked(7);
 	main_2228:
-		cx = 8;
-		do
+		for (Uint count=8; count; count--)
 		{
 			MoveObject_retval result = MoveObject(di);
+			cx = result.cx;
 			if (!result.al)
 				goto main_225A;
 			di[1] &= ~2;
@@ -1790,7 +1789,6 @@ void UpdateGhosts()
 				al = (al + 1) & 7;
 			di[4] = al;
 		}
-		while (--cx);
 		goto main_225D;
 	main_225A:
 		(WORD&)di[2] = cx;

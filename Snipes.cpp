@@ -938,7 +938,7 @@ bool updateHUD() // returns true if the match has been won
 			if (!livesRemaining)
 			{
 				outputNumber(0x1C, 0, 1, 2,  0, 0);
-				outputText  (0x1C,    1, 2, 33, statusLine+81);
+				outputText  (0x1C,    1, 2,  3, statusLine+81);
 			}
 		}
 	}

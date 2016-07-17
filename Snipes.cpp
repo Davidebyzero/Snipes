@@ -1234,7 +1234,7 @@ main_227E_retval main_227E(BYTE *di)
 	switch (di[4])
 	{
 	case 1:
-		tmp = cl + data_CE5[ch];
+		tmp = cl + (dl = data_CE5[ch]);
 		if (tmp >= MAZE_WIDTH)
 			tmp -= MAZE_WIDTH;
 		cl = tmp;
@@ -1555,14 +1555,10 @@ void UpdateSnipes()
 		data_B68++;
 		continue;
 	main_1F84:
-		*bx_si = 0x920;
-		bx_si--;
+		bx_si[1] = 0x920;
 		goto main_1F97;
 	main_1F8F:
-		*bx_si = 0x920;
-		if (bx_si != &maze[di[3] * MAZE_WIDTH + MAZE_WIDTH-1])
-			__debugbreak();
-		//bx_si = &maze[di[3] * MAZE_WIDTH + MAZE_WIDTH-1];
+		bx_si[-(MAZE_WIDTH-1)] = 0x920;
 	main_1F97:
 		*bx_si = 0x920;
 		if (GetRandomMasked(3) == 0)

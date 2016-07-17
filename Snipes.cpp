@@ -941,7 +941,7 @@ bool updateHUD() // returns true if the match has been won
 
 void ExplodeObject(BYTE arg)
 {
-	if (!arg) // explode the player (and don't overwrite the player object)
+	if (arg == OBJECT_PLAYER) // explode the player (and don't overwrite the player object)
 	{
 		arg = OBJECT_PLAYEREXPLOSION;
 		objects[OBJECT_PLAYEREXPLOSION * 8 + 2] = objects[2];
@@ -1006,7 +1006,7 @@ void FreeObjectInList_worker(BYTE *objectHead, BYTE object)
 
 void FreeObjectInList(BYTE *objectHead, BYTE object)
 {
-	if (!object) // explode the player (and don't overwrite the player object)
+	if (object == OBJECT_PLAYER)
 	{
 		ExplodeObject(object);
 		return;
@@ -1347,7 +1347,7 @@ main_2343:
 	return retval;
 }
 
-void fireBullet(BYTE arg)
+void FireBullet(BYTE arg)
 {
 	BYTE data_C97 = data_34A[4];
 	BYTE data_C98 = data_34A[2];
@@ -1478,7 +1478,7 @@ BYTE main_18A3()
 		return 0;
 	if (GetRandomMasked(0xFFFF >> (15 - data_C9C)))
 		return 0;
-	fireBullet(6);
+	FireBullet(6);
 	SetSoundEffectState(0, 1);
 	return 0xFF;
 }
@@ -2075,7 +2075,7 @@ main_1B8F:
 			return false;
 		BYTE data_CC1 = objects[OBJECT_PLAYER * 8 + 4];
 		objects[OBJECT_PLAYER * 8 + 4] = data_CAE[keyboard_state >> 4];
-		fireBullet(0);
+		FireBullet(0);
 		SetSoundEffectState(0, 0);
 		objects[OBJECT_PLAYER * 8 + 4] = data_CC1;
 		objects[OBJECT_PLAYER * 8 + 1] = objects[OBJECT_PLAYER * 8 + 5] == 1 ? data_2AA<<1 : data_2AA;
@@ -2084,7 +2084,7 @@ main_1B8F:
 	objects[OBJECT_PLAYER * 8 + 1] = 1;
 	return false;
 main_1BEE:
-	FreeObjectInList(objects, 0); // explode the player
+	FreeObjectInList(objects, OBJECT_PLAYER); // explode the player
 	data_C73 = true;
 	data_B66++;
 	return false;

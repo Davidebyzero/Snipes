@@ -410,6 +410,8 @@ void CreateMaze_helper(SHORT &data_1E0, BYTE &data_2AF)
 		else
 			data_1E0++;
 		break;
+	default:
+		__assume(0);
 	}
 }
 
@@ -1071,6 +1073,8 @@ bool main_154F(BYTE arg)
 			data_B5C += MAZE_WIDTH;
 		}
 		break;
+	default:
+		__assume(0);
 	}
 	return (BYTE&)maze[data_B5C] != ' ';
 }
@@ -1142,6 +1146,8 @@ void UpdateBullets()
 			data_C94 = data_C93;
 			data_C93 = data_34A[0];
 			continue;
+		default:
+			__assume(0);
 		}
 	main_13EF:
 		BYTE find_this = (BYTE&)maze[data_B5C];
@@ -1318,6 +1324,8 @@ MoveObject_retval MoveObject(BYTE *di)
 		ch = tmp;
 		ax = cx;
 		break;
+	default:
+		__assume(0);
 	}
 	const WORD *ptr = FakePointerToPointer((WORD&)di[6]);
 	dl += ((BYTE*)ptr)[1];
@@ -1393,6 +1401,8 @@ void FireBullet(BYTE bulletType)
 	main_16A1:
 		data_C99--;
 		break;
+	default:
+		__assume(0);
 	}
 	if (data_C98 >= MAZE_WIDTH)
 	{
@@ -2157,6 +2167,8 @@ void UpdateSound()
 	case 4:
 		PlayTone(sound3[data_DF1]);
 		break;
+	default:
+		__assume(0);
 	}
 	data_DF0 = 0xFF;
 }

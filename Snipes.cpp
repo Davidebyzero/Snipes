@@ -290,9 +290,9 @@ BYTE snipeShootingAccuracy, ghostBitingAccuracy, maxSnipes, numGenerators, numLi
 BYTE data_2AA;
 WORD frame;
 static bool data_C75, data_C73, data_C72, data_CBF;
-static BYTE data_2B4, data_2B3, data_2B2, data_2C0, objectHead_free, objectHead_bullets, objectHead_explosions, objectHead_ghosts, objectHead_snipes, objectHead_generators, data_B65, data_B68, data_B67, data_B66, data_B64, data_C74, data_DF0 = 0xFF, data_DF1, data_C96, data_B69, data_C77, data_C78;
-static WORD data_290, data_28E, data_348, data_346, data_1CA, data_1CC, data_B5C;
-static SHORT data_292, data_34E;
+static BYTE lastHUD_numGhosts, lastHUD_numGeneratorsKilled, lastHUD_numSnipes, lastHUD_numPlayerDeaths, objectHead_free, objectHead_bullets, objectHead_explosions, objectHead_ghosts, objectHead_snipes, objectHead_generators, numGeneratorsKilled, numGhosts, data_B67, numPlayerDeaths, numSnipes, data_C74, data_DF0 = 0xFF, data_DF1, data_C96, data_B69, data_C77, data_C78;
+static WORD lastHUD_numGhostsKilled, lastHUD_numSnipesKilled, numGhostsKilled, numSnipesKilled, data_1CA, data_1CC, data_B5C;
+static SHORT lastHUD_score, score;
 BYTE *data_34A;
 const WORD *data_34C;
 
@@ -377,13 +377,13 @@ void outputHUD()
 		scratchBuffer[6] = 'a';
 	outputText  (0x17, 40, 2,  0, scratchBuffer);
 
-	data_2B4 = 0xFF;
-	data_2B3 = 0xFF;
-	data_2B2 = 0xFF;
-	data_290 = 0xFFFF;
-	data_28E = 0xFFFF;
-	data_2C0 = 0xFF;
-	data_292 = -1;
+	lastHUD_numGhosts = 0xFF;
+	lastHUD_numGeneratorsKilled = 0xFF;
+	lastHUD_numSnipes = 0xFF;
+	lastHUD_numGhostsKilled = 0xFFFF;
+	lastHUD_numSnipesKilled = 0xFFFF;
+	lastHUD_numPlayerDeaths = 0xFF;
+	lastHUD_score = -1;
 }
 
 #define MAZE_SCRATCH_BUFFER_SIZE 320
@@ -869,14 +869,14 @@ void CreateGenerators()
 		data_34A[4] = 1;
 		PlotObjectToMaze();
 	}
-	data_B65 = numGenerators;
-	data_348 = 0;
-	data_B68 = 0;
+	numGeneratorsKilled = numGenerators;
+	numGhostsKilled = 0;
+	numGhosts = 0;
 	data_B67 = 0;
-	data_346 = 0;
-	data_B66 = 0;
-	data_B64 = 0;
-	data_34E = 0;
+	numSnipesKilled = 0;
+	numPlayerDeaths = 0;
+	numSnipes = 0;
+	score = 0;
 	data_C75 = false;
 	data_C74 = 0;
 	data_C73 = false;
@@ -905,31 +905,30 @@ void SetSoundEffectState(BYTE arg1, BYTE arg2)
 bool updateHUD() // returns true if the match has been won
 {
 	frame++;
-	if (data_28E != data_346)
-		outputNumber(0x13, 0, 4, 0, 11, data_28E = data_346);
-	if (data_290 != data_348)
-		outputNumber(0x13, 0, 4, 0, 20, data_290 = data_348);
-	if (data_2B3 != data_B65)
+	if (lastHUD_numSnipesKilled != numSnipesKilled)
+		outputNumber(0x13, 0, 4, 0, 11, lastHUD_numSnipesKilled = numSnipesKilled);
+	if (lastHUD_numGhostsKilled != numGhostsKilled)
+		outputNumber(0x13, 0, 4, 0, 20, lastHUD_numGhostsKilled = numGhostsKilled);
+	if (lastHUD_numGeneratorsKilled != numGeneratorsKilled)
 	{
-		outputNumber(0x17, 0, 2, 1,  3, data_2B3 = data_B65);
-		outputNumber(0x13, 0, 2, 0,  3, numGenerators - data_B65);
+		outputNumber(0x17, 0, 2, 1,  3, lastHUD_numGeneratorsKilled = numGeneratorsKilled);
+		outputNumber(0x13, 0, 2, 0,  3, numGenerators - numGeneratorsKilled);
 	}
-	if (data_2B2 != data_B64)
-		outputNumber(0x17, 0, 3, 1, 12, data_2B2 = data_B64);
-	if (data_2B4 != data_B68)
-		outputNumber(0x17, 0, 3, 1, 21, data_2B4 = data_B68);
-	if (data_292 != data_34E)
+	if (lastHUD_numSnipes != numSnipes)
+		outputNumber(0x17, 0, 3, 1, 12, lastHUD_numSnipes = numSnipes);
+	if (lastHUD_numGhosts != numGhosts)
+		outputNumber(0x17, 0, 3, 1, 21, lastHUD_numGhosts = numGhosts);
+	if (lastHUD_score != score)
 	{
-		data_292 = data_34E;
-		if (data_292 > 0)
-			outputNumber(0x17, 1, 5, 2, 33, data_292);
+		lastHUD_score = score;
+		if (lastHUD_score > 0)
+			outputNumber(0x17, 1, 5, 2, 33, lastHUD_score);
 		else
 			outputText  (0x17,    6, 2, 33, statusLine+65);
 	}
-	if (data_2C0 != data_B66)
+	if (lastHUD_numPlayerDeaths != numPlayerDeaths)
 	{
-		data_2C0 = data_B66;
-		BYTE livesRemaining = numLives - data_2C0;
+		BYTE livesRemaining = numLives - (lastHUD_numPlayerDeaths = numPlayerDeaths);
 		if (livesRemaining == 1)
 			outputText  (0x1C,   10, 2,  0, statusLine+71);
 		else
@@ -944,7 +943,7 @@ bool updateHUD() // returns true if the match has been won
 	}
 	outputNumber(0x17, 0, 5, 1, 34, frame); // Time
 
-	if (data_B64 || data_B65 || data_B68)
+	if (numSnipes || numGeneratorsKilled || numGhosts)
 		return false;
 
 	EraseBottomTwoLines();
@@ -1161,12 +1160,12 @@ void UpdateBullets()
 			{
 				if (memchr(data_128C, find_this, _countof(data_128C)))
 				{
-					data_34E++;
+					score += 1;
 					goto main_149B;
 				}
 				if (!(wmemchr((wchar_t*)&data_1002[1], (wchar_t&)maze[data_B5C], _countof(data_1002)-1) || (BYTE&)maze[data_B5C] == 0xFF))
 					goto main_149B;
-				data_34E += 50;
+				score += 50;
 				goto main_149B;
 			}
 			if (generatorsResistSnipeBullets && wmemchr((wchar_t*)&data_1002[1], (wchar_t&)maze[data_B5C], _countof(data_1002)-1) || (BYTE&)maze[data_B5C] == 0xFF)
@@ -1433,12 +1432,12 @@ void FireBullet(BYTE bulletType)
 		goto main_1786;
 	if (memchr(data_129D, (BYTE&)maze[data_B5E], _countof(data_129D)))
 	{
-		data_34E++;
+		score += 1;
 		goto main_17B4;
 	}
 	if (!(wmemchr((wchar_t*)&data_1002[1], (wchar_t&)maze[data_B5E], _countof(data_1002)-1) || (BYTE&)maze[data_B5E] == 0xFF))
 		goto main_17B4;
-	data_34E += 50;
+	score += 50;
 	goto main_17B4;
 main_1786:
 	if (generatorsResistSnipeBullets && wmemchr((wchar_t*)&data_1002[1], (wchar_t&)maze[data_B5E], _countof(data_1002)-1) || (BYTE&)maze[data_B5E] == 0xFF)
@@ -1554,9 +1553,9 @@ void UpdateSnipes()
 		}
 		di[5] = 2;
 		(WORD&)di[6] = FAKE_POINTER_data_10FE;
-		data_B64--;
-		data_346++;
-		data_B68++;
+		numSnipes--;
+		numSnipesKilled++;
+		numGhosts++;
 		continue;
 	main_1F84:
 		* leftPart = 0x920;
@@ -1579,8 +1578,8 @@ void UpdateSnipes()
 			FreeObjectInList(&objectHead_snipes, dl);
 			dl = tmp;
 		}
-		data_B64--;
-		data_346++;
+		numSnipes--;
+		numSnipesKilled++;
 		continue;
 	main_1FCF:
 		if (GetRandomMasked(3) == 0)
@@ -1709,8 +1708,8 @@ void UpdateGhosts()
 			BYTE tmp = di[0];
 			FreeObjectInList(&objectHead_ghosts, dl);
 			dl = tmp;
-			data_B68--;
-			data_348++;
+			numGhosts--;
+			numGhostsKilled++;
 			continue;
 		}
 		bx_si = 0x920;
@@ -1868,7 +1867,7 @@ void UpdateGenerators()
 			BYTE data_C90 = data_34A[0];
 			FreeObjectInList(&objectHead_generators, data_C8F);
 			data_C8F = data_C90;
-			data_B65--;
+			numGeneratorsKilled--;
 			continue;
 		}
 		main_E2A();
@@ -1880,7 +1879,7 @@ void UpdateGenerators()
 			data_34A[4] = 5;
 		else
 			data_34A[4] = (data_B69 >> (frame/0x100 + 1)) + 5;
-		if (GetRandomMasked(0x1F >> (numGenerators + 1 - data_B65)))
+		if (GetRandomMasked(0x1F >> (numGenerators + 1 - numGeneratorsKilled)))
 			goto main_1251;
 		data_34C = data_1112;
 		BYTE data_C91 = data_34A[2] + 2;
@@ -1889,12 +1888,12 @@ void UpdateGenerators()
 		BYTE data_C92 = data_34A[3];
 		if (main_CED(data_C92, data_C91))
 			goto main_1251;
-		if (data_B64 + data_B68 < maxSnipes)
+		if (numSnipes + numGhosts < maxSnipes)
 		{
 			BYTE data_C90 = CreateNewObject();
 			if (!data_C90)
 				goto main_1251;
-			data_B64++;
+			numSnipes++;
 			data_C8F = data_34A[0];
 			data_34A = &objects[data_C90 * 8];
 			data_34A[0] = objectHead_snipes;
@@ -2000,7 +1999,7 @@ bool main_1AB0() // returns true if the match has been lost
 	if (data_C73)
 	{
 		keyboard_state = PollKeyboard();
-		if (data_B66 >= numLives)
+		if (numPlayerDeaths >= numLives)
 		{
 			EraseBottomTwoLines();
 			COORD pos;
@@ -2076,7 +2075,7 @@ main_1B8F:
 main_1BEE:
 	FreeObjectInList(objects, OBJECT_PLAYER); // explode the player
 	data_C73 = true;
-	data_B66++;
+	numPlayerDeaths++;
 	return false;
 main_1C03:
 	keyboard_state = PollKeyboard();

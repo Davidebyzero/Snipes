@@ -292,7 +292,7 @@ BYTE snipeShootingAccuracy, ghostBitingAccuracy, maxSnipes, numGeneratorsAtStart
 BYTE data_2AA;
 WORD frame;
 static bool data_C75, data_C73, data_C72, data_CBF;
-static BYTE lastHUD_numGhosts, lastHUD_numGeneratorsKilled, lastHUD_numSnipes, lastHUD_numPlayerDeaths, objectHead_free, objectHead_bullets, objectHead_explosions, objectHead_ghosts, objectHead_snipes, objectHead_generators, numGeneratorsKilled, numGhosts, numBullets, numPlayerDeaths, numSnipes, data_C74, data_DF0 = 0xFF, data_DF1, data_C96, data_B69, data_C77, data_C78;
+static BYTE lastHUD_numGhosts, lastHUD_numGeneratorsKilled, lastHUD_numSnipes, lastHUD_numPlayerDeaths, objectHead_free, objectHead_bullets, objectHead_explosions, objectHead_ghosts, objectHead_snipes, objectHead_generators, numGenerators, numGhosts, numBullets, numPlayerDeaths, numSnipes, data_C74, data_DF0 = 0xFF, data_DF1, data_C96, data_B69, data_C77, data_C78;
 static WORD lastHUD_numGhostsKilled, lastHUD_numSnipesKilled, numGhostsKilled, numSnipesKilled, data_1CA, data_1CC, data_B5C;
 static SHORT lastHUD_score, score;
 BYTE *currentObject;
@@ -875,7 +875,7 @@ void CreateGeneratorsAndPlayer()
 		currentObject[4] = 1;
 		PlotObjectToMaze();
 	}
-	numGeneratorsKilled = numGeneratorsAtStart;
+	numGenerators = numGeneratorsAtStart;
 	numGhostsKilled = 0;
 	numGhosts = 0;
 	numBullets = 0;
@@ -915,10 +915,10 @@ bool updateHUD() // returns true if the match has been won
 		outputNumber(0x13, 0, 4, 0, 11, lastHUD_numSnipesKilled = numSnipesKilled);
 	if (lastHUD_numGhostsKilled != numGhostsKilled)
 		outputNumber(0x13, 0, 4, 0, 20, lastHUD_numGhostsKilled = numGhostsKilled);
-	if (lastHUD_numGeneratorsKilled != numGeneratorsKilled)
+	if (lastHUD_numGeneratorsKilled != numGenerators)
 	{
-		outputNumber(0x17, 0, 2, 1,  3, lastHUD_numGeneratorsKilled = numGeneratorsKilled);
-		outputNumber(0x13, 0, 2, 0,  3, numGeneratorsAtStart - numGeneratorsKilled);
+		outputNumber(0x17, 0, 2, 1,  3, lastHUD_numGeneratorsKilled = numGenerators);
+		outputNumber(0x13, 0, 2, 0,  3, numGeneratorsAtStart - numGenerators);
 	}
 	if (lastHUD_numSnipes != numSnipes)
 		outputNumber(0x17, 0, 3, 1, 12, lastHUD_numSnipes = numSnipes);
@@ -949,7 +949,7 @@ bool updateHUD() // returns true if the match has been won
 	}
 	outputNumber(0x17, 0, 5, 1, 34, frame); // Time
 
-	if (numSnipes || numGeneratorsKilled || numGhosts)
+	if (numSnipes || numGenerators || numGhosts)
 		return false;
 
 	EraseBottomTwoLines();
@@ -1806,7 +1806,7 @@ void UpdateGhosts()
 	}
 }
 
-bool main_EB9()
+bool IsObjectTaggedToExplode()
 {
 	BYTE data_C89 = ((BYTE*)currentSprite)[0];
 	BYTE data_C8A = ((BYTE*)currentSprite)[1];
@@ -1866,12 +1866,12 @@ void UpdateGenerators()
 			currentObject[5] = 0;
 		currentSprite = data_10A2[currentObject[5]];
 		(WORD&)currentObject[6] = PointerToFakePointer(currentSprite);
-		if (main_EB9())
+		if (IsObjectTaggedToExplode())
 		{
 			BYTE data_C90 = currentObject[0];
 			FreeObjectInList(&objectHead_generators, data_C8F);
 			data_C8F = data_C90;
-			numGeneratorsKilled--;
+			numGenerators--;
 			continue;
 		}
 		main_E2A();
@@ -1883,7 +1883,7 @@ void UpdateGenerators()
 			currentObject[4] = 5;
 		else
 			currentObject[4] = 5 + (data_B69 >> (frame/0x100 + 1));
-		if (GetRandomMasked(0xF >> (numGeneratorsAtStart - numGeneratorsKilled)))
+		if (GetRandomMasked(0xF >> (numGeneratorsAtStart - numGenerators)))
 			goto main_1251;
 		currentSprite = data_1112;
 		BYTE data_C91 = currentObject[2] + 2;
@@ -2026,11 +2026,11 @@ bool main_1AB0() // returns true if the match has been lost
 		{
 			keyboard_state = PollKeyboard();
 			objects[OBJECT_PLAYER * 8 + 5] = 2;
-			if (main_EB9())
+			if (IsObjectTaggedToExplode())
 				goto main_1BEE;
 			goto main_1B3C;
 		}
-		if (main_EB9())
+		if (IsObjectTaggedToExplode())
 			goto main_1BEE;
 		return false;
 	}

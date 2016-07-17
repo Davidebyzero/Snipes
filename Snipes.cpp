@@ -741,7 +741,7 @@ WORD PointerToFakePointer(const WORD *ptr)
 	return 0;
 }
 
-static const BYTE data_11E8[] = {
+static const bool data_11E8[] = {
 	0,1,0,0,1,0,0,1,0,0,1,0,0,1,0,0,1,0,0,1,0,0,1,0,0,1,0,0,1,0,0,1,0,0,1,0,0,1,0,0,1,0,
 	0,1,0,0,1,0,0,1,0,0,1,0,0,1,0,0,1,0,0,1,0,0,1,0,0,1,0,0,1,0,0,1,0,0,1,0,0,1,0,0,1,0,
 	0,1,0,0,1,0,0,1,0,0,1,0,0,1,0,0,1,0,0,1,0,0,1,0,0,1,0,0,1,0,0,1,0,0,1,0,0
@@ -1933,7 +1933,7 @@ bool main_198A()
 	{
 	case 1:
 		main_1A7B(1);
-		if (!(data_11E8[data_34A[3]] & 1))
+		if (!data_11E8[data_34A[3]])
 			goto main_1A5E;
 		if (main_1A7B(1))
 			goto main_1A5E;
@@ -1943,7 +1943,7 @@ bool main_198A()
 	case 3:
 		if (main_1A7B(2))
 			goto main_1A5A;
-		if (data_11E8[data_34A[3]] & 1)
+		if (data_11E8[data_34A[3]])
 			main_1A7B(1);
 		goto main_1A5A;
 	case 4:
@@ -1952,7 +1952,7 @@ bool main_198A()
 	case 5:
 		if (main_1A7B(2))
 			goto main_1A2B;
-		if (!(data_11E8[data_34A[3]] & 1))
+		if (!data_11E8[data_34A[3]])
 			goto main_1A2B;
 		main_1A7B(3);
 		// fall through
@@ -1962,7 +1962,7 @@ bool main_198A()
 		goto main_1A64;
 	case 7:
 		main_1A7B(3);
-		if (!(data_11E8[data_34A[3]] & 1))
+		if (!data_11E8[data_34A[3]])
 			goto main_1A5E;
 		if (main_1A7B(3))
 			goto main_1A5E;

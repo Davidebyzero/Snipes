@@ -1712,7 +1712,7 @@ void UpdateGhosts()
 			FreeObjectInList(&objectHead_ghosts, dl);
 			dl = tmp;
 			data_B68--;
-			data_348--;
+			data_348++;
 			continue;
 		}
 		bx_si = 0x920;

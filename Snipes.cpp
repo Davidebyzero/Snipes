@@ -1572,21 +1572,17 @@ void UpdateSnipes()
 			WORD dummy;
 			di[4] = main_2381(di, dummy);
 		}
+		for (Uint count=8; count; count--)
 		{
-			WORD cx = 8;
-			do
-			{
-				MoveObject_retval result = MoveObject(di);
-				if (!result.al)
-					break;
-				BYTE al = di[4];
-				if (di[1] & 1)
-					al = (al - 1) & 7;
-				else
-					al = (al + 1) & 7;
-				di[4] = al;
-			}
-			while (--cx);
+			MoveObject_retval result = MoveObject(di);
+			if (!result.al)
+				break;
+			BYTE al = di[4];
+			if (di[1] & 1)
+				al = (al - 1) & 7;
+			else
+				al = (al + 1) & 7;
+			di[4] = al;
 		}
 		(WORD&)di[6] = PointerToFakePointer(data_1130[di[4]]);
 	main_2021:

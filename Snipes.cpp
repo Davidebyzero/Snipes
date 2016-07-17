@@ -1489,59 +1489,47 @@ void UpdateSnipes()
 	while (dl)
 	{
 		BYTE *di = &objects[dl * 8];
-		WORD *bx_si = &maze[di[3] * MAZE_WIDTH + di[2]];
-		if ((BYTE&)bx_si[0] == 0xB2)
-			goto main_1F15;
-		if (di[2] >= MAZE_WIDTH-1)
-			goto main_1F06;
-		if ((BYTE&)bx_si[1] == 0xB2)
-			goto main_1F27;
+		WORD *bx = &maze[di[3] * MAZE_WIDTH];
+		WORD * leftPart = &bx[di[2]];
+		WORD *rightPart = di[2] >= MAZE_WIDTH-1 ? &bx[0] : leftPart + 1;
+		WORD *ghostPart;
+		if ((BYTE&)*leftPart == 0xB2)
+		{
+			*leftPart = 0x920;
+			ghostPart = rightPart;
+			goto main_1F33;
+		}
+		if ((BYTE&)*rightPart == 0xB2)
+		{
+			*rightPart = 0x920;
+			ghostPart = leftPart;
+			goto main_1F33;
+		}
 		if (--di[5])
 		{
 			dl = di[0];
 			continue;
 		}
 		goto main_1F84;
-	main_1F06:
-		if ((BYTE&)bx_si[-(MAZE_WIDTH-1)] == 0xB2)
-			goto main_1F27;
-		if (--di[5])
-		{
-			dl = di[0];
-			continue;
-		}
-		goto main_1F8F;
-	main_1F15:
-		bx_si[0] = 0x920;
-		if (di[2] < MAZE_WIDTH-1)
-			bx_si++;
-		else
-			bx_si -= MAZE_WIDTH-1;
-		goto main_1F33;
-	main_1F27:
-		bx_si[0] = 0x920;
-		if (di[2])
-			bx_si--;
-		else
-			bx_si += MAZE_WIDTH-1;
 	main_1F33:
 		if (!enableGhostSnipes)
 			goto main_1FB9;
-		if ((BYTE&)bx_si[0] != 0x01)
+		if ((BYTE&)*ghostPart != 0x01)
 			goto main_1FB9;
-		bx_si[0] = 0x502;
-		di[2] = bx_si - &maze[di[3] * MAZE_WIDTH];
-		BYTE *bx = &objectHead_snipes;
-		BYTE *si;
-		do
+		*ghostPart = 0x502;
+		di[2] = ghostPart - bx;
+
+		BYTE *prevObject;
+		for (BYTE *objectInList = &objectHead_snipes;;)
 		{
-			si = bx;
-			bx = &objects[*bx * 8];
+			prevObject = objectInList;
+			objectInList = &objects[*objectInList * 8];
+			if (objectInList == di)
+				break;
 		}
-		while (bx != di);
 
 		{
-			BYTE a = si[0] = di[0];
+			BYTE a = prevObject[0] = di[0];
 			{BYTE tmp = objectHead_ghosts; objectHead_ghosts = dl; dl = tmp;}
 			di[0] = dl;
 			dl = a;
@@ -1553,12 +1541,8 @@ void UpdateSnipes()
 		data_B68++;
 		continue;
 	main_1F84:
-		bx_si[1] = 0x920;
-		goto main_1F97;
-	main_1F8F:
-		bx_si[-(MAZE_WIDTH-1)] = 0x920;
-	main_1F97:
-		bx_si[0] = 0x920;
+		* leftPart = 0x920;
+		*rightPart = 0x920;
 		if (GetRandomMasked(3) == 0)
 			goto main_1FCF;
 		{

@@ -286,7 +286,7 @@ BYTE snipeShootingAccuracy, ghostBitingAccuracy, maxSnipes, numGenerators, numLi
 BYTE data_2AA;
 WORD frame;
 static bool data_C75, data_C73, data_C72, data_CBF;
-static BYTE data_2B4, data_2B3, data_2B2, data_2C0, data_C6C, data_C6D, data_C6F, data_C71, data_C6E, data_C70, data_B65, data_B68, data_B67, data_B66, data_B64, data_C74, data_DF0 = 0xFF, data_DF1, data_C96, data_B69, data_C77, data_C78;
+static BYTE data_2B4, data_2B3, data_2B2, data_2C0, objectHead_free, objectHead_bullets, objectHead_explosions, objectHead_ghosts, objectHead_snipes, objectHead_generators, data_B65, data_B68, data_B67, data_B66, data_B64, data_C74, data_DF0 = 0xFF, data_DF1, data_C96, data_B69, data_C77, data_C78;
 static WORD data_290, data_28E, data_348, data_346, data_1CA, data_1CC, data_B5C;
 static SHORT data_292, data_34E;
 BYTE *data_34A;
@@ -296,8 +296,11 @@ const WORD *data_34C;
 
 static BYTE data_B6C[MAX_OBJECTS];
 
-const size_t data_350_size = 8 * 40;
-static BYTE data_350[8 * MAX_OBJECTS];
+static BYTE objects[8 * MAX_OBJECTS];
+
+#define OBJECT_PLAYER          0x00
+#define OBJECT_LASTFREE        0xFD
+#define OBJECT_PLAYEREXPLOSION 0xFE
 
 static WORD maze[MAZE_WIDTH * MAZE_HEIGHT];
 
@@ -377,6 +380,8 @@ void outputHUD()
 	data_292 = -1;
 }
 
+#define MAZE_SCRATCH_BUFFER_SIZE 320
+
 void CreateMaze_helper(SHORT &data_1E0, BYTE &data_2AF)
 {
 	switch (data_2AF)
@@ -384,12 +389,12 @@ void CreateMaze_helper(SHORT &data_1E0, BYTE &data_2AF)
 	case 0:
 		data_1E0 -= 0x10;
 		if (data_1E0 < 0)
-			data_1E0 += data_350_size;
+			data_1E0 += MAZE_SCRATCH_BUFFER_SIZE;
 		break;
 	case 1:
 		data_1E0 += 0x10;
-		if (data_1E0 >= data_350_size)
-			data_1E0 -= data_350_size;
+		if (data_1E0 >= MAZE_SCRATCH_BUFFER_SIZE)
+			data_1E0 -= MAZE_SCRATCH_BUFFER_SIZE;
 		break;
 	case 2:
 		if ((data_1E0 & 0xF) == 0)
@@ -411,16 +416,18 @@ void CreateMaze()
 	static WORD data_1DE, data_1E0, data_1E2, data_1E4, data_1E6, data_1EA;
 	static BYTE data_2AF, data_2B0;
 
-	memset(data_350, 0xF, data_350_size);
-	data_350[0] = 0xE;
-	data_350[1] = 0xD;
+	BYTE (&mazeScratchBuffer)[MAZE_SCRATCH_BUFFER_SIZE] = (BYTE(&)[MAZE_SCRATCH_BUFFER_SIZE])objects;
+
+	memset(mazeScratchBuffer, 0xF, MAZE_SCRATCH_BUFFER_SIZE);
+	mazeScratchBuffer[0] = 0xE;
+	mazeScratchBuffer[1] = 0xD;
 	data_1EA = 0x13E;
 
 main_283:
 	if (!data_1EA)
 		goto main_372;
-	data_1DE = GetRandomRanged<data_350_size>();
-	if (data_350[data_1DE] != 0xF)
+	data_1DE = GetRandomRanged<MAZE_SCRATCH_BUFFER_SIZE>();
+	if (mazeScratchBuffer[data_1DE] != 0xF)
 		goto main_283;
 	data_1E2 = GetRandomMasked(3);
 	data_1E4 = 0;
@@ -431,7 +438,7 @@ main_283:
 		data_2AF = data_1E2 & 3;
 		data_1E0 = data_1DE;
 		CreateMaze_helper((SHORT&)data_1E0, data_2AF);
-		if (data_350[data_1E0] != 0xF)
+		if (mazeScratchBuffer[data_1E0] != 0xF)
 			break;
 		data_1E2++;
 		data_1E4++;
@@ -439,8 +446,8 @@ main_283:
 	data_1EA--;
 	static BYTE data_EA3[] = {8, 4, 2, 1};
 	static BYTE data_EA7[] = {4, 8, 1, 2};
-	data_350[data_1E0] ^= data_EA7[data_2AF];
-	data_350[data_1DE] ^= data_EA3[data_2AF];
+	mazeScratchBuffer[data_1E0] ^= data_EA7[data_2AF];
+	mazeScratchBuffer[data_1DE] ^= data_EA3[data_2AF];
 	data_1E2 = data_1DE;
 main_30E:
 	data_2AF = (BYTE)GetRandomMasked(3);
@@ -449,10 +456,10 @@ main_30E:
 	for (;;)
 	{
 		CreateMaze_helper((SHORT&)data_1E0, data_2AF);
-		if (!data_2B0 || data_350[data_1E0] != 0xF)
+		if (!data_2B0 || mazeScratchBuffer[data_1E0] != 0xF)
 			break;
-		data_350[data_1E0] ^= data_EA7[data_2AF];
-		data_350[data_1E2] ^= data_EA3[data_2AF];
+		mazeScratchBuffer[data_1E0] ^= data_EA7[data_2AF];
+		mazeScratchBuffer[data_1E2] ^= data_EA3[data_2AF];
 		data_1EA--;
 		data_2B0--;
 		data_1E2 = data_1E0;
@@ -463,11 +470,11 @@ main_30E:
 main_372:
 	for (data_1DE = 1; data_1DE <= 0x40; data_1DE++)
 	{
-		data_1E0 = GetRandomRanged<data_350_size>();
+		data_1E0 = GetRandomRanged<MAZE_SCRATCH_BUFFER_SIZE>();
 		data_2AF = (BYTE)GetRandomMasked(3);
-		data_350[data_1E0] &= ~data_EA3[data_2AF];
+		mazeScratchBuffer[data_1E0] &= ~data_EA3[data_2AF];
 		CreateMaze_helper((SHORT&)data_1E0, data_2AF);
-		data_350[data_1E0] &= ~data_EA7[data_2AF];
+		mazeScratchBuffer[data_1E0] &= ~data_EA7[data_2AF];
 	}
 	for (Uint i=0; i<_countof(maze); i++)
 		maze[i] = 0x920;
@@ -477,10 +484,10 @@ main_372:
 	{
 		for (data_1E0 = 0; data_1E0 < MAZE_WIDTH/MAZE_CELL_WIDTH; data_1E0++)
 		{
-			if (data_350[data_1E2] & 8)
+			if (mazeScratchBuffer[data_1E2] & 8)
 				for (Uint i=0; i<MAZE_CELL_WIDTH-1; i++)
 					maze[data_1E4 + 1 + i] = 0x9CD;
-			if (data_350[data_1E2] & 2)
+			if (mazeScratchBuffer[data_1E2] & 2)
 			{
 				data_1E6 = data_1E4 + MAZE_WIDTH;
 				for (WORD data_1E8 = 1; data_1E8 <= MAZE_CELL_HEIGHT-1; data_1E8++)
@@ -494,12 +501,12 @@ main_372:
 			else
 			{
 				if (!data_1E0)
-					data_1E6 = data_350_size - 1;
+					data_1E6 = MAZE_SCRATCH_BUFFER_SIZE - 1;
 				else
-					data_1E6 = data_1E2 + data_350_size - 0x11;
+					data_1E6 = data_1E2 + MAZE_SCRATCH_BUFFER_SIZE - 0x11;
 			}
 			static BYTE data_EAB[] = {0x20, 0xBA, 0xBA, 0xBA, 0xCD, 0xBC, 0xBB, 0xB9, 0xCD, 0xC8, 0xC9, 0xCC, 0xCD, 0xCA, 0xCB, 0xCE};
-			maze[data_1E4] = data_EAB[(data_350[data_1E2] & 0xA) | (data_350[data_1E6] & 0x5)] + 0x900;
+			maze[data_1E4] = data_EAB[(mazeScratchBuffer[data_1E2] & 0xA) | (mazeScratchBuffer[data_1E6] & 0x5)] + 0x900;
 			data_1E4 += MAZE_CELL_WIDTH;
 			data_1E2++;
 		}
@@ -507,12 +514,12 @@ main_372:
 	}
 }
 
-BYTE main_CB0()
+BYTE CreateNewObject()
 {
-	BYTE data_C76 = data_C6C;
-	if (data_C76)
-		data_C6C = data_350[data_C76 * 8];
-	return data_C76;
+	BYTE object = objectHead_free;
+	if (object)
+		objectHead_free = objects[object * 8];
+	return object;
 }
 
 #define SPRITE_SIZE(x,y) (((x)<<8)+(y))
@@ -758,10 +765,10 @@ static const BYTE data_128C[] = {1, 2, 0x18, 0x1A, 0x19, 0x1B};
 static const BYTE data_1292[] = {0xB9, 0xBA, 0xBB, 0xBC, 0xC8, 0xC9, 0xCA, 0xCB, 0xCC, 0xCD, 0xCE};
 static const BYTE data_129D[] = {1, 2, 0x18, 0x1A, 0x19, 0x1B};
 
-void main_CCF(BYTE arg)
+void FreeObject(BYTE object)
 {
-	data_350[arg * 8] = data_C6C;
-	data_C6C = arg;
+	objects[object * 8] = objectHead_free;
+	objectHead_free = object;
 }
 
 bool main_CED(WORD arg1, BYTE arg2)
@@ -816,21 +823,21 @@ void main_F77()
 
 void CreateGenerators()
 {
-	for (WORD data_B58 = 0; data_B58 <= 0xFC; data_B58++)
-		data_350[(data_B58 + 1) * 8] = data_B58 + 2;
-	data_350[2024] = 0;
-	data_C6C = 1;
-	data_C6D = 0;
-	data_C6F = 0;
-	data_C71 = 0;
-	data_C6E = 0;
-	data_C70 = 0;
+	for (WORD data_B58 = 1; data_B58 <= OBJECT_LASTFREE; data_B58++)
+		objects[data_B58 * 8] = data_B58 + 1;
+	objects[OBJECT_LASTFREE * 8] = 0;
+	objectHead_free = 1;
+	objectHead_bullets = 0;
+	objectHead_explosions = 0;
+	objectHead_ghosts = 0;
+	objectHead_snipes = 0;
+	objectHead_generators = 0;
 	for (WORD data_B58 = 1; data_B58 <= numGenerators; data_B58++)
 	{
-		BYTE data_B5A = main_CB0();
-		data_350[data_B5A * 8] = data_C70;
-		data_C70 = data_B5A;
-		data_34A = &data_350[data_B5A * 8];
+		BYTE data_B5A = CreateNewObject();
+		objects[data_B5A * 8] = objectHead_generators;
+		objectHead_generators = data_B5A;
+		data_34A = &objects[data_B5A * 8];
 		(WORD&)data_34A[6] = FAKE_POINTER_data_1002;
 		data_34C = data_1002;
 		main_F77();
@@ -851,15 +858,15 @@ void CreateGenerators()
 	data_C74 = 0;
 	data_C73 = false;
 	data_C72 = false;
-	(WORD&)data_350[6] = FAKE_POINTER_data_10E2;
+	(WORD&)objects[OBJECT_PLAYER * 8 + 6] = FAKE_POINTER_data_10E2;
 	data_34C = data_10E2;
-	data_34A = data_350;
+	data_34A = objects;
 	main_F77();
 	PlotObjectToMaze();
-	data_1CA = data_350[2];
-	data_1CC = data_350[3];
-	data_350[5] = 1;
-	data_350[1] = 1;
+	data_1CA = objects[OBJECT_PLAYER * 8 + 2];
+	data_1CC = objects[OBJECT_PLAYER * 8 + 3];
+	objects[OBJECT_PLAYER * 8 + 5] = 1;
+	objects[OBJECT_PLAYER * 8 + 1] = 1;
 }
 
 void SetSoundEffectState(BYTE arg1, BYTE arg2)
@@ -930,20 +937,20 @@ bool updateHUD() // returns true if the match has been won
 	return true;
 }
 
-void main_1C28(BYTE arg)
+void ExplodeObject(BYTE arg)
 {
-	if (!arg)
+	if (!arg) // explode the player (and don't overwrite the player object)
 	{
-		arg = 0xFE;
-		data_350[0x7F2] = data_350[2];
-		data_350[0x7F3] = data_350[3];
-		data_350[0x7F4] = 0x16;
-		(WORD&)data_350[0x7F6] = FAKE_POINTER_data_12C2;
+		arg = OBJECT_PLAYEREXPLOSION;
+		objects[OBJECT_PLAYEREXPLOSION * 8 + 2] = objects[2];
+		objects[OBJECT_PLAYEREXPLOSION * 8 + 3] = objects[3];
+		objects[OBJECT_PLAYEREXPLOSION * 8 + 4] = 0x16;
+		(WORD&)objects[OBJECT_PLAYEREXPLOSION * 8 + 6] = FAKE_POINTER_data_12C2;
 		data_C72 = true;
 	}
-	data_34A = &data_350[arg * 8];
-	data_34A[0] = data_C6F;
-	data_C6F = arg;
+	data_34A = &objects[arg * 8];
+	data_34A[0] = objectHead_explosions;
+	objectHead_explosions = arg;
 	const WORD *data_CC4 = FakePointerToPointer((WORD&)data_34A[6]);
 	BYTE data_CC8 = ((BYTE*)data_CC4)[0];
 	BYTE data_CC9 = ((BYTE*)data_CC4)[1];
@@ -975,40 +982,40 @@ void main_1C28(BYTE arg)
 	PlotObjectToMaze();
 }
 
-void main_1D04(BYTE *arg1, BYTE arg2)
+void FreeObjectInList_worker(BYTE *objectHead, BYTE object)
 {
-	BYTE data_CCA = *arg1;
-	if (arg2 == data_CCA)
+	BYTE data_CCA = *objectHead;
+	if (object == data_CCA)
 	{
-		*arg1 = data_350[arg2 * 8];
+		*objectHead = objects[object * 8];
 		return;
 	}
 	for (;;)
 	{
-		BYTE data_CCB = data_350[data_CCA * 8];
+		BYTE data_CCB = objects[data_CCA * 8];
 		if (!data_CCB)
 			return;
-		if (arg2 == data_CCB)
+		if (object == data_CCB)
 			break;
 		data_CCA = data_CCB;
 	}
-	data_350[data_CCA * 8] = data_350[arg2 * 8];
+	objects[data_CCA * 8] = objects[object * 8];
 }
 
-void main_1E8F(BYTE *arg1, BYTE arg2)
+void FreeObjectInList(BYTE *objectHead, BYTE object)
 {
-	if (!arg2)
+	if (!object) // explode the player (and don't overwrite the player object)
 	{
-		main_1C28(0);
+		ExplodeObject(object);
 		return;
 	}
-	main_1D04(arg1, arg2);
-	if (arg1 != &data_C6D)
+	FreeObjectInList_worker(objectHead, object);
+	if (objectHead != &objectHead_bullets)
 	{
-		main_1C28(arg2);
+		ExplodeObject(object);
 		return;
 	}
-	main_CCF(arg2);
+	FreeObject(object);
 }
 
 bool main_154F(BYTE arg)
@@ -1051,21 +1058,21 @@ bool main_154F(BYTE arg)
 	return (BYTE&)maze[data_B5C] != ' ';
 }
 
-void main_125C()
+void UpdateBullets()
 {
 	BYTE data_C94 = 0;
-	BYTE data_C93 = data_C6D;
+	BYTE data_C93 = objectHead_bullets;
 	for (;;)
 	{
 		if (!data_C93)
 			return;
-		data_34A = &data_350[data_C93 * 8];
+		data_34A = &objects[data_C93 * 8];
 		data_B5C = data_34A[3] * MAZE_WIDTH + data_34A[2];
 		if ((BYTE&)maze[data_B5C] == 0xB2)
 		{
 			BYTE data_C95 = data_34A[0];
 			maze[data_B5C] = 0x920;
-			main_1E8F(&data_C6D, data_C93);
+			FreeObjectInList(&objectHead_bullets, data_C93);
 			data_B67--;
 			data_C93 = data_C95;
 			continue;
@@ -1155,11 +1162,11 @@ void main_125C()
 	main_150E:
 		data_B67--;
 		if (!data_C94)
-			data_C6D = data_34A[0];
+			objectHead_bullets = data_34A[0];
 		else
-			data_350[data_C94 * 8] = data_34A[0];
+			objects[data_C94 * 8] = data_34A[0];
 		BYTE data_C95 = data_34A[0];
-		main_CCF(data_C93);
+		FreeObject(data_C93);
 		data_C93 = data_C95;
 	}
 }
@@ -1338,7 +1345,7 @@ main_2343:
 	return retval;
 }
 
-void main_1613(BYTE arg)
+void fireBullet(BYTE arg)
 {
 	BYTE data_C97 = data_34A[4];
 	BYTE data_C98 = data_34A[2];
@@ -1420,26 +1427,26 @@ main_17B4:
 	maze[data_B5E] = 0x0FB2;
 	goto main_1899;
 main_17C3:
-	BYTE data_C9B = main_CB0();
+	BYTE data_C9B = CreateNewObject();
 	if (!data_C9B || data_B67 > 50)
 		goto main_1899;
 	data_B67++;
 	BYTE *data_B62 = data_34A;
-	data_34A = &data_350[data_C9B * 8];
-	if (!data_C6D)
+	data_34A = &objects[data_C9B * 8];
+	if (!objectHead_bullets)
 	{
-		data_C6D = data_C9B;
+		objectHead_bullets = data_C9B;
 		goto main_182D;
 	}
-	BYTE data_C9A = data_C6D;
+	BYTE data_C9A = objectHead_bullets;
 	for (;;)
 	{
-		if (BYTE tmp = data_350[data_C9A * 8])
+		if (BYTE tmp = objects[data_C9A * 8])
 			data_C9A = tmp;
 		else
 			break;
 	}
-	data_350[data_C9A * 8] = data_C9B;
+	objects[data_C9A * 8] = data_C9B;
 main_182D:
 	data_34A[0] = 0;
 	if (arg < 6)
@@ -1469,17 +1476,17 @@ BYTE main_18A3()
 		return 0;
 	if (GetRandomMasked(0xFFFF >> (15 - data_C9C)))
 		return 0;
-	main_1613(6);
+	fireBullet(6);
 	SetSoundEffectState(0, 1);
 	return 0xFF;
 }
 
-void main_1EC1()
+void UpdateSnipes()
 {
-	BYTE dl = data_C6E;
+	BYTE dl = objectHead_snipes;
 	while (dl)
 	{
-		BYTE *di = &data_350[dl * 8];
+		BYTE *di = &objects[dl * 8];
 		WORD *bx_si = &maze[di[3] * MAZE_WIDTH + di[2]];
 		if ((BYTE&)bx_si[0] == 0xB2)
 			goto main_1F15;
@@ -1524,18 +1531,18 @@ void main_1EC1()
 			goto main_1FB9;
 		*bx_si = 0x502;
 		di[2] = bx_si - &maze[di[3] * MAZE_WIDTH];
-		BYTE *bx = &data_C6E;
+		BYTE *bx = &objectHead_snipes;
 		BYTE *si;
 		do
 		{
 			si = bx;
-			bx = &data_350[*bx * 8];
+			bx = &objects[*bx * 8];
 		}
 		while (bx != di);
 
 		{
 			BYTE a = si[0] = di[0];
-			{BYTE tmp = data_C71; data_C71 = dl; dl = tmp;}
+			{BYTE tmp = objectHead_ghosts; objectHead_ghosts = dl; dl = tmp;}
 			di[0] = dl;
 			dl = a;
 		}
@@ -1571,7 +1578,7 @@ void main_1EC1()
 	main_1FB9:
 		{
 			BYTE tmp = di[0];
-			main_1E8F(&data_C6E, dl);
+			FreeObjectInList(&objectHead_snipes, dl);
 			dl = tmp;
 		}
 		data_B64--;
@@ -1687,12 +1694,12 @@ void main_1EC1()
 	}
 }
 
-void main_2124()
+void UpdateGhosts()
 {
-	BYTE dl = data_C71;
+	BYTE dl = objectHead_ghosts;
 	while (dl)
 	{
-		BYTE *di = &data_350[dl * 8];
+		BYTE *di = &objects[dl * 8];
 		WORD &bx_si = maze[di[3] * MAZE_WIDTH + di[2]];
 		if ((BYTE&)bx_si != 0xB2)
 		{
@@ -1706,7 +1713,7 @@ void main_2124()
 		{
 	main_2158:
 			BYTE tmp = di[0];
-			main_1E8F(&data_C71, dl);
+			FreeObjectInList(&objectHead_ghosts, dl);
 			dl = tmp;
 			data_B68--;
 			data_348--;
@@ -1854,12 +1861,12 @@ void main_E2A()
 	}
 }
 
-void main_10C9()
+void UpdateGenerators()
 {
-	BYTE data_C8F = data_C70;
+	BYTE data_C8F = objectHead_generators;
 	while (data_C8F)
 	{
-		data_34A = &data_350[data_C8F * 8];
+		data_34A = &objects[data_C8F * 8];
 		if (++data_34A[5] >= 15)
 			data_34A[5] = 0;
 		data_34C = data_10A2[data_34A[5]];
@@ -1867,7 +1874,7 @@ void main_10C9()
 		if (main_EB9())
 		{
 			BYTE data_C90 = data_34A[0];
-			main_1E8F(&data_C70, data_C8F);
+			FreeObjectInList(&objectHead_generators, data_C8F);
 			data_C8F = data_C90;
 			data_B65--;
 			continue;
@@ -1892,14 +1899,14 @@ void main_10C9()
 			goto main_1251;
 		if (data_B64 + data_B68 < maxSnipes)
 		{
-			BYTE data_C90 = main_CB0();
+			BYTE data_C90 = CreateNewObject();
 			if (!data_C90)
 				goto main_1251;
 			data_B64++;
 			data_C8F = data_34A[0];
-			data_34A = &data_350[data_C90 * 8];
-			data_34A[0] = data_C6E;
-			data_C6E = data_C90;
+			data_34A = &objects[data_C90 * 8];
+			data_34A[0] = objectHead_snipes;
+			objectHead_snipes = data_C90;
 			data_34A[2] = data_C91;
 			data_34A[3] = data_C92;
 			data_34A[4] = 2;
@@ -1916,18 +1923,18 @@ void main_10C9()
 
 bool main_1A7B(BYTE arg)
 {
-	data_350[4] = arg << 1;
+	objects[OBJECT_PLAYER * 8 + 4] = arg << 1;
 	main_227E_retval result = main_227E(data_34A);
 	if (result.al)
 		return data_CBF = true;
-	data_1CA = data_350[2] = data_C77;
-	data_1CC = data_350[3] = data_C78;
+	data_1CA = objects[OBJECT_PLAYER * 8 + 2] = data_C77;
+	data_1CC = objects[OBJECT_PLAYER * 8 + 3] = data_C78;
 	return false;
 }
 
 bool main_198A()
 {
-	BYTE data_CBE = data_350[4];
+	BYTE data_CBE = objects[OBJECT_PLAYER * 8 + 4];
 	data_CBF = false;
 	switch (data_CBE)
 	{
@@ -1979,7 +1986,7 @@ bool main_198A()
 	main_1A64:
 		if (!data_CBF)
 			PlotObjectToMaze();
-		data_350[4] = data_CBE;
+		objects[OBJECT_PLAYER * 8 + 4] = data_CBE;
 		return !data_CBF;
 	default:
 		__assume(0);
@@ -1988,7 +1995,7 @@ bool main_198A()
 
 bool main_1AB0() // returns true if the match has been lost
 {
-	data_34A = data_350;
+	data_34A = objects;
 	if (++data_C74 > 7)
 	{
 		data_C74 = 0;
@@ -2020,10 +2027,10 @@ bool main_1AB0() // returns true if the match has been lost
 	}
 	else
 	{
-		if (--data_350[5] == 0)
+		if (--objects[OBJECT_PLAYER * 8 + 5] == 0)
 		{
 			keyboard_state = PollKeyboard();
-			data_350[5] = 2;
+			objects[OBJECT_PLAYER * 8 + 5] = 2;
 			if (main_EB9())
 				goto main_1BEE;
 			goto main_1B3C;
@@ -2037,12 +2044,12 @@ main_1B3C:
 	static const BYTE data_CAE[] = {0, 2, 6, 0, 4, 3, 5, 0, 0, 1, 7, 0, 0, 0, 0, 0};
 	if (BYTE keyboardMove = keyboard_state & (KEYSTATE_MOVE_RIGHT | KEYSTATE_MOVE_LEFT | KEYSTATE_MOVE_DOWN | KEYSTATE_MOVE_UP))
 	{
-		data_350[4] = data_CAE[keyboardMove];
+		objects[OBJECT_PLAYER * 8 + 4] = data_CAE[keyboardMove];
 		if (!main_198A())
 			goto main_1B85;
 		if (!spacebar_state)
 			goto main_1B8F;
-		if (data_350[5] == 1)
+		if (objects[OBJECT_PLAYER * 8 + 5] == 1)
 		{
 			main_E2A();
 			if (!main_198A())
@@ -2052,7 +2059,7 @@ main_1B3C:
 				PlotObjectToMaze();
 			}
 		}
-		data_350[5] = 1;
+		objects[OBJECT_PLAYER * 8 + 5] = 1;
 		goto main_1B8F;
 	main_1B85:
 		if (enableElectricWalls)
@@ -2062,20 +2069,20 @@ main_1B3C:
 main_1B8F:
 	if (!spacebar_state && (keyboard_state & (KEYSTATE_FIRE_RIGHT | KEYSTATE_FIRE_LEFT | KEYSTATE_FIRE_DOWN | KEYSTATE_FIRE_UP)))
 	{
-		if (--data_350[1])
+		if (--objects[OBJECT_PLAYER * 8 + 1])
 			return false;
-		BYTE data_CC1 = data_350[4];
-		data_350[4] = data_CAE[keyboard_state >> 4];
-		main_1613(0);
+		BYTE data_CC1 = objects[OBJECT_PLAYER * 8 + 4];
+		objects[OBJECT_PLAYER * 8 + 4] = data_CAE[keyboard_state >> 4];
+		fireBullet(0);
 		SetSoundEffectState(0, 0);
-		data_350[4] = data_CC1;
-		data_350[1] = data_350[5] == 1 ? data_2AA<<1 : data_2AA;
+		objects[OBJECT_PLAYER * 8 + 4] = data_CC1;
+		objects[OBJECT_PLAYER * 8 + 1] = objects[OBJECT_PLAYER * 8 + 5] == 1 ? data_2AA<<1 : data_2AA;
 		return false;
 	}
-	data_350[1] = 1;
+	objects[OBJECT_PLAYER * 8 + 1] = 1;
 	return false;
 main_1BEE:
-	main_1E8F(data_350, 0);
+	FreeObjectInList(objects, 0); // explode the player
 	data_C73 = true;
 	data_B66++;
 	return false;
@@ -2083,20 +2090,20 @@ main_1C03:
 	keyboard_state = PollKeyboard();
 	data_C73 = false;
 	main_F77();
-	data_1CA = data_350[2];
-	data_1CC = data_350[3];
+	data_1CA = objects[OBJECT_PLAYER * 8 + 2];
+	data_1CC = objects[OBJECT_PLAYER * 8 + 3];
 	PlotObjectToMaze();
 	return false;
 }
 
-void main_1D64()
+void UpdateExplosions()
 {
-	BYTE al = data_C6F;
+	BYTE al = objectHead_explosions;
 main_1D6A:
 	BYTE data_CCC = al;
 	if (!al)
 		return;
-	BYTE *data_CC6 = data_34A = &data_350[al * 8];
+	BYTE *data_CC6 = data_34A = &objects[al * 8];
 	data_34C = FakePointerToPointer((WORD&)data_CC6[6]);
 	main_E2A();
 	BYTE data_CCE = (data_CC6[5] + 1) % 6;
@@ -2105,9 +2112,9 @@ main_1D6A:
 	data_CC6[5]++;
 	if (data_CC6[5] <= data_CCF)
 		goto main_1DF4;
-	main_1D04(&data_C6F, data_CCC);
+	FreeObjectInList_worker(&objectHead_explosions, data_CCC);
 	if (data_CCC != 0xFE)
-		main_CCF(data_CCC);
+		FreeObject(data_CCC);
 	else
 		data_C72 = 0;
 	goto main_1E87;
@@ -2336,15 +2343,15 @@ int main(int argc, char* argv[])
 				}
 			}
 
-			main_125C();
-			main_2124();
-			main_1EC1();
-			main_10C9();
+			UpdateBullets();
+			UpdateGhosts();
+			UpdateSnipes();
+			UpdateGenerators();
 
 			if (main_1AB0())
 				break;
 
-			main_1D64();
+			UpdateExplosions();
 			UpdateSound();
 			DrawViewport();
 		}

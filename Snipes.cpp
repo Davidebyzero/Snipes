@@ -280,7 +280,7 @@ static BYTE maxSnipesTable            ['9'-'1'+1] = { 10,  20,  30,  40,  60,  8
 static BYTE numGeneratorsTable        ['9'-'1'+1] = {  3,   3,   4,   4,   5,   5,   6,   8,  10};
 static BYTE numLivesTable             ['9'-'1'+1] = {  5,   5,   5,   5,   5,   4,   4,   3,   2};
 
-bool enableElectricWalls, enableGhostSnipes, skillThing7, enableRubberBullets;
+bool enableElectricWalls, enableGhostSnipes, generatorsResistSnipeBullets, enableRubberBullets;
 BYTE snipeShootingAccuracy, ghostBitingAccuracy, maxSnipes, numGenerators, numLives;
 
 BYTE data_2AA;
@@ -1145,7 +1145,7 @@ void UpdateBullets()
 				data_34E += 50;
 				goto main_149B;
 			}
-			if (skillThing7)
+			if (!generatorsResistSnipeBullets)
 				goto main_149B;
 			WORD find_this = maze[data_B5C];
 			if (wmemchr((wchar_t*)&data_1002[1], (wchar_t&)find_this, _countof(data_1002)-1) && (BYTE&)find_this != 0xFF)
@@ -1419,7 +1419,7 @@ void FireBullet(BYTE arg)
 	data_34E += 50;
 	goto main_17B4;
 main_1786:
-	if (skillThing7)
+	if (!generatorsResistSnipeBullets)
 		goto main_17B4;
 	if (wmemchr((wchar_t*)&data_1002[1], (wchar_t&)maze[data_B5E], _countof(data_1002)-1))
 		goto main_1899;
@@ -2269,15 +2269,15 @@ int main(int argc, char* argv[])
 	for (;;)
 	{
 		enableElectricWalls = skillLevelLetter >= 'M'-'A';
-		snipeShootingAccuracy = snipeShootingAccuracyTable[skillLevelLetter];
-		enableGhostSnipes     = enableGhostSnipesTable    [skillLevelLetter];
-		ghostBitingAccuracy   = ghostBitingAccuracyTable  [skillLevelLetter];
-		maxSnipes             = maxSnipesTable            [skillLevelNumber-1];
-		numGenerators         = numGeneratorsTable        [skillLevelNumber-1];
-		numLives              = numLivesTable             [skillLevelNumber-1];
-		skillThing7           = skillLevelLetter < 'W'-'A';
-		data_2AA              = 2;
-		enableRubberBullets   = rubberBulletTable [skillLevelLetter];
+		snipeShootingAccuracy        = snipeShootingAccuracyTable[skillLevelLetter];
+		enableGhostSnipes            = enableGhostSnipesTable    [skillLevelLetter];
+		ghostBitingAccuracy          = ghostBitingAccuracyTable  [skillLevelLetter];
+		maxSnipes                    = maxSnipesTable            [skillLevelNumber-1];
+		numGenerators                = numGeneratorsTable        [skillLevelNumber-1];
+		numLives                     = numLivesTable             [skillLevelNumber-1];
+		generatorsResistSnipeBullets = skillLevelLetter >= 'W'-'A';
+		data_2AA                     = 2;
+		enableRubberBullets          = rubberBulletTable [skillLevelLetter];
 
 		SetConsoleMode(output, 0);
 		cursorInfo.bVisible = FALSE;

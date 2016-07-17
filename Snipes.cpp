@@ -222,6 +222,8 @@ WORD GetRandomRanged()
 	mask |= mask >> 2;
 	mask |= mask >> 4;
 	mask |= mask >> 8;
+	if (mask == RANGE-1)
+		return GetRandomMasked(mask);
 	for (;;)
 	{
 		WORD number = GetRandomMasked(mask);
@@ -794,14 +796,14 @@ void FreeObject(BYTE object)
 	objectHead_free = object;
 }
 
-bool main_CED(WORD arg1, BYTE arg2)
+bool IsObjectLocationOccupied(WORD row, BYTE column)
 {
 	BYTE data_C79 = ((BYTE*)data_34C)[0];
 	BYTE data_C7A = ((BYTE*)data_34C)[1];
-	WORD data_B50 = (WORD)arg1 * MAZE_WIDTH;
+	WORD data_B50 = (WORD)row * MAZE_WIDTH;
 	for (BYTE data_C7B = 0; data_C7B < data_C79; data_C7B++)
 	{
-		BYTE data_C7D = arg2;
+		BYTE data_C7D = column;
 		for (BYTE data_C7C = 0; data_C7C < data_C7A; data_C7C++)
 		{
 			if ((BYTE&)maze[data_C7D + data_B50] != ' ')
@@ -840,8 +842,12 @@ void PlotObjectToMaze() // plots object data_34A with sprite data_34C
 
 void main_F77()
 {
-	data_34A[2] = GetRandomMasked(0xF) * 8 + 4;
-	while (main_CED(data_34A[3] = (BYTE)GetRandomRanged<0x14>() * 6 + 3, data_34A[2])) {}
+	do
+	{
+		data_34A[2] = (BYTE)GetRandomRanged<MAZE_WIDTH  / MAZE_CELL_WIDTH >() * MAZE_CELL_WIDTH  + MAZE_CELL_WIDTH /2;
+		data_34A[3] = (BYTE)GetRandomRanged<MAZE_HEIGHT / MAZE_CELL_HEIGHT>() * MAZE_CELL_HEIGHT + MAZE_CELL_HEIGHT/2;
+	}
+	while (IsObjectLocationOccupied(data_34A[3], data_34A[2]));
 }
 
 void CreateGenerators()
@@ -1423,7 +1429,7 @@ void FireBullet(BYTE bulletType)
 	}
 	const WORD *data_B60 = data_34C;
 	data_34C = data_1150;
-	if (!main_CED(data_C99, data_C98))
+	if (!IsObjectLocationOccupied(data_C99, data_C98))
 		goto main_17C3;
 	WORD data_B5E = data_C99 * MAZE_WIDTH + data_C98;
 	if (memchr(data_1292, (BYTE&)maze[data_B5E], _countof(data_1292)))
@@ -1884,7 +1890,7 @@ void UpdateGenerators()
 		if (data_C91  > MAZE_WIDTH - 1)
 			data_C91 -= MAZE_WIDTH - 1;
 		BYTE data_C92 = data_34A[3];
-		if (main_CED(data_C92, data_C91))
+		if (IsObjectLocationOccupied(data_C92, data_C91))
 			goto main_1251;
 		if (numSnipes + numGhosts < maxSnipes)
 		{

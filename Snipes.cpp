@@ -1624,7 +1624,7 @@ void UpdateSnipes()
 			goto main_209E;
 		if (!((BYTE*)&cx)[1] || !((BYTE*)&cx)[0])
 			goto main_2083;
-		if (abs((int)!((BYTE*)&cx)[0] * MAZE_CELL_HEIGHT - (int)!((BYTE*)&cx)[1] * MAZE_CELL_WIDTH) >= MAZE_CELL_WIDTH)
+		if (abs((int)((BYTE*)&cx)[0] * MAZE_CELL_HEIGHT - (int)((BYTE*)&cx)[1] * MAZE_CELL_WIDTH) >= MAZE_CELL_WIDTH)
 			goto main_20F4;
 		al = di[4];
 	main_2083:

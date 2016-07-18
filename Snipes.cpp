@@ -2060,12 +2060,12 @@ main_1B3C:
 	{
 		BYTE moveDirection = data_CAE[keyboardMove];
 		objects[OBJECT_PLAYER * 8 + 4] = moveDirection;
-		replayOutput = moveDirection;
+		replayOutput = moveDirection + 1;
 		if (!main_198A())
 			goto main_1B85;
 		if (!spacebar_state)
 			goto main_1B8F;
-		replayOutput += 8;
+		replayOutput += 0x80;
 		if (objects[OBJECT_PLAYER * 8 + 5] == 1)
 		{
 			main_E2A();
@@ -2087,7 +2087,7 @@ main_1B8F:
 	if (!spacebar_state && (keyboard_state & (KEYSTATE_FIRE_RIGHT | KEYSTATE_FIRE_LEFT | KEYSTATE_FIRE_DOWN | KEYSTATE_FIRE_UP)))
 	{
 		BYTE fireDirection = data_CAE[keyboard_state >> 4];
-		replayOutput += fireDirection << 4;
+		replayOutput += (fireDirection + 1) * 9;
 		if (--objects[OBJECT_PLAYER * 8 + 1])
 			return false;
 		BYTE data_CC1 = objects[OBJECT_PLAYER * 8 + 4];

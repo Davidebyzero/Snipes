@@ -2011,9 +2011,10 @@ bool main_198A()
 	}
 }
 
-bool main_1AB0(BYTE &replayOutput) // returns true if the match has been lost
+bool main_1AB0(bool playbackMode, BYTE &replayIO) // returns true if the match has been lost
 {
-	replayOutput = 0;
+	if (!playbackMode)
+		replayIO = 0;
 	currentObject = objects;
 	if (++data_C74 > 7)
 	{
@@ -2060,17 +2061,32 @@ bool main_1AB0(BYTE &replayOutput) // returns true if the match has been lost
 	}
 main_1B3C:
 	main_E2A();
+	BYTE moveDirection;
+	if (playbackMode)
+	{
+		spacebar_state = replayIO >> 7;
+		moveDirection = (replayIO & 0x7F) % 9;
+		if (moveDirection)
+		{
+			moveDirection--;
+			goto playback_move;
+		}
+	}
 	static const BYTE data_CAE[] = {0, 2, 6, 0, 4, 3, 5, 0, 0, 1, 7, 0, 0, 0, 0, 0};
 	if (BYTE keyboardMove = keyboard_state & (KEYSTATE_MOVE_RIGHT | KEYSTATE_MOVE_LEFT | KEYSTATE_MOVE_DOWN | KEYSTATE_MOVE_UP))
 	{
-		BYTE moveDirection = data_CAE[keyboardMove];
+		if (!playbackMode)
+			moveDirection = data_CAE[keyboardMove];
+	playback_move:
 		objects[OBJECT_PLAYER * 8 + 4] = moveDirection;
-		replayOutput = moveDirection + 1;
+		if (!playbackMode)
+			replayIO = moveDirection + 1;
 		if (!main_198A())
 			goto main_1B85;
 		if (!spacebar_state)
 			goto main_1B8F;
-		replayOutput += 0x80;
+		if (!playbackMode)
+			replayIO += 0x80;
 		if (objects[OBJECT_PLAYER * 8 + 5] == 1)
 		{
 			main_E2A();
@@ -2089,10 +2105,23 @@ main_1B3C:
 	}
 	PlotObjectToMaze();
 main_1B8F:
+	BYTE fireDirection;
+	if (playbackMode)
+	{
+		fireDirection = (replayIO & 0x7F) / 9 % 9;
+		if (fireDirection)
+		{
+			fireDirection--;
+			goto playback_fire;
+		}
+	}
 	if (!spacebar_state && (keyboard_state & (KEYSTATE_FIRE_RIGHT | KEYSTATE_FIRE_LEFT | KEYSTATE_FIRE_DOWN | KEYSTATE_FIRE_UP)))
 	{
-		BYTE fireDirection = data_CAE[keyboard_state >> 4];
-		replayOutput += (fireDirection + 1) * 9;
+		if (!playbackMode)
+			fireDirection = data_CAE[keyboard_state >> 4];
+	playback_fire:
+		if (!playbackMode)
+			replayIO += (fireDirection + 1) * 9;
 		if (--objects[OBJECT_PLAYER * 8 + 1])
 			return false;
 		BYTE data_CC1 = objects[OBJECT_PLAYER * 8 + 4];
@@ -2235,6 +2264,13 @@ void DrawViewport()
 
 int __cdecl main(int argc, char* argv[])
 {
+	if (argc > 2)
+	{
+		fprintf(stderr, "Usage: %s [filename of replay to play back]\n");
+		return -1;
+	}
+	bool playbackMode = argc == 2;
+
 	input  = GetStdHandle(STD_INPUT_HANDLE);
 	output = GetStdHandle(STD_OUTPUT_HANDLE);
 
@@ -2296,9 +2332,12 @@ int __cdecl main(int argc, char* argv[])
 	pos.X = 0;
 	pos.Y = 0;
 	FillConsoleOutputAttribute(output, FOREGROUND_BLUE | FOREGROUND_GREEN | FOREGROUND_RED, windowSize.X*windowSize.Y, pos, &operationSize);
-	SetConsoleTextAttribute(output, FOREGROUND_BLUE | FOREGROUND_GREEN | FOREGROUND_RED);
-	WriteConsole(output, STRING_WITH_LEN("Enter skill level (A-Z)(1-9): "), &operationSize, 0);
-	ReadSkillLevel();
+	if (!playbackMode)
+	{
+		SetConsoleTextAttribute(output, FOREGROUND_BLUE | FOREGROUND_GREEN | FOREGROUND_RED);
+		WriteConsole(output, STRING_WITH_LEN("Enter skill level (A-Z)(1-9): "), &operationSize, 0);
+		ReadSkillLevel();
+	}
 
 	WORD tick_count = GetTickCountWord();
 	random_seed_lo = (BYTE)tick_count;
@@ -2311,6 +2350,20 @@ int __cdecl main(int argc, char* argv[])
 	for (;;)
 	{
 		FILE *replayFile = NULL;
+		if (playbackMode)
+		{
+			replayFile = fopen(argv[1], "rb");
+			if (!replayFile)
+			{
+				fprintf(stderr, "Error opening replay file \"%s\" for playback\n", argv[1]);
+				return -1;
+			}
+			fread(&random_seed_lo, sizeof(random_seed_lo), 1, replayFile);
+			fread(&random_seed_hi, sizeof(random_seed_hi), 1, replayFile);
+			fread(&skillLevelLetter, 1, 1, replayFile);
+			fread(&skillLevelNumber, 1, 1, replayFile);
+		}
+		else
 		{
 			time_t rectime = time(NULL);
 			struct tm *rectime_gmt;
@@ -2381,11 +2434,16 @@ int __cdecl main(int argc, char* argv[])
 			UpdateSnipes();
 			UpdateGenerators();
 
-			BYTE replayOutput;
-			if (main_1AB0(replayOutput))
+			BYTE replayIO;
+			if (playbackMode)
+			{
+				if (fread(&replayIO, 1, 1, replayFile) == 0)
+					replayIO = 0;
+			}
+			if (main_1AB0(playbackMode, replayIO))
 				break;
-			if (replayFile)
-				fwrite(&replayOutput, 1, 1, replayFile);
+			if (!playbackMode && replayFile)
+				fwrite(&replayIO, 1, 1, replayFile);
 
 			UpdateExplosions();
 			UpdateSound();
@@ -2406,6 +2464,8 @@ int __cdecl main(int argc, char* argv[])
 		SetConsoleCursorPosition(output, pos);
 		SetConsoleTextAttribute(output, FOREGROUND_BLUE | FOREGROUND_GREEN | FOREGROUND_RED);
 		SetConsoleMode(output, ENABLE_PROCESSED_OUTPUT | ENABLE_WRAP_AT_EOL_OUTPUT);
+		if (playbackMode)
+			break;
 		for (;;)
 		{
 			SetConsoleMode(input, ENABLE_PROCESSED_INPUT | ENABLE_LINE_INPUT | ENABLE_ECHO_INPUT);

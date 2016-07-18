@@ -83,6 +83,7 @@ static bool sound_enabled = true;
 static bool shooting_sound_enabled = false;
 static bool spacebar_state = false;
 static BYTE keyboard_state = 0;
+static BYTE keyState[0x100] = {};
 Uint PollKeyboard()
 {
 	for (;;)
@@ -96,30 +97,45 @@ Uint PollKeyboard()
 		ReadConsoleInput(input, &record, 1, &numread);
 		if (!numread)
 			break;
-		if (record.EventType == KEY_EVENT && record.Event.KeyEvent.bKeyDown)
+		if (record.EventType == KEY_EVENT)
 		{
-			if (record.Event.KeyEvent.wVirtualKeyCode == VK_F1)
-				sound_enabled ^= true;
+			if (record.Event.KeyEvent.bKeyDown)
+			{
+				if (record.Event.KeyEvent.wVirtualKeyCode < _countof(keyState))
+					keyState[record.Event.KeyEvent.wVirtualKeyCode] |= record.Event.KeyEvent.dwControlKeyState & ENHANCED_KEY ? 2 : 1;
+
+				if (record.Event.KeyEvent.wVirtualKeyCode == VK_F1)
+					sound_enabled ^= true;
+				else
+				if (record.Event.KeyEvent.wVirtualKeyCode == VK_F2)
+					shooting_sound_enabled ^= true;
+				else
+				if (record.Event.KeyEvent.wVirtualKeyCode == VK_ESCAPE)
+					forfeit_match = true;
+			}
 			else
-			if (record.Event.KeyEvent.wVirtualKeyCode == VK_F2)
-				shooting_sound_enabled ^= true;
-			else
-			if (record.Event.KeyEvent.wVirtualKeyCode == VK_ESCAPE)
-				forfeit_match = true;
+			{
+				if (record.Event.KeyEvent.wVirtualKeyCode < _countof(keyState))
+					keyState[record.Event.KeyEvent.wVirtualKeyCode] &= record.Event.KeyEvent.dwControlKeyState & ENHANCED_KEY ? ~2 : ~1;
+			}
 		}
+		else
+		if (record.EventType == KEY_EVENT && !record.Event.KeyEvent.bKeyDown)
+			printf("%u%02X up (%02X) [%02X]\n", (record.Event.KeyEvent.dwControlKeyState>>8)&1, record.Event.KeyEvent.wVirtualKeyCode, record.Event.KeyEvent.wVirtualScanCode, record.Event.KeyEvent.dwControlKeyState);
 	}
 	Uint state = 0;
-	if (GetKeyState(VK_RIGHT) < 0) state |= KEYSTATE_MOVE_RIGHT;
-	if (GetKeyState(VK_LEFT ) < 0) state |= KEYSTATE_MOVE_LEFT;
-	if (GetKeyState(VK_DOWN ) < 0) state |= KEYSTATE_MOVE_DOWN;
-	if (GetKeyState(VK_CLEAR) < 0) state |= KEYSTATE_MOVE_DOWN;
-	if (GetKeyState(VK_UP   ) < 0) state |= KEYSTATE_MOVE_UP;
-	if (GetKeyState('D'     ) < 0) state |= KEYSTATE_FIRE_RIGHT;
-	if (GetKeyState('A'     ) < 0) state |= KEYSTATE_FIRE_LEFT;
-	if (GetKeyState('S'     ) < 0) state |= KEYSTATE_FIRE_DOWN;
-	if (GetKeyState('X'     ) < 0) state |= KEYSTATE_FIRE_DOWN;
-	if (GetKeyState('W'     ) < 0) state |= KEYSTATE_FIRE_UP;
-	spacebar_state = GetKeyState(VK_SPACE) < 0;
+	if (keyState[VK_RIGHT]) state |= KEYSTATE_MOVE_RIGHT;
+	if (keyState[VK_LEFT ]) state |= KEYSTATE_MOVE_LEFT;
+	if (keyState[VK_DOWN ]) state |= KEYSTATE_MOVE_DOWN;
+	if (keyState[VK_CLEAR]) state |= KEYSTATE_MOVE_DOWN; // center key on numeric keypad with NumLock off
+	if (keyState[0xFF    ]) state |= KEYSTATE_MOVE_DOWN; // center key on cursor pad, on non-inverted-T keyboards
+	if (keyState[VK_UP   ]) state |= KEYSTATE_MOVE_UP;
+	if (keyState['D'     ]) state |= KEYSTATE_FIRE_RIGHT;
+	if (keyState['A'     ]) state |= KEYSTATE_FIRE_LEFT;
+	if (keyState['S'     ]) state |= KEYSTATE_FIRE_DOWN;
+	if (keyState['X'     ]) state |= KEYSTATE_FIRE_DOWN;
+	if (keyState['W'     ]) state |= KEYSTATE_FIRE_UP;
+	spacebar_state = keyState[VK_SPACE];
 	if ((state & (KEYSTATE_MOVE_RIGHT | KEYSTATE_MOVE_LEFT)) == (KEYSTATE_MOVE_RIGHT | KEYSTATE_MOVE_LEFT) ||
 		(state & (KEYSTATE_MOVE_DOWN  | KEYSTATE_MOVE_UP  )) == (KEYSTATE_MOVE_DOWN  | KEYSTATE_MOVE_UP  ))
 		state &= ~(KEYSTATE_MOVE_RIGHT | KEYSTATE_MOVE_LEFT | KEYSTATE_MOVE_DOWN | KEYSTATE_MOVE_UP);

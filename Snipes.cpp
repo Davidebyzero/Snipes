@@ -84,7 +84,12 @@ static bool sound_enabled = true;
 static bool shooting_sound_enabled = false;
 static BYTE spacebar_state = false;
 static BYTE keyboard_state = 0;
-static BYTE keyState[0x100] = {};
+BYTE keyState[0x100];
+
+void ClearKeyboard()
+{
+	memset(keyState, 0, sizeof(keyState));
+}
 Uint PollKeyboard()
 {
 	for (;;)
@@ -2339,6 +2344,7 @@ int __cdecl main(int argc, char* argv[])
 		SetConsoleMode(output, 0);
 		cursorInfo.bVisible = FALSE;
 		SetConsoleCursorInfo(output, &cursorInfo);
+		ClearKeyboard();
 
 		frame = 0;
 		outputHUD();

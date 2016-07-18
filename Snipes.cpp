@@ -1,5 +1,6 @@
 #include <Windows.h>
 #include <MMSystem.h>
+#include <time.h>
 #include <stdio.h>
 #include <math.h>
 #include <wchar.h>
@@ -2005,8 +2006,9 @@ bool main_198A()
 	}
 }
 
-bool main_1AB0() // returns true if the match has been lost
+bool main_1AB0(BYTE &replayOutput) // returns true if the match has been lost
 {
+	replayOutput = 0;
 	currentObject = objects;
 	if (++data_C74 > 7)
 	{
@@ -2056,11 +2058,14 @@ main_1B3C:
 	static const BYTE data_CAE[] = {0, 2, 6, 0, 4, 3, 5, 0, 0, 1, 7, 0, 0, 0, 0, 0};
 	if (BYTE keyboardMove = keyboard_state & (KEYSTATE_MOVE_RIGHT | KEYSTATE_MOVE_LEFT | KEYSTATE_MOVE_DOWN | KEYSTATE_MOVE_UP))
 	{
-		objects[OBJECT_PLAYER * 8 + 4] = data_CAE[keyboardMove];
+		BYTE moveDirection = data_CAE[keyboardMove];
+		objects[OBJECT_PLAYER * 8 + 4] = moveDirection;
+		replayOutput = moveDirection;
 		if (!main_198A())
 			goto main_1B85;
 		if (!spacebar_state)
 			goto main_1B8F;
+		replayOutput += 8;
 		if (objects[OBJECT_PLAYER * 8 + 5] == 1)
 		{
 			main_E2A();
@@ -2081,10 +2086,12 @@ main_1B3C:
 main_1B8F:
 	if (!spacebar_state && (keyboard_state & (KEYSTATE_FIRE_RIGHT | KEYSTATE_FIRE_LEFT | KEYSTATE_FIRE_DOWN | KEYSTATE_FIRE_UP)))
 	{
+		BYTE fireDirection = data_CAE[keyboard_state >> 4];
+		replayOutput += fireDirection << 4;
 		if (--objects[OBJECT_PLAYER * 8 + 1])
 			return false;
 		BYTE data_CC1 = objects[OBJECT_PLAYER * 8 + 4];
-		objects[OBJECT_PLAYER * 8 + 4] = data_CAE[keyboard_state >> 4];
+		objects[OBJECT_PLAYER * 8 + 4] = fireDirection;
 		FireBullet(0);
 		SetSoundEffectState(0, 0);
 		objects[OBJECT_PLAYER * 8 + 4] = data_CC1;
@@ -2298,6 +2305,26 @@ int __cdecl main(int argc, char* argv[])
 
 	for (;;)
 	{
+		FILE *replayFile = NULL;
+		{
+			time_t rectime = time(NULL);
+			struct tm *rectime_gmt;
+			rectime_gmt = gmtime(&rectime);
+
+			char replayFilename[MAX_PATH];
+			sprintf(replayFilename,
+					"%04d-%02d-%02d %02d.%02d.%02d.SnipesGame",
+					1900+rectime_gmt->tm_year, rectime_gmt->tm_mon+1, rectime_gmt->tm_mday,
+					rectime_gmt->tm_hour, rectime_gmt->tm_min, rectime_gmt->tm_sec);
+
+			replayFile = fopen(replayFilename, "wb");
+			if (replayFile)
+			{
+				fwrite(&random_seed_lo, sizeof(random_seed_lo), 1, replayFile);
+				fwrite(&random_seed_hi, sizeof(random_seed_hi), 1, replayFile);
+			}
+		}
+
 		enableElectricWalls = skillLevelLetter >= 'M'-'A';
 		snipeShootingAccuracy        = snipeShootingAccuracyTable[skillLevelLetter];
 		enableGhostSnipes            = enableGhostSnipesTable    [skillLevelLetter];
@@ -2354,8 +2381,11 @@ int __cdecl main(int argc, char* argv[])
 			UpdateSnipes();
 			UpdateGenerators();
 
-			if (main_1AB0())
+			BYTE replayOutput;
+			if (main_1AB0(replayOutput))
 				break;
+			if (replayFile)
+				fwrite(&replayOutput, 1, 1, replayFile);
 
 			UpdateExplosions();
 			UpdateSound();
@@ -2364,6 +2394,9 @@ int __cdecl main(int argc, char* argv[])
 
 		ClearSound();
 		forfeit_match = false;
+
+		if (replayFile)
+			fclose(replayFile);
 
 		cursorInfo.bVisible = TRUE;
 		SetConsoleCursorInfo(output, &cursorInfo);

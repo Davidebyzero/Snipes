@@ -2325,6 +2325,7 @@ int __cdecl main(int argc, char* argv[])
 			replayFile = fopen(replayFilename, "wb");
 			if (replayFile)
 			{
+				setvbuf(replayFile, NULL, _IOFBF, 64);
 				fwrite(&random_seed_lo, sizeof(random_seed_lo), 1, replayFile);
 				fwrite(&random_seed_hi, sizeof(random_seed_hi), 1, replayFile);
 			}

@@ -1862,7 +1862,7 @@ void UpdateGenerators()
 	while (data_C8F)
 	{
 		currentObject = &objects[data_C8F * 8];
-		if (++currentObject[5] >= 15)
+		if (++currentObject[5] > 15)
 			currentObject[5] = 0;
 		currentSprite = data_10A2[currentObject[5]];
 		(WORD&)currentObject[6] = PointerToFakePointer(currentSprite);

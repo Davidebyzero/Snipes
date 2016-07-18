@@ -1,0 +1,1 @@
+//#define CHEAT_OMNISCIENCE

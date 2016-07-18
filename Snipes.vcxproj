@@ -83,6 +83,10 @@
   <ItemGroup>
     <ClCompile Include="Snipes.cpp" />
   </ItemGroup>
+  <ItemGroup>
+    <ClInclude Include="config-sample.h" />
+    <ClInclude Include="config.h" />
+  </ItemGroup>
   <Import Project="$(VCTargetsPath)\Microsoft.Cpp.targets" />
   <ImportGroup Label="ExtensionTargets">
   </ImportGroup>

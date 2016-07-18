@@ -4,6 +4,7 @@
 #include <stdio.h>
 #include <math.h>
 #include <wchar.h>
+#include "config.h"
 #pragma comment(lib,"winmm.lib")
 
 typedef unsigned int Uint;
@@ -156,14 +157,12 @@ Uint PollKeyboard()
 	return state;
 }
 
-//#define OMNISCIENCE_CHEAT
-
 #define MAZE_CELL_WIDTH  8
 #define MAZE_CELL_HEIGHT 6
 #define MAZE_WIDTH  (MAZE_CELL_WIDTH  * 16)
 #define MAZE_HEIGHT (MAZE_CELL_HEIGHT * 20)
 
-#ifdef OMNISCIENCE_CHEAT
+#ifdef CHEAT_OMNISCIENCE
  #define WINDOW_WIDTH  MAZE_WIDTH
  #define WINDOW_HEIGHT MAZE_HEIGHT
 #else

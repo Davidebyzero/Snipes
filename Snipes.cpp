@@ -2346,15 +2346,6 @@ int __cdecl main(int argc, char* argv[])
 		CreateGeneratorsAndPlayer();
 		SetSoundEffectState(0, 0xFF);
 
-		/*FILE *f = fopen("mazey.bin", "wb");
-		for (Uint i=0; i<sizeof(maze)/2; i++)
-			fwrite(&maze[i], 1, 1, f);
-		fclose(f);*/
-
-		/*StartTone(2711);
-		for (;;)
-			Sleep(1000);*/
-
 		for (;;)
 		{
 			if (forfeit_match)

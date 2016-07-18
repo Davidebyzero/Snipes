@@ -1222,7 +1222,7 @@ BYTE main_2381(BYTE *di, WORD &cx)
 	}
 	if (ax >= MAZE_HEIGHT/2)
 	{
-		bx |= 2;
+		bx ^= 2;
 		ax = MAZE_HEIGHT - ax;
 	}
 	((BYTE*)&cx)[1] = (BYTE&)ax;

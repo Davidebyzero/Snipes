@@ -2460,7 +2460,7 @@ int __cdecl main(int argc, char* argv[])
 		SetConsoleCursorInfo(output, &cursorInfo);
 		COORD pos;
 		pos.X = 0;
-		pos.Y = WINDOW_HEIGHT-1;
+		pos.Y = WINDOW_HEIGHT-1 - (playbackMode ? 1 : 0);
 		SetConsoleCursorPosition(output, pos);
 		SetConsoleTextAttribute(output, FOREGROUND_BLUE | FOREGROUND_GREEN | FOREGROUND_RED);
 		SetConsoleMode(output, ENABLE_PROCESSED_OUTPUT | ENABLE_WRAP_AT_EOL_OUTPUT);

@@ -2328,6 +2328,8 @@ int __cdecl main(int argc, char* argv[])
 				setvbuf(replayFile, NULL, _IOFBF, 64);
 				fwrite(&random_seed_lo, sizeof(random_seed_lo), 1, replayFile);
 				fwrite(&random_seed_hi, sizeof(random_seed_hi), 1, replayFile);
+				fwrite(&skillLevelLetter, 1, 1, replayFile);
+				fwrite(&skillLevelNumber, 1, 1, replayFile);
 			}
 		}
 

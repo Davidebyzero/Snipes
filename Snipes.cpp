@@ -81,7 +81,7 @@ void ClearSound()
 static bool forfeit_match = false;
 static bool sound_enabled = true;
 static bool shooting_sound_enabled = false;
-static bool spacebar_state = false;
+static BYTE spacebar_state = false;
 static BYTE keyboard_state = 0;
 static BYTE keyState[0x100] = {};
 Uint PollKeyboard()
@@ -278,7 +278,7 @@ void ParseSkillLevel(char *skillLevel, DWORD skillLevelLength)
 
 void ReadSkillLevel()
 {
-	char skillLevel[0x80] = {0};
+	char skillLevel[0x80] = {};
 	DWORD skillLevelLength = ReadConsole_wrapper(skillLevel, _countof(skillLevel));
 
 	if (skillLevel[skillLevelLength-1] == '\n')

@@ -1,1 +1,2 @@
 //#define CHEAT_OMNISCIENCE
+//#define CHEAT_FAST_FORWARD

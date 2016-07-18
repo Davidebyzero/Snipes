@@ -2422,14 +2422,21 @@ int __cdecl main(int argc, char* argv[])
 			if (updateHUD())
 				break;
 
-			for (;;)
+#ifdef CHEAT_FAST_FORWARD
+			if (!keyState['F'])
+#else
+			if (!playbackMode || !keyState['F'])
+#endif
 			{
-				Sleep(1);
-				WORD tick_count2 = GetTickCountWord();
-				if (tick_count2 != tick_count)
+				for (;;)
 				{
-					tick_count = tick_count2;
-					break;
+					Sleep(1);
+					WORD tick_count2 = GetTickCountWord();
+					if (tick_count2 != tick_count)
+					{
+						tick_count = tick_count2;
+						break;
+					}
 				}
 			}
 

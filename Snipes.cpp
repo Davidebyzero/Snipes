@@ -175,29 +175,24 @@ Uint PollKeyboard()
 
 void WriteTextMem(Uint count, WORD row, WORD column, WORD *src)
 {
-	COORD pos;
-	pos.X = column;
-	pos.Y = row;
-	SetConsoleCursorPosition(output, pos);
-	static BYTE buf[WINDOW_WIDTH];
-	for (Uint i=0;;)
+	COORD size;
+	size.X = count;
+	size.Y = 1;
+	COORD srcPos;
+	srcPos.X = 0;
+	srcPos.Y = 0;
+	SMALL_RECT rect;
+	rect.Left   = column;
+	rect.Top    = row;
+	rect.Right  = column + count;
+	rect.Bottom = row + 1;
+	static CHAR_INFO buf[WINDOW_WIDTH];
+	for (Uint i=0; i<count; i++)
 	{
-		BYTE color = ((BYTE*)&src[i])[1];
-		SetConsoleTextAttribute(output, color);
-		Uint start = i;
-		for (;;)
-		{
-			buf[i] = (BYTE&)src[i];
-			if (++i >= count)
-				break;
-			if (((BYTE*)&src[i])[1] != color)
-				break;
-		}
-		DWORD operationSize;
-		WriteConsole(output, (BYTE*)buf + start, i - start, &operationSize, 0);
-		if (i >= count)
-			break;
+		buf[i].Char.AsciiChar = ((BYTE*)&src[i])[0];
+		buf[i].Attributes     = ((BYTE*)&src[i])[1];
 	}
+	WriteConsoleOutput(output, buf, size, srcPos, &rect);
 }
 
 DWORD ReadConsole_wrapper(char buffer[], DWORD bufsize)

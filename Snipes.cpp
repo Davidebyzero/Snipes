@@ -2070,6 +2070,8 @@ main_1B3C:
 			moveDirection--;
 			goto playback_move;
 		}
+		else
+			goto playback_noMove;
 	}
 	static const BYTE data_CAE[] = {0, 2, 6, 0, 4, 3, 5, 0, 0, 1, 7, 0, 0, 0, 0, 0};
 	if (BYTE keyboardMove = keyboard_state & (KEYSTATE_MOVE_RIGHT | KEYSTATE_MOVE_LEFT | KEYSTATE_MOVE_DOWN | KEYSTATE_MOVE_UP))
@@ -2102,6 +2104,7 @@ main_1B3C:
 		if (enableElectricWalls)
 			goto main_1BEE;
 	}
+playback_noMove:
 	PlotObjectToMaze();
 main_1B8F:
 	BYTE fireDirection;
@@ -2113,6 +2116,8 @@ main_1B8F:
 			fireDirection--;
 			goto playback_fire;
 		}
+		else
+			goto playback_noFire;
 	}
 	if (!spacebar_state && (keyboard_state & (KEYSTATE_FIRE_RIGHT | KEYSTATE_FIRE_LEFT | KEYSTATE_FIRE_DOWN | KEYSTATE_FIRE_UP)))
 	{
@@ -2131,6 +2136,7 @@ main_1B8F:
 		objects[OBJECT_PLAYER * 8 + 1] = objects[OBJECT_PLAYER * 8 + 5] == 1 ? data_2AA<<1 : data_2AA;
 		return false;
 	}
+playback_noFire:
 	objects[OBJECT_PLAYER * 8 + 1] = 1;
 	return false;
 main_1BEE:

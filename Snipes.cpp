@@ -2276,6 +2276,15 @@ BOOL WINAPI ConsoleHandlerRoutine(DWORD dwCtrlType)
 	return FALSE;
 }
 
+bool DidBreakHappenDuringInput()
+{
+	DWORD operationSize;
+	Sleep(1); // allow ConsoleHandlerRoutine to be triggered
+	if (forfeit_match)
+		WriteConsole(output, "\r\n", 2, &operationSize, 0);
+	return forfeit_match;
+}
+
 int __cdecl main(int argc, char* argv[])
 {
 	if (argc > 2)
@@ -2353,6 +2362,8 @@ int __cdecl main(int argc, char* argv[])
 		SetConsoleTextAttribute(output, FOREGROUND_BLUE | FOREGROUND_GREEN | FOREGROUND_RED);
 		WriteConsole(output, STRING_WITH_LEN("Enter skill level (A-Z)(1-9): "), &operationSize, 0);
 		ReadSkillLevel();
+		if (DidBreakHappenDuringInput())
+			goto do_not_play_again;
 	}
 
 	WORD tick_count = GetTickCountWord();
@@ -2495,6 +2506,8 @@ int __cdecl main(int argc, char* argv[])
 			WriteConsole(output, STRING_WITH_LEN("Play another game? (Y or N) "), &operationSize, 0);
 			char playAgain;
 			ReadConsole_wrapper(&playAgain, 1);
+			if (DidBreakHappenDuringInput())
+				goto do_not_play_again;
 			if (playAgain == 'Y' || playAgain == 'y')
 				goto do_play_again;
 			if (playAgain == 'N' || playAgain == 'n')
@@ -2503,6 +2516,8 @@ int __cdecl main(int argc, char* argv[])
 	do_play_again:
 		WriteConsole(output, STRING_WITH_LEN("Enter new skill level (A-Z)(1-9): "), &operationSize, 0);
 		ReadSkillLevel();
+		if (DidBreakHappenDuringInput())
+			goto do_not_play_again;
 	}
 do_not_play_again:
 

@@ -34,7 +34,7 @@ HANDLE output;
 #define WAVE_BUFFER_COUNT 11
 HWAVEOUT waveOutput;
 WAVEHDR waveHeader[WAVE_BUFFER_COUNT];
-static double toneFreq = 0;
+double toneFreq;
 Uint currentFreqnum = 0;
 Uint tonePhase;
 SHORT toneBuf[WAVE_BUFFER_LENGTH * WAVE_BUFFER_COUNT];
@@ -57,11 +57,16 @@ void PlayTone(Uint freqnum)
 	if (currentFreqnum == freqnum)
 		return;
 	BOOL soundAlreadyPlaying = currentFreqnum;
-	currentFreqnum = freqnum;
 	toneFreq = (13125000. / (TONE_SAMPLE_RATE * 11)) / freqnum;
 	tonePhase = 0;
 	if (soundAlreadyPlaying)
+	{
+		currentFreqnum = freqnum;
 		return;
+	}
+	currentFreqnum = 0;
+	waveOutReset(waveOutput);
+	currentFreqnum = freqnum;
 	for (Uint i=0; i<WAVE_BUFFER_COUNT; i++)
 		WaveOutProc(waveOutput, WOM_DONE, 0, (DWORD_PTR)&waveHeader[i], 0);
 }

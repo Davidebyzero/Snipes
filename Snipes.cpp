@@ -2266,6 +2266,16 @@ void DrawViewport()
 	}
 }
 
+BOOL WINAPI ConsoleHandlerRoutine(DWORD dwCtrlType)
+{
+	if (dwCtrlType == CTRL_C_EVENT || dwCtrlType == CTRL_BREAK_EVENT)
+	{
+		forfeit_match = true;
+		return TRUE;
+	}
+	return FALSE;
+}
+
 int __cdecl main(int argc, char* argv[])
 {
 	if (argc > 2)
@@ -2294,6 +2304,8 @@ int __cdecl main(int argc, char* argv[])
 	window.Bottom = windowSize.Y-1;
 	SetConsoleWindowInfo(output, TRUE, &window);
 	SetConsoleScreenBufferSize(output, windowSize);
+
+	SetConsoleCtrlHandler(ConsoleHandlerRoutine, TRUE);
 
 	//timeBeginPeriod(1);
 

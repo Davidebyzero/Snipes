@@ -11,6 +11,7 @@ typedef unsigned int Uint;
 typedef unsigned long long QWORD;
 
 #define inrange(n,a,b) ((Uint)((n)-(a))<=(Uint)((b)-(a)))
+#define inrangex(n,a,b) ((Uint)((n)-(a))<(Uint)((b)-(a)))
 
 template <size_t size>
 char (*__strlength_helper(char const (&_String)[size]))[size];
@@ -200,6 +201,13 @@ void WriteTextMem(Uint count, WORD row, WORD column, MazeTile *src)
 	{
 		buf[i].Char.AsciiChar = src[i].ch;
 		buf[i].Attributes     = src[i].color;
+#if defined(CHEAT_OMNISCIENCE) && defined(CHEAT_OMNISCIENCE_SHOW_NORMAL_VIEWPORT)
+		if (!(inrangex(column+i, WINDOW_WIDTH/2 - 40/2 + 1,
+		                         WINDOW_WIDTH/2 + 40/2 + 1) &&
+		      inrangex(row, VIEWPORT_ROW + VIEWPORT_HEIGHT/2 - (25 - VIEWPORT_ROW)/2 + 1,
+		                    VIEWPORT_ROW + VIEWPORT_HEIGHT/2 + (25 - VIEWPORT_ROW)/2 + 1)) && row >= VIEWPORT_ROW)
+			buf[i].Attributes += 0x40;
+#endif
 	}
 	WriteConsoleOutput(output, buf, size, srcPos, &rect);
 }

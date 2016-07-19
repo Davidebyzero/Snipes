@@ -132,9 +132,6 @@ Uint PollKeyboard()
 					keyState[record.Event.KeyEvent.wVirtualKeyCode] &= record.Event.KeyEvent.dwControlKeyState & ENHANCED_KEY ? ~2 : ~1;
 			}
 		}
-		else
-		if (record.EventType == KEY_EVENT && !record.Event.KeyEvent.bKeyDown)
-			printf("%u%02X up (%02X) [%02X]\n", (record.Event.KeyEvent.dwControlKeyState>>8)&1, record.Event.KeyEvent.wVirtualKeyCode, record.Event.KeyEvent.wVirtualScanCode, record.Event.KeyEvent.dwControlKeyState);
 	}
 	Uint state = 0;
 	if (keyState[VK_RIGHT]) state |= KEYSTATE_MOVE_RIGHT;

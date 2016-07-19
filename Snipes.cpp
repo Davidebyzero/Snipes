@@ -310,20 +310,34 @@ static BYTE numLivesTable             ['9'-'1'+1] = {  5,   5,   5,   5,   5,   
 bool enableElectricWalls, enableGhostSnipes, generatorsResistSnipeBullets, enableRubberBullets;
 BYTE snipeShootingAccuracy, ghostBitingAccuracy, maxSnipes, numGeneratorsAtStart, numLives;
 
+struct Object
+{
+	BYTE next; // objects[] index of the next object in the linked list of this object's type
+	BYTE unknown1;
+	union
+	{
+		struct {BYTE x, y;};
+		WORD xy;
+	};
+	BYTE unknown4;
+	BYTE unknown5;
+	WORD sprite; // FAKE_POINTER to current sprite frame
+};
+
 BYTE data_2AA;
 WORD frame;
 static bool data_C75, data_C73, data_C72, data_CBF;
 static BYTE lastHUD_numGhosts, lastHUD_numGeneratorsKilled, lastHUD_numSnipes, lastHUD_numPlayerDeaths, objectHead_free, objectHead_bullets, objectHead_explosions, objectHead_ghosts, objectHead_snipes, objectHead_generators, numGenerators, numGhosts, numBullets, numPlayerDeaths, numSnipes, data_C74, data_DF0 = 0xFF, data_DF1, data_C96, data_B69, data_C77, data_C78;
 static WORD lastHUD_numGhostsKilled, lastHUD_numSnipesKilled, numGhostsKilled, numSnipesKilled, data_1CA, data_1CC, data_B5C;
 static SHORT lastHUD_score, score;
-BYTE *currentObject;
+Object *currentObject;
 const WORD *currentSprite;
 
 #define MAX_OBJECTS 0x100
 
 static BYTE data_B6C[MAX_OBJECTS];
 
-static BYTE objects[8 * MAX_OBJECTS];
+static Object objects[MAX_OBJECTS];
 
 #define OBJECT_PLAYER          0x00
 #define OBJECT_LASTFREE        0xFD
@@ -549,7 +563,7 @@ BYTE CreateNewObject()
 {
 	BYTE object = objectHead_free;
 	if (object)
-		objectHead_free = objects[object * 8];
+		objectHead_free = objects[object].next;
 	return object;
 }
 
@@ -820,7 +834,7 @@ static const BYTE data_129D[] = {1, 2, 0x18, 0x1A, 0x19, 0x1B};
 
 void FreeObject(BYTE object)
 {
-	objects[object * 8] = objectHead_free;
+	objects[object].next = objectHead_free;
 	objectHead_free = object;
 }
 
@@ -851,10 +865,10 @@ void PlotObjectToMaze() // plots object currentObject with sprite currentSprite
 	BYTE spriteHeight = ((BYTE*)currentSprite)[0];
 	BYTE spriteWidth  = ((BYTE*)currentSprite)[1];
 	BYTE data_C83 = 0;
-	WORD data_B52 = (WORD)currentObject[3] * MAZE_WIDTH;
+	WORD data_B52 = (WORD)currentObject->y * MAZE_WIDTH;
 	for (BYTE data_C81 = 0; data_C81 < spriteHeight; data_C81++)
 	{
-		BYTE data_C80 = currentObject[2];
+		BYTE data_C80 = currentObject->x;
 		for (BYTE data_C82 = 0; data_C82 < spriteWidth; data_C82++)
 		{
 			maze[data_B52 + data_C80] = currentSprite[1 + data_C83];
@@ -872,17 +886,17 @@ void GetRandomUnoccupiedMazeCell()
 {
 	do
 	{
-		currentObject[2] = (BYTE)GetRandomRanged<MAZE_WIDTH  / MAZE_CELL_WIDTH >() * MAZE_CELL_WIDTH  + MAZE_CELL_WIDTH /2;
-		currentObject[3] = (BYTE)GetRandomRanged<MAZE_HEIGHT / MAZE_CELL_HEIGHT>() * MAZE_CELL_HEIGHT + MAZE_CELL_HEIGHT/2;
+		currentObject->x = (BYTE)GetRandomRanged<MAZE_WIDTH  / MAZE_CELL_WIDTH >() * MAZE_CELL_WIDTH  + MAZE_CELL_WIDTH /2;
+		currentObject->y = (BYTE)GetRandomRanged<MAZE_HEIGHT / MAZE_CELL_HEIGHT>() * MAZE_CELL_HEIGHT + MAZE_CELL_HEIGHT/2;
 	}
-	while (IsObjectLocationOccupied(currentObject[3], currentObject[2]));
+	while (IsObjectLocationOccupied(currentObject->y, currentObject->x));
 }
 
 void CreateGeneratorsAndPlayer()
 {
 	for (WORD data_B58 = 1; data_B58 <= OBJECT_LASTFREE; data_B58++)
-		objects[data_B58 * 8] = data_B58 + 1;
-	objects[OBJECT_LASTFREE * 8] = 0;
+		objects[data_B58].next = data_B58 + 1;
+	objects[OBJECT_LASTFREE].next = 0;
 	objectHead_free = 1;
 	objectHead_bullets = 0;
 	objectHead_explosions = 0;
@@ -892,15 +906,15 @@ void CreateGeneratorsAndPlayer()
 	for (WORD data_B58 = 0; data_B58 < numGeneratorsAtStart; data_B58++)
 	{
 		BYTE data_B5A = CreateNewObject();
-		objects[data_B5A * 8] = objectHead_generators;
+		objects[data_B5A].next = objectHead_generators;
 		objectHead_generators = data_B5A;
-		currentObject = &objects[data_B5A * 8];
-		(WORD&)currentObject[6] = FAKE_POINTER_data_1002;
+		currentObject = &objects[data_B5A];
+		currentObject->sprite = FAKE_POINTER_data_1002;
 		currentSprite = data_1002;
 		GetRandomUnoccupiedMazeCell();
-		currentObject[1] = 0;
-		currentObject[5] = (BYTE)GetRandomMasked(0xF);
-		currentObject[4] = 1;
+		currentObject->unknown1 = 0;
+		currentObject->unknown5 = (BYTE)GetRandomMasked(0xF);
+		currentObject->unknown4 = 1;
 		PlotObjectToMaze();
 	}
 	numGenerators = numGeneratorsAtStart;
@@ -915,15 +929,15 @@ void CreateGeneratorsAndPlayer()
 	data_C74 = 0;
 	data_C73 = false;
 	data_C72 = false;
-	(WORD&)objects[OBJECT_PLAYER * 8 + 6] = FAKE_POINTER_data_10E2;
+	objects[OBJECT_PLAYER].sprite = FAKE_POINTER_data_10E2;
 	currentSprite = data_10E2;
-	currentObject = &objects[OBJECT_PLAYER * 8];
+	currentObject = &objects[OBJECT_PLAYER];
 	GetRandomUnoccupiedMazeCell();
 	PlotObjectToMaze();
-	data_1CA = objects[OBJECT_PLAYER * 8 + 2];
-	data_1CC = objects[OBJECT_PLAYER * 8 + 3];
-	objects[OBJECT_PLAYER * 8 + 5] = 1;
-	objects[OBJECT_PLAYER * 8 + 1] = 1;
+	data_1CA = objects[OBJECT_PLAYER].x;
+	data_1CC = objects[OBJECT_PLAYER].y;
+	objects[OBJECT_PLAYER].unknown5 = 1;
+	objects[OBJECT_PLAYER].unknown1 = 1;
 }
 
 void SetSoundEffectState(BYTE arg1, BYTE arg2)
@@ -998,41 +1012,41 @@ void ExplodeObject(BYTE arg)
 	if (arg == OBJECT_PLAYER) // explode the player (and don't overwrite the player object)
 	{
 		arg = OBJECT_PLAYEREXPLOSION;
-		objects[OBJECT_PLAYEREXPLOSION * 8 + 2] = objects[2];
-		objects[OBJECT_PLAYEREXPLOSION * 8 + 3] = objects[3];
-		objects[OBJECT_PLAYEREXPLOSION * 8 + 4] = 0x16;
-		(WORD&)objects[OBJECT_PLAYEREXPLOSION * 8 + 6] = FAKE_POINTER_data_12C2;
+		objects[OBJECT_PLAYEREXPLOSION].x = objects[OBJECT_PLAYER].x;
+		objects[OBJECT_PLAYEREXPLOSION].y = objects[OBJECT_PLAYER].y;
+		objects[OBJECT_PLAYEREXPLOSION].unknown4 = ExplosionType_PlayerOrGenerator;
+		objects[OBJECT_PLAYEREXPLOSION].sprite = FAKE_POINTER_data_12C2;
 		data_C72 = true;
 	}
-	currentObject = &objects[arg * 8];
-	currentObject[0] = objectHead_explosions;
+	currentObject = &objects[arg];
+	currentObject->next = objectHead_explosions;
 	objectHead_explosions = arg;
-	const WORD *data_CC4 = FakePointerToPointer((WORD&)currentObject[6]);
+	const WORD *data_CC4 = FakePointerToPointer(currentObject->sprite);
 	BYTE data_CC8 = ((BYTE*)data_CC4)[0];
 	BYTE data_CC9 = ((BYTE*)data_CC4)[1];
-	BYTE *data_CC2 = currentObject;
+	Object *data_CC2 = currentObject;
 	if (data_CC8 == 2 && data_CC9 == 2)
 	{
-		(WORD&)data_CC2[6] = FAKE_POINTER_data_12C2;
+		data_CC2->sprite = FAKE_POINTER_data_12C2;
 		currentSprite = data_12C2;
-		data_CC2[4] = ExplosionType_PlayerOrGenerator;
-		data_CC2[5] = 0;
+		data_CC2->unknown4 = ExplosionType_PlayerOrGenerator;
+		data_CC2->unknown5 = 0;
 		SetSoundEffectState(0, 4);
 	}
 	if (data_CC8 == 1 && data_CC9 == 2)
 	{
-		(WORD&)data_CC2[6] = FAKE_POINTER_data_1316;
+		data_CC2->sprite = FAKE_POINTER_data_1316;
 		currentSprite = data_1316;
-		data_CC2[4] = ExplosionType_Snipe;
-		data_CC2[5] = 0;
+		data_CC2->unknown4 = ExplosionType_Snipe;
+		data_CC2->unknown5 = 0;
 		SetSoundEffectState(0, 3);
 	}
 	if (data_CC8 == 1 && data_CC9 == 1)
 	{
-		(WORD&)data_CC2[6] = FAKE_POINTER_data_136A;
+		data_CC2->sprite = FAKE_POINTER_data_136A;
 		currentSprite = data_136A;
-		data_CC2[4] = ExplosionType_Ghost;
-		data_CC2[5] = 2;
+		data_CC2->unknown4 = ExplosionType_Ghost;
+		data_CC2->unknown5 = 2;
 		SetSoundEffectState(2, 2);
 	}
 	PlotObjectToMaze();
@@ -1043,19 +1057,19 @@ void FreeObjectInList_worker(BYTE *objectHead, BYTE object)
 	BYTE data_CCA = *objectHead;
 	if (object == data_CCA)
 	{
-		*objectHead = objects[object * 8];
+		*objectHead = objects[object].next;
 		return;
 	}
 	for (;;)
 	{
-		BYTE data_CCB = objects[data_CCA * 8];
+		BYTE data_CCB = objects[data_CCA].next;
 		if (!data_CCB)
 			return;
 		if (object == data_CCB)
 			break;
 		data_CCA = data_CCB;
 	}
-	objects[data_CCA * 8] = objects[object * 8];
+	objects[data_CCA].next = objects[object].next;
 }
 
 void FreeObjectInList(BYTE *objectHead, BYTE object)
@@ -1080,33 +1094,33 @@ bool main_154F(BYTE arg)
 	{
 	case 0:
 		data_B5C -= MAZE_WIDTH;
-		if (--currentObject[3] == 0xFF)
+		if (--currentObject->y == 0xFF)
 		{
-			currentObject[3] = MAZE_HEIGHT - 1;
+			currentObject->y = MAZE_HEIGHT - 1;
 			data_B5C += _countof(maze);
 		}
 		break;
 	case 1:
 		data_B5C++;
-		if (++currentObject[2] >= MAZE_WIDTH)
+		if (++currentObject->x >= MAZE_WIDTH)
 		{
-			currentObject[2] = 0;
+			currentObject->x = 0;
 			data_B5C -= MAZE_WIDTH;
 		}
 		break;
 	case 2:
 		data_B5C += MAZE_WIDTH;
-		if (++currentObject[3] >= MAZE_HEIGHT)
+		if (++currentObject->y >= MAZE_HEIGHT)
 		{
-			currentObject[3] = 0;
+			currentObject->y = 0;
 			data_B5C -= _countof(maze);
 		}
 		break;
 	case 3:
 		data_B5C--;
-		if (--currentObject[2] == 0xFF)
+		if (--currentObject->x == 0xFF)
 		{
-			currentObject[2] = MAZE_WIDTH - 1;
+			currentObject->x = MAZE_WIDTH - 1;
 			data_B5C += MAZE_WIDTH;
 		}
 		break;
@@ -1124,11 +1138,11 @@ void UpdateBullets()
 	{
 		if (!data_C93)
 			return;
-		currentObject = &objects[data_C93 * 8];
-		data_B5C = currentObject[3] * MAZE_WIDTH + currentObject[2];
+		currentObject = &objects[data_C93];
+		data_B5C = currentObject->y * MAZE_WIDTH + currentObject->x;
 		if ((BYTE&)maze[data_B5C] == 0xB2)
 		{
-			BYTE data_C95 = currentObject[0];
+			BYTE data_C95 = currentObject->next;
 			maze[data_B5C] = 0x920;
 			FreeObjectInList(&objectHead_bullets, data_C93);
 			numBullets--;
@@ -1136,14 +1150,14 @@ void UpdateBullets()
 			continue;
 		}
 		maze[data_B5C] = 0x920;
-		switch (currentObject[4])
+		switch (currentObject->unknown4)
 		{
 		case 1:
-			if (main_154F(1) || IsDiagonalDoubledPhase(currentObject[3]) && main_154F(1))
+			if (main_154F(1) || IsDiagonalDoubledPhase(currentObject->y) && main_154F(1))
 				goto main_13EF;
 			goto main_1390;
 		case 3:
-			if (main_154F(2) || IsDiagonalDoubledPhase(currentObject[3]) && main_154F(1))
+			if (main_154F(2) || IsDiagonalDoubledPhase(currentObject->y) && main_154F(1))
 				goto main_13EF;
 			// fall through
 		case 2:
@@ -1155,7 +1169,7 @@ void UpdateBullets()
 				goto main_13EF;
 			goto main_139A;
 		case 5:
-			if (main_154F(2) || IsDiagonalDoubledPhase(currentObject[3]) && main_154F(3))
+			if (main_154F(2) || IsDiagonalDoubledPhase(currentObject->y) && main_154F(3))
 				goto main_13EF;
 			// fall through
 		case 6:
@@ -1163,7 +1177,7 @@ void UpdateBullets()
 				goto main_13EF;
 			goto main_139A;
 		case 7:
-			if (main_154F(3) || IsDiagonalDoubledPhase(currentObject[3]) && main_154F(3))
+			if (main_154F(3) || IsDiagonalDoubledPhase(currentObject->y) && main_154F(3))
 				goto main_13EF;
 			// fall through
 		case 0:
@@ -1171,17 +1185,17 @@ void UpdateBullets()
 			if (main_154F(0))
 				goto main_13EF;
 		main_139A:
-			if (currentObject[1] >= 6)
-				currentSprite = FakePointerToPointer((WORD&)currentObject[6]);
+			if (currentObject->unknown1 >= 6)
+				currentSprite = FakePointerToPointer(currentObject->sprite);
 			else
 			{
-				if (++currentObject[5] > 3)
-					currentObject[5] = 0;
-				currentSprite = data_11D4[currentObject[5]];
+				if (++currentObject->unknown5 > 3)
+					currentObject->unknown5 = 0;
+				currentSprite = data_11D4[currentObject->unknown5];
 			}
 			maze[data_B5C] = currentSprite[1];
 			data_C94 = data_C93;
-			data_C93 = currentObject[0];
+			data_C93 = currentObject->next;
 			continue;
 		default:
 			__assume(0);
@@ -1190,7 +1204,7 @@ void UpdateBullets()
 		BYTE find_this = (BYTE&)maze[data_B5C];
 		if (!memchr(data_1281, find_this, _countof(data_1281)))
 		{
-			if (!currentObject[1])
+			if (!currentObject->unknown1)
 			{
 				if (memchr(data_128C, find_this, _countof(data_128C)))
 				{
@@ -1208,29 +1222,29 @@ void UpdateBullets()
 			maze[data_B5C] = 0x0FB2;
 			goto main_150E;
 		}
-		if (!enableRubberBullets || currentObject[1] || !data_B6C[data_C93] || !(currentObject[4] & 1))
+		if (!enableRubberBullets || currentObject->unknown1 || !data_B6C[data_C93] || !(currentObject->unknown4 & 1))
 			goto main_150E;
 		data_B6C[data_C93]--;
-		currentObject[4] = data_1261[data_C96 * 8 + currentObject[4]];
+		currentObject->unknown4 = data_1261[data_C96 * 8 + currentObject->unknown4];
 		SetSoundEffectState(1, 0);
 		main_154F((data_C96 + 2) & 3);
 		goto main_139A;
 	main_150E:
 		numBullets--;
 		if (!data_C94)
-			objectHead_bullets = currentObject[0];
+			objectHead_bullets = currentObject->next;
 		else
-			objects[data_C94 * 8] = currentObject[0];
-		BYTE data_C95 = currentObject[0];
+			objects[data_C94].next = currentObject->next;
+		BYTE data_C95 = currentObject->next;
 		FreeObject(data_C93);
 		data_C93 = data_C95;
 	}
 }
 
-BYTE main_2381(BYTE *di, WORD &cx)
+BYTE main_2381(Object &di, WORD &cx)
 {
 	SHORT bx = 1;
-	SHORT ax = di[2] - data_1CA;
+	SHORT ax = di.x - data_1CA;
 	if (ax <= 0)
 	{
 		bx = 0;
@@ -1242,7 +1256,7 @@ BYTE main_2381(BYTE *di, WORD &cx)
 		ax = MAZE_WIDTH - ax;
 	}
 	((BYTE*)&cx)[0] = (BYTE&)ax;
-	ax = di[3] - data_1CC;
+	ax = di.y - data_1CC;
 	if (ax < 0)
 	{
 		bx |= 2;
@@ -1264,7 +1278,7 @@ BYTE main_2381(BYTE *di, WORD &cx)
 }
 
 struct MoveObject_retval {bool al; BYTE ah; WORD cx; WORD *bx_si;};
-MoveObject_retval MoveObject(BYTE *di)
+MoveObject_retval MoveObject(Object &di)
 {
 	union
 	{
@@ -1281,11 +1295,11 @@ MoveObject_retval MoveObject(BYTE *di)
 		WORD dx;
 		struct {BYTE dl, dh;};
 	};
-	cx = (WORD&)di[2];
+	cx = di.xy;
 	ax = cx;
 	dx = 0;
 	int tmp;
-	switch (di[4])
+	switch (di.unknown4)
 	{
 	case 1:
 		tmp = cl + (dl = IsDiagonalDoubledPhase(ch) + 1);
@@ -1364,7 +1378,7 @@ MoveObject_retval MoveObject(BYTE *di)
 	default:
 		__assume(0);
 	}
-	const WORD *ptr = FakePointerToPointer((WORD&)di[6]);
+	const WORD *ptr = FakePointerToPointer(di.sprite);
 	dl += ((BYTE*)ptr)[1];
 	dh += ((BYTE*)ptr)[0];
 	WORD *si = &maze[ah * MAZE_WIDTH];
@@ -1405,9 +1419,9 @@ main_2343:
 
 void FireBullet(BYTE bulletType)
 {
-	BYTE data_C97 = currentObject[4];
-	BYTE data_C98 = currentObject[2];
-	BYTE data_C99 = currentObject[3];
+	BYTE data_C97 = currentObject->unknown4;
+	BYTE data_C98 = currentObject->x;
+	BYTE data_C99 = currentObject->y;
 	switch (data_C97)
 	{
 	case 1:
@@ -1484,8 +1498,8 @@ main_17C3:
 	if (!data_C9B || numBullets > 50)
 		goto main_1899;
 	numBullets++;
-	BYTE *data_B62 = currentObject;
-	currentObject = &objects[data_C9B * 8];
+	Object *data_B62 = currentObject;
+	currentObject = &objects[data_C9B];
 	if (!objectHead_bullets)
 	{
 		objectHead_bullets = data_C9B;
@@ -1494,28 +1508,28 @@ main_17C3:
 	BYTE data_C9A = objectHead_bullets;
 	for (;;)
 	{
-		if (BYTE tmp = objects[data_C9A * 8])
+		if (BYTE tmp = objects[data_C9A].next)
 			data_C9A = tmp;
 		else
 			break;
 	}
-	objects[data_C9A * 8] = data_C9B;
+	objects[data_C9A].next = data_C9B;
 main_182D:
-	currentObject[0] = 0;
+	currentObject->next = 0;
 	if (bulletType < 6)
 	{
-		(WORD&)currentObject[6] = FAKE_POINTER_data_1150;
+		currentObject->sprite = FAKE_POINTER_data_1150;
 		goto main_1854;
 	}
-	(WORD&)currentObject[6] = PointerToFakePointer(data_11B4[data_C97]);
+	currentObject->sprite = PointerToFakePointer(data_11B4[data_C97]);
 main_1854:
-	currentObject[2] = data_C98;
-	currentObject[3] = data_C99;
-	currentObject[4] = data_C97;
-	currentObject[5] = 0;
-	currentObject[1] = bulletType;
+	currentObject->x = data_C98;
+	currentObject->y = data_C99;
+	currentObject->unknown4 = data_C97;
+	currentObject->unknown5 = 0;
+	currentObject->unknown1 = bulletType;
 	data_B6C[data_C9B] = (BYTE)GetRandomMasked(7) + 1;
-	currentSprite = FakePointerToPointer((WORD&)currentObject[6]);
+	currentSprite = FakePointerToPointer(currentObject->sprite);
 	PlotObjectToMaze();
 	currentObject = data_B62;
 main_1899:
@@ -1539,10 +1553,10 @@ void UpdateSnipes()
 	BYTE dl = objectHead_snipes;
 	while (dl)
 	{
-		BYTE *di = &objects[dl * 8];
-		WORD *bx = &maze[di[3] * MAZE_WIDTH];
-		WORD * leftPart = &bx[di[2]];
-		WORD *rightPart = di[2] >= MAZE_WIDTH-1 ? &bx[0] : leftPart + 1;
+		Object &di = objects[dl];
+		WORD *bx = &maze[di.y * MAZE_WIDTH];
+		WORD * leftPart = &bx[di.x];
+		WORD *rightPart = di.x >= MAZE_WIDTH-1 ? &bx[0] : leftPart + 1;
 		WORD *ghostPart;
 		if ((BYTE&)*leftPart == 0xB2)
 		{
@@ -1556,9 +1570,9 @@ void UpdateSnipes()
 			ghostPart = leftPart;
 			goto main_1F33;
 		}
-		if (--di[5])
+		if (--di.unknown5)
 		{
-			dl = di[0];
+			dl = di.next;
 			continue;
 		}
 		goto main_1F84;
@@ -1568,25 +1582,26 @@ void UpdateSnipes()
 		if ((BYTE&)*ghostPart != 0x01)
 			goto main_1FB9;
 		*ghostPart = 0x502;
-		di[2] = ghostPart - bx;
+		di.x = ghostPart - bx;
 
-		BYTE *prevObject;
-		for (BYTE *objectInList = &objectHead_snipes;;)
+		// TODO: make the typecasting here less hacky; currently it only works because "next" is the first member of struct Object
+		Object *prevObject;
+		for (Object *objectInList = (Object*)&objectHead_snipes;;)
 		{
 			prevObject = objectInList;
-			objectInList = &objects[*objectInList * 8];
-			if (objectInList == di)
+			objectInList = &objects[objectInList->next];
+			if (objectInList == &di)
 				break;
 		}
 
 		{
-			BYTE a = prevObject[0] = di[0];
+			BYTE a = prevObject->next = di.next;
 			{BYTE tmp = objectHead_ghosts; objectHead_ghosts = dl; dl = tmp;}
-			di[0] = dl;
+			di.next = dl;
 			dl = a;
 		}
-		di[5] = 2;
-		(WORD&)di[6] = FAKE_POINTER_data_10FE;
+		di.unknown5 = 2;
+		di.sprite = FAKE_POINTER_data_10FE;
 		numSnipes--;
 		numSnipesKilled++;
 		numGhosts++;
@@ -1600,15 +1615,15 @@ void UpdateSnipes()
 			MoveObject_retval result = MoveObject(di);
 			if (result.al)
 				goto main_1FCF;
-			(WORD&)di[2] = result.cx;
+			di.xy = result.cx;
 		}
-		if (!(di[4] & 1))
+		if (!(di.unknown4 & 1))
 			goto main_2021;
-		di[5] = 8;
+		di.unknown5 = 8;
 		goto main_2025;
 	main_1FB9:
 		{
-			BYTE tmp = di[0];
+			BYTE tmp = di.next;
 			FreeObjectInList(&objectHead_snipes, dl);
 			dl = tmp;
 		}
@@ -1617,52 +1632,52 @@ void UpdateSnipes()
 		continue;
 	main_1FCF:
 		if (GetRandomMasked(3) == 0)
-			di[4] = (BYTE)GetRandomMasked(7);
+			di.unknown4 = (BYTE)GetRandomMasked(7);
 		else
 		{
 			WORD dummy;
-			di[4] = main_2381(di, dummy);
+			di.unknown4 = main_2381(di, dummy);
 		}
 		for (Uint count=8; count; count--)
 		{
 			MoveObject_retval result = MoveObject(di);
 			if (!result.al)
 				break;
-			BYTE al = di[4];
-			if (di[1] & 1)
+			BYTE al = di.unknown4;
+			if (di.unknown1 & 1)
 				al = (al - 1) & 7;
 			else
 				al = (al + 1) & 7;
-			di[4] = al;
+			di.unknown4 = al;
 		}
-		(WORD&)di[6] = PointerToFakePointer(data_1130[di[4]]);
+		di.sprite = PointerToFakePointer(data_1130[di.unknown4]);
 	main_2021:
-		di[5] = 6;
+		di.unknown5 = 6;
 	main_2025:
-		const WORD *sprite = FakePointerToPointer((WORD&)di[6]);
-		maze[di[3] * MAZE_WIDTH + di[2]] = sprite[1];
-		if (di[2] < MAZE_WIDTH-1)
-			maze[di[3] * MAZE_WIDTH + di[2]+1] = sprite[2];
+		const WORD *sprite = FakePointerToPointer(di.sprite);
+		maze[di.y * MAZE_WIDTH + di.x] = sprite[1];
+		if (di.x < MAZE_WIDTH-1)
+			maze[di.y * MAZE_WIDTH + di.x+1] = sprite[2];
 		else
-			maze[di[3] * MAZE_WIDTH          ] = sprite[2];
+			maze[di.y * MAZE_WIDTH          ] = sprite[2];
 		WORD cx;
 		BYTE al = main_2381(di, cx);
-		BYTE ah = di[4];
+		BYTE ah = di.unknown4;
 		if (al != ah)
 			goto main_209E;
 		if (!((BYTE*)&cx)[1] || !((BYTE*)&cx)[0])
 			goto main_2083;
 		if (abs((int)((BYTE*)&cx)[0] * MAZE_CELL_HEIGHT - (int)((BYTE*)&cx)[1] * MAZE_CELL_WIDTH) >= MAZE_CELL_WIDTH)
 			goto main_20F4;
-		al = di[4];
+		al = di.unknown4;
 	main_2083:
 		{
-			BYTE tmp = di[4];
-			di[4] = al;
-			currentObject = di;
-			currentSprite = FakePointerToPointer((WORD&)di[6]);
+			BYTE tmp = di.unknown4;
+			di.unknown4 = al;
+			currentObject = &di;
+			currentSprite = FakePointerToPointer(di.sprite);
 			al = FireSnipeBullet();
-			di[4] = tmp;
+			di.unknown4 = tmp;
 		}
 		goto main_20F9;
 	main_209E:
@@ -1701,19 +1716,19 @@ void UpdateSnipes()
 			goto main_2083;
 		}
 	main_20F4:
-		dl = di[0];
+		dl = di.next;
 		continue;
 	main_20F9:
 		if (!al)
 			goto main_20F4;
-		if ((BYTE&)maze[di[3] * MAZE_WIDTH + di[2]] != 0x01)
-			maze[di[3] * MAZE_WIDTH + di[2]] = 0x9FF;
+		if ((BYTE&)maze[di.y * MAZE_WIDTH + di.x] != 0x01)
+			maze[di.y * MAZE_WIDTH + di.x] = 0x9FF;
 		else
 		{
-			if (di[2] < MAZE_WIDTH-1)
-				maze[di[3] * MAZE_WIDTH + di[2]+1] = 0x9FF;
+			if (di.x < MAZE_WIDTH-1)
+				maze[di.y * MAZE_WIDTH + di.x+1] = 0x9FF;
 			else
-				maze[di[3] * MAZE_WIDTH          ] = 0x9FF;
+				maze[di.y * MAZE_WIDTH          ] = 0x9FF;
 		}
 		goto main_20F4;
 	}
@@ -1724,20 +1739,20 @@ void UpdateGhosts()
 	BYTE dl = objectHead_ghosts;
 	while (dl)
 	{
-		BYTE *di = &objects[dl * 8];
-		WORD &bx_si = maze[di[3] * MAZE_WIDTH + di[2]];
+		Object &di = objects[dl];
+		WORD &bx_si = maze[di.y * MAZE_WIDTH + di.x];
 		if ((BYTE&)bx_si != 0xB2)
 		{
-			if (--di[5])
+			if (--di.unknown5)
 			{
-				dl = di[0];
+				dl = di.next;
 				continue;
 			}
 		}
 		else
 		{
 	main_2158:
-			BYTE tmp = di[0];
+			BYTE tmp = di.next;
 			FreeObjectInList(&objectHead_ghosts, dl);
 			dl = tmp;
 			numGhosts--;
@@ -1746,15 +1761,15 @@ void UpdateGhosts()
 		}
 		bx_si = 0x920;
 		BYTE data_CD0 = dl;
-		if (di[1] & 2)
+		if (di.unknown1 & 2)
 			goto main_2228;
 		WORD cx;
 		BYTE al = main_2381(di, cx);
 		if (data_B69 <= 4)
 		{
-			di[4] = al;
+			di.unknown4 = al;
 			MoveObject_retval result = MoveObject(di);
-			if (result.al && (di[4] & 1))
+			if (result.al && (di.unknown4 & 1))
 				if (result.ah == 0x93 || result.ah == 0x4F || result.ah == 0x11 || result.ah == 0x10) // player character sprite
 				{
 					if (GetRandomMasked(ghostBitingAccuracy) == 0)
@@ -1776,7 +1791,7 @@ void UpdateGhosts()
 			al = 6;
 		goto main_220B;
 	main_21DA:
-		di[4] = ++al;
+		di.unknown4 = ++al;
 		{
 			MoveObject_retval result = MoveObject(di);
 			cx = result.cx;
@@ -1791,7 +1806,7 @@ void UpdateGhosts()
 		else
 		if (((BYTE*)&cx)[0] < 1)
 		{
-			di[4] = al += 2;
+			di.unknown4 = al += 2;
 			MoveObject_retval result = MoveObject(di);
 			cx = result.cx;
 			if (!result.al)
@@ -1799,7 +1814,7 @@ void UpdateGhosts()
 			al = (al - 4) & 7;
 		}
 	main_220B:
-		di[4] = al;
+		di.unknown4 = al;
 		{
 			MoveObject_retval result = MoveObject(di);
 			cx = result.cx;
@@ -1807,8 +1822,8 @@ void UpdateGhosts()
 				goto main_225A;
 		}
 		if (data_B69 >= 0x14)
-			di[1] |= 2;
-		di[4] = (BYTE)GetRandomMasked(7);
+			di.unknown1 |= 2;
+		di.unknown4 = (BYTE)GetRandomMasked(7);
 	main_2228:
 		for (Uint count=8; count; count--)
 		{
@@ -1816,21 +1831,21 @@ void UpdateGhosts()
 			cx = result.cx;
 			if (!result.al)
 				goto main_225A;
-			di[1] &= ~2;
-			al = di[4];
-			if (di[1] & 1)
+			di.unknown1 &= ~2;
+			al = di.unknown4;
+			if (di.unknown1 & 1)
 				al = (al - 1) & 7;
 			else
 				al = (al + 1) & 7;
-			di[4] = al;
+			di.unknown4 = al;
 		}
 		goto main_225D;
 	main_225A:
-		(WORD&)di[2] = cx;
+		di.xy = cx;
 	main_225D:
-		maze[di[3] * MAZE_WIDTH + di[2]] = 0x502;
-		di[5] = 3;
-		dl = di[0];
+		maze[di.y * MAZE_WIDTH + di.x] = 0x502;
+		di.unknown5 = 3;
+		dl = di.next;
 	}
 }
 
@@ -1838,12 +1853,12 @@ bool IsObjectTaggedToExplode()
 {
 	BYTE data_C89 = ((BYTE*)currentSprite)[0];
 	BYTE data_C8A = ((BYTE*)currentSprite)[1];
-	WORD data_B56 = currentObject[3] * MAZE_WIDTH;
+	WORD data_B56 = currentObject->y * MAZE_WIDTH;
 	BYTE data_C8C = 0;
 main_EE4:
 	if (data_C8C >= data_C89)
 		return false;
-	BYTE data_C8B = currentObject[2];
+	BYTE data_C8B = currentObject->x;
 	BYTE data_C8D = 0;
 main_EFC:
 	if (data_C8D < data_C8A)
@@ -1868,10 +1883,10 @@ void main_E2A()
 {
 	BYTE data_C84 = ((BYTE*)currentSprite)[0];
 	BYTE data_C85 = ((BYTE*)currentSprite)[1];
-	WORD data_B54 = currentObject[3] * MAZE_WIDTH;
+	WORD data_B54 = currentObject->y * MAZE_WIDTH;
 	for (BYTE data_C87 = 0; data_C87 < data_C84; data_C87++)
 	{
-		BYTE data_C86 = currentObject[2];
+		BYTE data_C86 = currentObject->x;
 		for (BYTE data_C88 = 0; data_C88 < data_C85; data_C88++)
 		{
 			maze[data_B54 + data_C86] = 0x920;
@@ -1889,14 +1904,14 @@ void UpdateGenerators()
 	BYTE data_C8F = objectHead_generators;
 	while (data_C8F)
 	{
-		currentObject = &objects[data_C8F * 8];
-		if (++currentObject[5] > 15)
-			currentObject[5] = 0;
-		currentSprite = data_10A2[currentObject[5]];
-		(WORD&)currentObject[6] = PointerToFakePointer(currentSprite);
+		currentObject = &objects[data_C8F];
+		if (++currentObject->unknown5 > 15)
+			currentObject->unknown5 = 0;
+		currentSprite = data_10A2[currentObject->unknown5];
+		currentObject->sprite = PointerToFakePointer(currentSprite);
 		if (IsObjectTaggedToExplode())
 		{
-			BYTE data_C90 = currentObject[0];
+			BYTE data_C90 = currentObject->next;
 			FreeObjectInList(&objectHead_generators, data_C8F);
 			data_C8F = data_C90;
 			numGenerators--;
@@ -1904,21 +1919,21 @@ void UpdateGenerators()
 		}
 		main_E2A();
 		PlotObjectToMaze();
-		if (--currentObject[4])
+		if (--currentObject->unknown4)
 			goto main_1251;
 		WORD dummy;
-		main_2381(currentObject, dummy);
+		main_2381(*currentObject, dummy);
 		if (frame >= 0xF00)
-			currentObject[4] = 5;
+			currentObject->unknown4 = 5;
 		else
-			currentObject[4] = 5 + (data_B69 >> (frame/0x100 + 1));
+			currentObject->unknown4 = 5 + (data_B69 >> (frame/0x100 + 1));
 		if (GetRandomMasked(0xF >> (numGeneratorsAtStart - numGenerators)))
 			goto main_1251;
 		currentSprite = data_1112;
-		BYTE data_C91 = currentObject[2] + 2;
+		BYTE data_C91 = currentObject->x + 2;
 		if (data_C91  > MAZE_WIDTH - 1)
 			data_C91 -= MAZE_WIDTH - 1; // note: this is a latent bug; it should be MAZE_WIDTH, but this makes no difference because this code will never be reached, since generators are centered within their respective maze cells
-		BYTE data_C92 = currentObject[3];
+		BYTE data_C92 = currentObject->y;
 		if (IsObjectLocationOccupied(data_C92, data_C91))
 			goto main_1251;
 		if (numSnipes + numGhosts < maxSnipes)
@@ -1927,44 +1942,44 @@ void UpdateGenerators()
 			if (!data_C90)
 				goto main_1251;
 			numSnipes++;
-			data_C8F = currentObject[0];
-			currentObject = &objects[data_C90 * 8];
-			currentObject[0] = objectHead_snipes;
+			data_C8F = currentObject->next;
+			currentObject = &objects[data_C90];
+			currentObject->next = objectHead_snipes;
 			objectHead_snipes = data_C90;
-			currentObject[2] = data_C91;
-			currentObject[3] = data_C92;
-			currentObject[4] = 2;
-			(WORD&)currentObject[6] = FAKE_POINTER_data_1112;
+			currentObject->x = data_C91;
+			currentObject->y = data_C92;
+			currentObject->unknown4 = 2;
+			currentObject->sprite = FAKE_POINTER_data_1112;
 			PlotObjectToMaze();
-			currentObject[1] = (BYTE)GetRandomMasked(1);
-			currentObject[5] = 4;
+			currentObject->unknown1 = (BYTE)GetRandomMasked(1);
+			currentObject->unknown5 = 4;
 			continue;
 		}
 	main_1251:
-		data_C8F = currentObject[0];
+		data_C8F = currentObject->next;
 	}
 }
 
 bool main_1A7B(BYTE arg)
 {
-	objects[OBJECT_PLAYER * 8 + 4] = arg << 1;
-	MoveObject_retval result = MoveObject(currentObject);
+	objects[OBJECT_PLAYER].unknown4 = arg << 1;
+	MoveObject_retval result = MoveObject(*currentObject);
 	if (result.al)
 		return data_CBF = true;
-	data_1CA = objects[OBJECT_PLAYER * 8 + 2] = data_C77;
-	data_1CC = objects[OBJECT_PLAYER * 8 + 3] = data_C78;
+	data_1CA = objects[OBJECT_PLAYER].x = data_C77;
+	data_1CC = objects[OBJECT_PLAYER].y = data_C78;
 	return false;
 }
 
 bool main_198A()
 {
-	BYTE data_CBE = objects[OBJECT_PLAYER * 8 + 4];
+	BYTE data_CBE = objects[OBJECT_PLAYER].unknown4;
 	data_CBF = false;
 	switch (data_CBE)
 	{
 	case 1:
 		main_1A7B(1);
-		if (!IsDiagonalDoubledPhase(currentObject[3]))
+		if (!IsDiagonalDoubledPhase(currentObject->y))
 			goto main_1A5E;
 		if (main_1A7B(1))
 			goto main_1A5E;
@@ -1974,7 +1989,7 @@ bool main_198A()
 	case 3:
 		if (main_1A7B(2))
 			goto main_1A5A;
-		if (IsDiagonalDoubledPhase(currentObject[3]))
+		if (IsDiagonalDoubledPhase(currentObject->y))
 			main_1A7B(1);
 		goto main_1A5A;
 	case 4:
@@ -1983,7 +1998,7 @@ bool main_198A()
 	case 5:
 		if (main_1A7B(2))
 			goto main_1A2B;
-		if (!IsDiagonalDoubledPhase(currentObject[3]))
+		if (!IsDiagonalDoubledPhase(currentObject->y))
 			goto main_1A2B;
 		main_1A7B(3);
 		// fall through
@@ -1993,7 +2008,7 @@ bool main_198A()
 		goto main_1A64;
 	case 7:
 		main_1A7B(3);
-		if (!IsDiagonalDoubledPhase(currentObject[3]))
+		if (!IsDiagonalDoubledPhase(currentObject->y))
 			goto main_1A5E;
 		if (main_1A7B(3))
 			goto main_1A5E;
@@ -2010,7 +2025,7 @@ bool main_198A()
 	main_1A64:
 		if (!data_CBF)
 			PlotObjectToMaze();
-		objects[OBJECT_PLAYER * 8 + 4] = data_CBE;
+		objects[OBJECT_PLAYER].unknown4 = data_CBE;
 		return !data_CBF;
 	default:
 		__assume(0);
@@ -2021,7 +2036,7 @@ bool main_1AB0(bool playbackMode, BYTE &replayIO) // returns true if the match h
 {
 	if (!playbackMode)
 		replayIO = 0;
-	currentObject = objects;
+	currentObject = &objects[OBJECT_PLAYER];
 	if (++data_C74 > 7)
 	{
 		data_C74 = 0;
@@ -2053,10 +2068,10 @@ bool main_1AB0(bool playbackMode, BYTE &replayIO) // returns true if the match h
 	}
 	else
 	{
-		if (--objects[OBJECT_PLAYER * 8 + 5] == 0)
+		if (--objects[OBJECT_PLAYER].unknown5 == 0)
 		{
 			keyboard_state = PollKeyboard();
-			objects[OBJECT_PLAYER * 8 + 5] = 2;
+			objects[OBJECT_PLAYER].unknown5 = 2;
 			if (IsObjectTaggedToExplode())
 				goto main_1BEE;
 			goto main_1B3C;
@@ -2086,7 +2101,7 @@ main_1B3C:
 		if (!playbackMode)
 			moveDirection = data_CAE[keyboardMove];
 	playback_move:
-		objects[OBJECT_PLAYER * 8 + 4] = moveDirection;
+		objects[OBJECT_PLAYER].unknown4 = moveDirection;
 		if (!playbackMode)
 			replayIO = moveDirection + 1;
 		if (!main_198A())
@@ -2095,7 +2110,7 @@ main_1B3C:
 			goto main_1B8F;
 		if (!playbackMode)
 			replayIO += 0x80;
-		if (objects[OBJECT_PLAYER * 8 + 5] == 1)
+		if (objects[OBJECT_PLAYER].unknown5 == 1)
 		{
 			main_E2A();
 			if (!main_198A())
@@ -2105,7 +2120,7 @@ main_1B3C:
 				PlotObjectToMaze();
 			}
 		}
-		objects[OBJECT_PLAYER * 8 + 5] = 1;
+		objects[OBJECT_PLAYER].unknown5 = 1;
 		goto main_1B8F;
 	main_1B85:
 		if (enableElectricWalls)
@@ -2133,21 +2148,21 @@ main_1B8F:
 	playback_fire:
 		if (!playbackMode)
 			replayIO += (fireDirection + 1) * 9;
-		if (--objects[OBJECT_PLAYER * 8 + 1])
+		if (--objects[OBJECT_PLAYER].unknown1)
 			return false;
-		BYTE data_CC1 = objects[OBJECT_PLAYER * 8 + 4];
-		objects[OBJECT_PLAYER * 8 + 4] = fireDirection;
+		BYTE data_CC1 = objects[OBJECT_PLAYER].unknown4;
+		objects[OBJECT_PLAYER].unknown4 = fireDirection;
 		FireBullet(0);
 		SetSoundEffectState(0, 0);
-		objects[OBJECT_PLAYER * 8 + 4] = data_CC1;
-		objects[OBJECT_PLAYER * 8 + 1] = objects[OBJECT_PLAYER * 8 + 5] == 1 ? data_2AA<<1 : data_2AA;
+		objects[OBJECT_PLAYER].unknown4 = data_CC1;
+		objects[OBJECT_PLAYER].unknown1 = objects[OBJECT_PLAYER].unknown5 == 1 ? data_2AA<<1 : data_2AA;
 		return false;
 	}
 playback_noFire:
-	objects[OBJECT_PLAYER * 8 + 1] = 1;
+	objects[OBJECT_PLAYER].unknown1 = 1;
 	return false;
 main_1BEE:
-	FreeObjectInList(objects, OBJECT_PLAYER); // explode the player
+	FreeObjectInList(&objects[OBJECT_PLAYER].next, OBJECT_PLAYER); // explode the player
 	data_C73 = true;
 	numPlayerDeaths++;
 	return false;
@@ -2155,8 +2170,8 @@ main_1C03:
 	keyboard_state = PollKeyboard();
 	data_C73 = false;
 	GetRandomUnoccupiedMazeCell();
-	data_1CA = objects[OBJECT_PLAYER * 8 + 2];
-	data_1CC = objects[OBJECT_PLAYER * 8 + 3];
+	data_1CA = objects[OBJECT_PLAYER].x;
+	data_1CC = objects[OBJECT_PLAYER].y;
 	PlotObjectToMaze();
 	return false;
 }
@@ -2165,14 +2180,14 @@ void UpdateExplosions()
 {
 	for (BYTE object = objectHead_explosions; object;)
 	{
-		BYTE *data_CC6 = currentObject = &objects[object * 8];
-		currentSprite = FakePointerToPointer((WORD&)data_CC6[6]);
+		Object *data_CC6 = currentObject = &objects[object];
+		currentSprite = FakePointerToPointer(data_CC6->sprite);
 		main_E2A();
-		BYTE data_CCE = (data_CC6[5] + 1) % 6;
-		BYTE data_CCD = data_CC6[0];
+		BYTE data_CCE = (data_CC6->unknown5 + 1) % 6;
+		BYTE data_CCD = data_CC6->next;
 		BYTE data_CCF = object == OBJECT_PLAYEREXPLOSION ? 11 : 5;
-		data_CC6[5]++;
-		if (data_CC6[5] > data_CCF)
+		data_CC6->unknown5++;
+		if (data_CC6->unknown5 > data_CCF)
 		{
 			FreeObjectInList_worker(&objectHead_explosions, object);
 			if (object != OBJECT_PLAYEREXPLOSION)
@@ -2182,26 +2197,26 @@ void UpdateExplosions()
 		}
 		else
 		{
-			if (data_CC6[4] == ExplosionType_PlayerOrGenerator)
+			if (data_CC6->unknown4 == ExplosionType_PlayerOrGenerator)
 			{
-				(WORD&)data_CC6[6] = PointerToFakePointer(data_12FE[data_CCE]);
+				data_CC6->sprite = PointerToFakePointer(data_12FE[data_CCE]);
 				currentSprite = data_12FE[data_CCE];
-				if (object == OBJECT_PLAYEREXPLOSION && data_CC6[5] > 5)
-					SetSoundEffectState(11 - data_CC6[5], 4);
+				if (object == OBJECT_PLAYEREXPLOSION && data_CC6->unknown5 > 5)
+					SetSoundEffectState(11 - data_CC6->unknown5, 4);
 				else
 					SetSoundEffectState(data_CCE, 4);
 			}
 			else
-			if (data_CC6[4] == ExplosionType_Snipe)
+			if (data_CC6->unknown4 == ExplosionType_Snipe)
 			{
-				(WORD&)data_CC6[6] = PointerToFakePointer(data_1352[data_CCE]);
+				data_CC6->sprite = PointerToFakePointer(data_1352[data_CCE]);
 				currentSprite = data_1352[data_CCE];
 				SetSoundEffectState(data_CCE, 3);
 			}
 			else
-			if (data_CC6[4] == ExplosionType_Ghost)
+			if (data_CC6->unknown4 == ExplosionType_Ghost)
 			{
-				(WORD&)data_CC6[6] = PointerToFakePointer(data_1392[data_CCE]);
+				data_CC6->sprite = PointerToFakePointer(data_1392[data_CCE]);
 				currentSprite = data_1392[data_CCE];
 				SetSoundEffectState(data_CCE, 2);
 			}

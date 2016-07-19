@@ -596,26 +596,26 @@ enum ExplosionType
 #define SPRITE_SIZE(x,y) (((x)<<8)+(y))
 
 // generator
-static const WORD data_1002[] = {SPRITE_SIZE(2,2), 0x0FDA, 0x0EBF, 0x0DC0, 0x0CD9};
-static const WORD data_100C[] = {SPRITE_SIZE(2,2), 0x0EFF, 0x0EFF, 0x0EFF, 0x0EFF};
-static const WORD data_1016[] = {SPRITE_SIZE(2,2), 0x0EDA, 0x0EBF, 0x0EC0, 0x0ED9};
-static const WORD data_1020[] = {SPRITE_SIZE(2,2), 0x0EFF, 0x0EFF, 0x0EFF, 0x0EFF};
-static const WORD data_102A[] = {SPRITE_SIZE(2,2), 0x0DDA, 0x0DBF, 0x0DC0, 0x0DD9};
-static const WORD data_1034[] = {SPRITE_SIZE(2,2), 0x0EFF, 0x0EFF, 0x0EFF, 0x0EFF};
-static const WORD data_103E[] = {SPRITE_SIZE(2,2), 0x0CDA, 0x0CBF, 0x0CC0, 0x0CD9};
-static const WORD data_1048[] = {SPRITE_SIZE(2,2), 0x0EFF, 0x0EFF, 0x0EFF, 0x0EFF};
-static const WORD data_1052[] = {SPRITE_SIZE(2,2), 0x0BDA, 0x0BBF, 0x0BC0, 0x0BD9};
-static const WORD data_105C[] = {SPRITE_SIZE(2,2), 0x0EFF, 0x0EFF, 0x0EFF, 0x0EFF};
-static const WORD data_1066[] = {SPRITE_SIZE(2,2), 0x0ADA, 0x0ABF, 0x0AC0, 0x0AD9};
-static const WORD data_1070[] = {SPRITE_SIZE(2,2), 0x0EFF, 0x0EFF, 0x0EFF, 0x0EFF};
-static const WORD data_107A[] = {SPRITE_SIZE(2,2), 0x09DA, 0x09BF, 0x09C0, 0x09D9};
-static const WORD data_1084[] = {SPRITE_SIZE(2,2), 0x0EFF, 0x0EFF, 0x0EFF, 0x0EFF};
-static const WORD data_108E[] = {SPRITE_SIZE(2,2), 0x04DA, 0x04BF, 0x04C0, 0x04D9};
-static const WORD data_1098[] = {SPRITE_SIZE(2,2), 0x0EFF, 0x0EFF, 0x0EFF, 0x0EFF};
+static const WORD data_1002[] = {SPRITE_SIZE(2,2), 0xFDA, 0xEBF, 0xDC0, 0xCD9};
+static const WORD data_100C[] = {SPRITE_SIZE(2,2), 0xEFF, 0xEFF, 0xEFF, 0xEFF};
+static const WORD data_1016[] = {SPRITE_SIZE(2,2), 0xEDA, 0xEBF, 0xEC0, 0xED9};
+static const WORD data_1020[] = {SPRITE_SIZE(2,2), 0xEFF, 0xEFF, 0xEFF, 0xEFF};
+static const WORD data_102A[] = {SPRITE_SIZE(2,2), 0xDDA, 0xDBF, 0xDC0, 0xDD9};
+static const WORD data_1034[] = {SPRITE_SIZE(2,2), 0xEFF, 0xEFF, 0xEFF, 0xEFF};
+static const WORD data_103E[] = {SPRITE_SIZE(2,2), 0xCDA, 0xCBF, 0xCC0, 0xCD9};
+static const WORD data_1048[] = {SPRITE_SIZE(2,2), 0xEFF, 0xEFF, 0xEFF, 0xEFF};
+static const WORD data_1052[] = {SPRITE_SIZE(2,2), 0xBDA, 0xBBF, 0xBC0, 0xBD9};
+static const WORD data_105C[] = {SPRITE_SIZE(2,2), 0xEFF, 0xEFF, 0xEFF, 0xEFF};
+static const WORD data_1066[] = {SPRITE_SIZE(2,2), 0xADA, 0xABF, 0xAC0, 0xAD9};
+static const WORD data_1070[] = {SPRITE_SIZE(2,2), 0xEFF, 0xEFF, 0xEFF, 0xEFF};
+static const WORD data_107A[] = {SPRITE_SIZE(2,2), 0x9DA, 0x9BF, 0x9C0, 0x9D9};
+static const WORD data_1084[] = {SPRITE_SIZE(2,2), 0xEFF, 0xEFF, 0xEFF, 0xEFF};
+static const WORD data_108E[] = {SPRITE_SIZE(2,2), 0x4DA, 0x4BF, 0x4C0, 0x4D9};
+static const WORD data_1098[] = {SPRITE_SIZE(2,2), 0xEFF, 0xEFF, 0xEFF, 0xEFF};
 static const WORD *data_10A2[] = {data_1002, data_100C, data_1016, data_1020, data_102A, data_1034, data_103E, data_1048, data_1052, data_105C, data_1066, data_1070, data_107A, data_1084, data_108E, data_1098};
 // player
-static const WORD data_10E2[] = {SPRITE_SIZE(2,2), 0x0F93, 0x0F93, 0x0F11, 0x0F10};
-static const WORD data_10EC[] = {SPRITE_SIZE(2,2), 0x0F4F, 0x0F4F, 0x0F11, 0x0F10};
+static const WORD data_10E2[] = {SPRITE_SIZE(2,2), 0xF93, 0xF93, 0xF11, 0xF10};
+static const WORD data_10EC[] = {SPRITE_SIZE(2,2), 0xF4F, 0xF4F, 0xF11, 0xF10};
 static const WORD *data_10F6[] = {data_10E2, data_10EC};
 // ghost
 static const WORD data_10FE[] = {SPRITE_SIZE(1,1), 0x202};
@@ -626,40 +626,40 @@ static const WORD data_111C[] = {SPRITE_SIZE(2,1), 0x201, 0x219};
 static const WORD data_1126[] = {SPRITE_SIZE(2,1), 0x21B, 0x201};
 static const WORD *data_1130[] = {data_1108, data_1112, data_1112, data_1112, data_111C, data_1126, data_1126, data_1126};
 // player bullet
-static const WORD data_1150[] = {SPRITE_SIZE(1,1), 0x0E09};
-static const WORD data_115A[] = {SPRITE_SIZE(1,1), 0x0B0F};
+static const WORD data_1150[] = {SPRITE_SIZE(1,1), 0xE09};
+static const WORD data_115A[] = {SPRITE_SIZE(1,1), 0xB0F};
 static const WORD *data_11D4[] = {data_1150, data_115A, data_1150, data_115A};
 // snipe bullet
-static const WORD data_1164[] = {SPRITE_SIZE(1,1), 0x0A18};
-static const WORD data_116E[] = {SPRITE_SIZE(1,1), 0x0A2F};
-static const WORD data_1178[] = {SPRITE_SIZE(1,1), 0x0A1A};
-static const WORD data_1182[] = {SPRITE_SIZE(1,1), 0x0A5C};
-static const WORD data_118C[] = {SPRITE_SIZE(1,1), 0x0A19};
-static const WORD data_1196[] = {SPRITE_SIZE(1,1), 0x0A2F};
-static const WORD data_11A0[] = {SPRITE_SIZE(1,1), 0x0A1B};
-static const WORD data_11AA[] = {SPRITE_SIZE(1,1), 0x0A5C};
+static const WORD data_1164[] = {SPRITE_SIZE(1,1), 0xA18};
+static const WORD data_116E[] = {SPRITE_SIZE(1,1), 0xA2F};
+static const WORD data_1178[] = {SPRITE_SIZE(1,1), 0xA1A};
+static const WORD data_1182[] = {SPRITE_SIZE(1,1), 0xA5C};
+static const WORD data_118C[] = {SPRITE_SIZE(1,1), 0xA19};
+static const WORD data_1196[] = {SPRITE_SIZE(1,1), 0xA2F};
+static const WORD data_11A0[] = {SPRITE_SIZE(1,1), 0xA1B};
+static const WORD data_11AA[] = {SPRITE_SIZE(1,1), 0xA5C};
 static const WORD *data_11B4[] = {data_1164, data_116E, data_1178, data_1182, data_118C, data_1196, data_11A0, data_11AA};
 // player or generator explosion
-static const WORD data_12C2[] = {SPRITE_SIZE(2,2), 0x0FB0, 0x0FB2, 0x0FB2, 0x0FB0};
-static const WORD data_12CC[] = {SPRITE_SIZE(2,2), 0x0BB2, 0x0BB0, 0x0BB0, 0x0BB2};
-static const WORD data_12D6[] = {SPRITE_SIZE(2,2), 0x0CB0, 0x0CB2, 0x0CB2, 0x0CB0};
-static const WORD data_12E0[] = {SPRITE_SIZE(2,2), 0x04B2, 0x04B0, 0x04B0, 0x04B2};
-static const WORD data_12EA[] = {SPRITE_SIZE(2,2), 0x062A, 0x060F, 0x062A, 0x060F};
-static const WORD data_12F4[] = {SPRITE_SIZE(2,2), 0x0807, 0x0820, 0x0807, 0x0820};
+static const WORD data_12C2[] = {SPRITE_SIZE(2,2), 0xFB0, 0xFB2, 0xFB2, 0xFB0};
+static const WORD data_12CC[] = {SPRITE_SIZE(2,2), 0xBB2, 0xBB0, 0xBB0, 0xBB2};
+static const WORD data_12D6[] = {SPRITE_SIZE(2,2), 0xCB0, 0xCB2, 0xCB2, 0xCB0};
+static const WORD data_12E0[] = {SPRITE_SIZE(2,2), 0x4B2, 0x4B0, 0x4B0, 0x4B2};
+static const WORD data_12EA[] = {SPRITE_SIZE(2,2), 0x62A, 0x60F, 0x62A, 0x60F};
+static const WORD data_12F4[] = {SPRITE_SIZE(2,2), 0x807, 0x820, 0x807, 0x820};
 static const WORD *data_12FE[] = {data_12C2, data_12CC, data_12D6, data_12E0, data_12EA, data_12F4};
 // snipe explosion
-static const WORD data_1316[] = {SPRITE_SIZE(2,1), 0x0FB0, 0x0FB2};
-static const WORD data_1320[] = {SPRITE_SIZE(2,1), 0x0BB2, 0x0BB0};
-static const WORD data_132A[] = {SPRITE_SIZE(2,1), 0x0CB0, 0x0CB2};
-static const WORD data_1334[] = {SPRITE_SIZE(2,1), 0x04B2, 0x04B0};
-static const WORD data_133E[] = {SPRITE_SIZE(2,1), 0x062A, 0x060F};
-static const WORD data_1348[] = {SPRITE_SIZE(2,1), 0x0807, 0x0820};
+static const WORD data_1316[] = {SPRITE_SIZE(2,1), 0xFB0, 0xFB2};
+static const WORD data_1320[] = {SPRITE_SIZE(2,1), 0xBB2, 0xBB0};
+static const WORD data_132A[] = {SPRITE_SIZE(2,1), 0xCB0, 0xCB2};
+static const WORD data_1334[] = {SPRITE_SIZE(2,1), 0x4B2, 0x4B0};
+static const WORD data_133E[] = {SPRITE_SIZE(2,1), 0x62A, 0x60F};
+static const WORD data_1348[] = {SPRITE_SIZE(2,1), 0x807, 0x820};
 static const WORD *data_1352[] = {data_1316, data_1320, data_132A, data_1334, data_133E, data_1348};
 // ghost explosion
-static const WORD data_136A[] = {SPRITE_SIZE(1,1), 0x0FB2};
-static const WORD data_1374[] = {SPRITE_SIZE(1,1), 0x0B0F};
-static const WORD data_137E[] = {SPRITE_SIZE(1,1), 0x0C09};
-static const WORD data_1388[] = {SPRITE_SIZE(1,1), 0x0407};
+static const WORD data_136A[] = {SPRITE_SIZE(1,1), 0xFB2};
+static const WORD data_1374[] = {SPRITE_SIZE(1,1), 0xB0F};
+static const WORD data_137E[] = {SPRITE_SIZE(1,1), 0xC09};
+static const WORD data_1388[] = {SPRITE_SIZE(1,1), 0x407};
 static const WORD *data_1392[] = {data_136A, data_136A, data_136A, data_1374, data_137E, data_1388};
 
 // fake pointers - hacky, but they work for now; should definitely replace them with real pointers once the porting is complete

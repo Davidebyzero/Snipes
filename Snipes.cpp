@@ -794,16 +794,23 @@ WORD PointerToFakePointer(const WORD *ptr)
 	return 0;
 }
 
+#ifdef USE_MODULO_LOOKUP_TABLE
 static const bool data_11E8[] = {
 	0,1,0,0,1,0,0,1,0,0,1,0,0,1,0,0,1,0,0,1,0,0,1,0,0,1,0,0,1,0,0,1,0,0,1,0,0,1,0,0,1,0,
 	0,1,0,0,1,0,0,1,0,0,1,0,0,1,0,0,1,0,0,1,0,0,1,0,0,1,0,0,1,0,0,1,0,0,1,0,0,1,0,0,1,0,
 	0,1,0,0,1,0,0,1,0,0,1,0,0,1,0,0,1,0,0,1,0,0,1,0,0,1,0,0,1,0,0,1,0,0,1,0,0
 };
-static const BYTE data_CE5[] = {
-	1,2,1,1,2,1,1,2,1,1,2,1,1,2,1,1,2,1,1,2,1,1,2,1,1,2,1,1,2,1,1,2,1,1,2,1,1,2,1,1,2,1,
-	1,2,1,1,2,1,1,2,1,1,2,1,1,2,1,1,2,1,1,2,1,1,2,1,1,2,1,1,2,1,1,2,1,1,2,1,1,2,1,1,2,1,
-	1,2,1,1,2,1,1,2,1,1,2,1,1,2,1,1,2,1,1,2,1,1,2,1,1,2,1,1,2,1,1,2,1,1,2,1,1
-};
+
+bool IsDiagonalDoubledPhase(BYTE n)
+{
+	return data_11E8[n];
+}
+#else
+bool IsDiagonalDoubledPhase(BYTE n)
+{
+	return n % 3 & 1;
+}
+#endif
 
 static const BYTE data_1261[] = {4, 3, 4, 4, 4, 4, 4, 5, 6, 7, 6, 5, 6, 6, 6, 6, 0, 0, 0, 1, 0, 7, 0, 0, 2, 2, 2, 2, 2, 3, 2, 1};
 static const BYTE data_1281[] = {0xB9, 0xBA, 0xBB, 0xBC, 0xC8, 0xC9, 0xCA, 0xCB, 0xCC, 0xCD, 0xCE};
@@ -1132,11 +1139,11 @@ void UpdateBullets()
 		switch (currentObject[4])
 		{
 		case 1:
-			if (main_154F(1) || data_11E8[currentObject[3]] && main_154F(1))
+			if (main_154F(1) || IsDiagonalDoubledPhase(currentObject[3]) && main_154F(1))
 				goto main_13EF;
 			goto main_1390;
 		case 3:
-			if (main_154F(2) || data_11E8[currentObject[3]] && main_154F(1))
+			if (main_154F(2) || IsDiagonalDoubledPhase(currentObject[3]) && main_154F(1))
 				goto main_13EF;
 			// fall through
 		case 2:
@@ -1148,7 +1155,7 @@ void UpdateBullets()
 				goto main_13EF;
 			goto main_139A;
 		case 5:
-			if (main_154F(2) || data_11E8[currentObject[3]] && main_154F(3))
+			if (main_154F(2) || IsDiagonalDoubledPhase(currentObject[3]) && main_154F(3))
 				goto main_13EF;
 			// fall through
 		case 6:
@@ -1156,7 +1163,7 @@ void UpdateBullets()
 				goto main_13EF;
 			goto main_139A;
 		case 7:
-			if (main_154F(3) || data_11E8[currentObject[3]] && main_154F(3))
+			if (main_154F(3) || IsDiagonalDoubledPhase(currentObject[3]) && main_154F(3))
 				goto main_13EF;
 			// fall through
 		case 0:
@@ -1281,7 +1288,7 @@ MoveObject_retval MoveObject(BYTE *di)
 	switch (di[4])
 	{
 	case 1:
-		tmp = cl + (dl = data_CE5[ch]);
+		tmp = cl + (dl = IsDiagonalDoubledPhase(ch) + 1);
 		if (tmp >= MAZE_WIDTH)
 			tmp -= MAZE_WIDTH;
 		cl = tmp;
@@ -1307,7 +1314,7 @@ MoveObject_retval MoveObject(BYTE *di)
 		if (tmp >= MAZE_HEIGHT)
 			tmp = 0;
 		ch = tmp;
-		dl = data_CE5[ch];
+		dl = IsDiagonalDoubledPhase(ch) + 1;
 		tmp = cl + dl;
 		if (tmp >= MAZE_WIDTH)
 			tmp -= MAZE_WIDTH;
@@ -1326,7 +1333,7 @@ MoveObject_retval MoveObject(BYTE *di)
 		if (tmp >= MAZE_HEIGHT)
 			tmp = 0;
 		ch = tmp;
-		dl = data_CE5[ch];
+		dl = IsDiagonalDoubledPhase(ch) + 1;
 		tmp = cl - dl;
 		if (tmp < 0)
 			tmp += MAZE_WIDTH;
@@ -1342,7 +1349,7 @@ MoveObject_retval MoveObject(BYTE *di)
 		al = cl;
 		break;
 	case 7:
-		dl = data_CE5[ch];
+		dl = IsDiagonalDoubledPhase(ch) + 1;
 		tmp = cl - dl;
 		if (tmp < 0)
 			tmp += MAZE_WIDTH;
@@ -1957,7 +1964,7 @@ bool main_198A()
 	{
 	case 1:
 		main_1A7B(1);
-		if (!data_11E8[currentObject[3]])
+		if (!IsDiagonalDoubledPhase(currentObject[3]))
 			goto main_1A5E;
 		if (main_1A7B(1))
 			goto main_1A5E;
@@ -1967,7 +1974,7 @@ bool main_198A()
 	case 3:
 		if (main_1A7B(2))
 			goto main_1A5A;
-		if (data_11E8[currentObject[3]])
+		if (IsDiagonalDoubledPhase(currentObject[3]))
 			main_1A7B(1);
 		goto main_1A5A;
 	case 4:
@@ -1976,7 +1983,7 @@ bool main_198A()
 	case 5:
 		if (main_1A7B(2))
 			goto main_1A2B;
-		if (!data_11E8[currentObject[3]])
+		if (!IsDiagonalDoubledPhase(currentObject[3]))
 			goto main_1A2B;
 		main_1A7B(3);
 		// fall through
@@ -1986,7 +1993,7 @@ bool main_198A()
 		goto main_1A64;
 	case 7:
 		main_1A7B(3);
-		if (!data_11E8[currentObject[3]])
+		if (!IsDiagonalDoubledPhase(currentObject[3]))
 			goto main_1A5E;
 		if (main_1A7B(3))
 			goto main_1A5E;

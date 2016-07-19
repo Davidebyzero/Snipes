@@ -335,7 +335,7 @@ const WORD *currentSprite;
 
 #define MAX_OBJECTS 0x100
 
-static BYTE data_B6C[MAX_OBJECTS];
+static BYTE bulletLifetime[MAX_OBJECTS];
 
 static Object objects[MAX_OBJECTS];
 
@@ -1132,21 +1132,18 @@ bool main_154F(BYTE arg)
 
 void UpdateBullets()
 {
-	BYTE data_C94 = 0;
-	BYTE data_C93 = objectHead_bullets;
-	for (;;)
+	BYTE prevObject = 0;
+	for (BYTE object = objectHead_bullets; object;)
 	{
-		if (!data_C93)
-			return;
-		currentObject = &objects[data_C93];
+		currentObject = &objects[object];
 		data_B5C = currentObject->y * MAZE_WIDTH + currentObject->x;
 		if ((BYTE&)maze[data_B5C] == 0xB2)
 		{
-			BYTE data_C95 = currentObject->next;
+			BYTE nextObject = currentObject->next;
 			maze[data_B5C] = 0x920;
-			FreeObjectInList(&objectHead_bullets, data_C93);
+			FreeObjectInList(&objectHead_bullets, object);
 			numBullets--;
-			data_C93 = data_C95;
+			object = nextObject;
 			continue;
 		}
 		maze[data_B5C] = 0x920;
@@ -1194,8 +1191,8 @@ void UpdateBullets()
 				currentSprite = data_11D4[currentObject->unknown5];
 			}
 			maze[data_B5C] = currentSprite[1];
-			data_C94 = data_C93;
-			data_C93 = currentObject->next;
+			prevObject = object;
+			object = currentObject->next;
 			continue;
 		default:
 			__assume(0);
@@ -1222,22 +1219,22 @@ void UpdateBullets()
 			maze[data_B5C] = 0x0FB2;
 			goto main_150E;
 		}
-		if (!enableRubberBullets || currentObject->unknown1 || !data_B6C[data_C93] || !(currentObject->unknown4 & 1))
+		if (!enableRubberBullets || currentObject->unknown1 || !bulletLifetime[object] || !(currentObject->unknown4 & 1))
 			goto main_150E;
-		data_B6C[data_C93]--;
+		bulletLifetime[object]--;
 		currentObject->unknown4 = data_1261[data_C96 * 8 + currentObject->unknown4];
 		SetSoundEffectState(1, 0);
 		main_154F((data_C96 + 2) & 3);
 		goto main_139A;
 	main_150E:
 		numBullets--;
-		if (!data_C94)
+		if (!prevObject)
 			objectHead_bullets = currentObject->next;
 		else
-			objects[data_C94].next = currentObject->next;
-		BYTE data_C95 = currentObject->next;
-		FreeObject(data_C93);
-		data_C93 = data_C95;
+			objects[prevObject].next = currentObject->next;
+		BYTE nextObject = currentObject->next;
+		FreeObject(object);
+		object = nextObject;
 	}
 }
 
@@ -1469,7 +1466,7 @@ void FireBullet(BYTE bulletType)
 		else
 			data_C99 -= MAZE_HEIGHT;
 	}
-	const WORD *data_B60 = currentSprite;
+	const WORD *currentSprite_backup = currentSprite;
 	currentSprite = data_1150;
 	if (!IsObjectLocationOccupied(data_C99, data_C98))
 		goto main_17C3;
@@ -1494,26 +1491,23 @@ main_17B4:
 	maze[data_B5E] = 0x0FB2;
 	goto main_1899;
 main_17C3:
-	BYTE data_C9B = CreateNewObject();
-	if (!data_C9B || numBullets > 50)
+	BYTE newBullet = CreateNewObject();
+	if (!newBullet || numBullets > 50)
 		goto main_1899;
 	numBullets++;
-	Object *data_B62 = currentObject;
-	currentObject = &objects[data_C9B];
+	Object *currentObject_backup = currentObject;
+	currentObject = &objects[newBullet];
 	if (!objectHead_bullets)
 	{
-		objectHead_bullets = data_C9B;
+		objectHead_bullets = newBullet;
 		goto main_182D;
 	}
-	BYTE data_C9A = objectHead_bullets;
-	for (;;)
 	{
-		if (BYTE tmp = objects[data_C9A].next)
-			data_C9A = tmp;
-		else
-			break;
+		BYTE objectTail_bullets = objectHead_bullets;
+		while (BYTE nextObject = objects[objectTail_bullets].next)
+			objectTail_bullets = nextObject;
+		objects[objectTail_bullets].next = newBullet;
 	}
-	objects[data_C9A].next = data_C9B;
 main_182D:
 	currentObject->next = 0;
 	if (bulletType < 6)
@@ -1528,12 +1522,12 @@ main_1854:
 	currentObject->unknown4 = data_C97;
 	currentObject->unknown5 = 0;
 	currentObject->unknown1 = bulletType;
-	data_B6C[data_C9B] = (BYTE)GetRandomMasked(7) + 1;
+	bulletLifetime[newBullet] = (BYTE)GetRandomMasked(7) + 1;
 	currentSprite = FakePointerToPointer(currentObject->sprite);
 	PlotObjectToMaze();
-	currentObject = data_B62;
+	currentObject = currentObject_backup;
 main_1899:
-	currentSprite = data_B60;
+	currentSprite = currentSprite_backup;
 }
 
 bool FireSnipeBullet()
@@ -1550,10 +1544,9 @@ bool FireSnipeBullet()
 
 void UpdateSnipes()
 {
-	BYTE dl = objectHead_snipes;
-	while (dl)
+	for (BYTE object = objectHead_snipes; object;)
 	{
-		Object &di = objects[dl];
+		Object &di = objects[object];
 		WORD *bx = &maze[di.y * MAZE_WIDTH];
 		WORD * leftPart = &bx[di.x];
 		WORD *rightPart = di.x >= MAZE_WIDTH-1 ? &bx[0] : leftPart + 1;
@@ -1572,7 +1565,7 @@ void UpdateSnipes()
 		}
 		if (--di.unknown5)
 		{
-			dl = di.next;
+			object = di.next;
 			continue;
 		}
 		goto main_1F84;
@@ -1596,9 +1589,9 @@ void UpdateSnipes()
 
 		{
 			BYTE a = prevObject->next = di.next;
-			{BYTE tmp = objectHead_ghosts; objectHead_ghosts = dl; dl = tmp;}
-			di.next = dl;
-			dl = a;
+			{BYTE tmp = objectHead_ghosts; objectHead_ghosts = object; object = tmp;}
+			di.next = object;
+			object = a;
 		}
 		di.unknown5 = 2;
 		di.sprite = FAKE_POINTER_data_10FE;
@@ -1624,8 +1617,8 @@ void UpdateSnipes()
 	main_1FB9:
 		{
 			BYTE tmp = di.next;
-			FreeObjectInList(&objectHead_snipes, dl);
-			dl = tmp;
+			FreeObjectInList(&objectHead_snipes, object);
+			object = tmp;
 		}
 		numSnipes--;
 		numSnipesKilled++;
@@ -1716,7 +1709,7 @@ void UpdateSnipes()
 			goto main_2083;
 		}
 	main_20F4:
-		dl = di.next;
+		object = di.next;
 		continue;
 	main_20F9:
 		if (!al)
@@ -1736,31 +1729,29 @@ void UpdateSnipes()
 
 void UpdateGhosts()
 {
-	BYTE dl = objectHead_ghosts;
-	while (dl)
+	for (BYTE object = objectHead_ghosts; object;)
 	{
-		Object &di = objects[dl];
+		Object &di = objects[object];
 		WORD &bx_si = maze[di.y * MAZE_WIDTH + di.x];
 		if ((BYTE&)bx_si != 0xB2)
 		{
 			if (--di.unknown5)
 			{
-				dl = di.next;
+				object = di.next;
 				continue;
 			}
 		}
 		else
 		{
 	main_2158:
-			BYTE tmp = di.next;
-			FreeObjectInList(&objectHead_ghosts, dl);
-			dl = tmp;
+			BYTE nextObject = di.next;
+			FreeObjectInList(&objectHead_ghosts, object);
+			object = nextObject;
 			numGhosts--;
 			numGhostsKilled++;
 			continue;
 		}
 		bx_si = 0x920;
-		BYTE data_CD0 = dl;
 		if (di.unknown1 & 2)
 			goto main_2228;
 		WORD cx;
@@ -1774,7 +1765,6 @@ void UpdateGhosts()
 				{
 					if (GetRandomMasked(ghostBitingAccuracy) == 0)
 					{
-						dl = data_CD0;
 						*(BYTE*)result.bx_si = 0xB2;
 						goto main_2158;
 					}
@@ -1845,7 +1835,7 @@ void UpdateGhosts()
 	main_225D:
 		maze[di.y * MAZE_WIDTH + di.x] = 0x502;
 		di.unknown5 = 3;
-		dl = di.next;
+		object = di.next;
 	}
 }
 
@@ -1901,19 +1891,18 @@ void main_E2A()
 
 void UpdateGenerators()
 {
-	BYTE data_C8F = objectHead_generators;
-	while (data_C8F)
+	for (BYTE object = objectHead_generators; object;)
 	{
-		currentObject = &objects[data_C8F];
+		currentObject = &objects[object];
 		if (++currentObject->unknown5 > 15)
 			currentObject->unknown5 = 0;
 		currentSprite = data_10A2[currentObject->unknown5];
 		currentObject->sprite = PointerToFakePointer(currentSprite);
 		if (IsObjectTaggedToExplode())
 		{
-			BYTE data_C90 = currentObject->next;
-			FreeObjectInList(&objectHead_generators, data_C8F);
-			data_C8F = data_C90;
+			BYTE nextObject = currentObject->next;
+			FreeObjectInList(&objectHead_generators, object);
+			object = nextObject;
 			numGenerators--;
 			continue;
 		}
@@ -1930,24 +1919,29 @@ void UpdateGenerators()
 		if (GetRandomMasked(0xF >> (numGeneratorsAtStart - numGenerators)))
 			goto main_1251;
 		currentSprite = data_1112;
-		BYTE data_C91 = currentObject->x + 2;
-		if (data_C91  > MAZE_WIDTH - 1)
-			data_C91 -= MAZE_WIDTH - 1; // note: this is a latent bug; it should be MAZE_WIDTH, but this makes no difference because this code will never be reached, since generators are centered within their respective maze cells
-		BYTE data_C92 = currentObject->y;
-		if (IsObjectLocationOccupied(data_C92, data_C91))
+		BYTE x = currentObject->x + 2;
+#ifdef EMULATE_LATENT_BUGS
+		if (x  > MAZE_WIDTH - 1)
+			x -= MAZE_WIDTH - 1;
+#else
+		if (x >= MAZE_WIDTH)
+			x -= MAZE_WIDTH;
+#endif
+		BYTE y = currentObject->y;
+		if (IsObjectLocationOccupied(y, x))
 			goto main_1251;
 		if (numSnipes + numGhosts < maxSnipes)
 		{
-			BYTE data_C90 = CreateNewObject();
-			if (!data_C90)
+			BYTE spawnedSnipe = CreateNewObject();
+			if (!spawnedSnipe)
 				goto main_1251;
 			numSnipes++;
-			data_C8F = currentObject->next;
-			currentObject = &objects[data_C90];
+			object = currentObject->next;
+			currentObject = &objects[spawnedSnipe];
 			currentObject->next = objectHead_snipes;
-			objectHead_snipes = data_C90;
-			currentObject->x = data_C91;
-			currentObject->y = data_C92;
+			objectHead_snipes = spawnedSnipe;
+			currentObject->x = x;
+			currentObject->y = y;
 			currentObject->unknown4 = 2;
 			currentObject->sprite = FAKE_POINTER_data_1112;
 			PlotObjectToMaze();
@@ -1956,7 +1950,7 @@ void UpdateGenerators()
 			continue;
 		}
 	main_1251:
-		data_C8F = currentObject->next;
+		object = currentObject->next;
 	}
 }
 
@@ -2180,14 +2174,14 @@ void UpdateExplosions()
 {
 	for (BYTE object = objectHead_explosions; object;)
 	{
-		Object *data_CC6 = currentObject = &objects[object];
-		currentSprite = FakePointerToPointer(data_CC6->sprite);
+		Object *explosionObject = currentObject = &objects[object];
+		currentSprite = FakePointerToPointer(explosionObject->sprite);
 		main_E2A();
-		BYTE data_CCE = (data_CC6->unknown5 + 1) % 6;
-		BYTE data_CCD = data_CC6->next;
+		BYTE data_CCE = (explosionObject->unknown5 + 1) % 6;
+		BYTE nextObject = explosionObject->next;
 		BYTE data_CCF = object == OBJECT_PLAYEREXPLOSION ? 11 : 5;
-		data_CC6->unknown5++;
-		if (data_CC6->unknown5 > data_CCF)
+		explosionObject->unknown5++;
+		if (explosionObject->unknown5 > data_CCF)
 		{
 			FreeObjectInList_worker(&objectHead_explosions, object);
 			if (object != OBJECT_PLAYEREXPLOSION)
@@ -2197,32 +2191,32 @@ void UpdateExplosions()
 		}
 		else
 		{
-			if (data_CC6->unknown4 == ExplosionType_PlayerOrGenerator)
+			if (explosionObject->unknown4 == ExplosionType_PlayerOrGenerator)
 			{
-				data_CC6->sprite = PointerToFakePointer(data_12FE[data_CCE]);
+				explosionObject->sprite = PointerToFakePointer(data_12FE[data_CCE]);
 				currentSprite = data_12FE[data_CCE];
-				if (object == OBJECT_PLAYEREXPLOSION && data_CC6->unknown5 > 5)
-					SetSoundEffectState(11 - data_CC6->unknown5, 4);
+				if (object == OBJECT_PLAYEREXPLOSION && explosionObject->unknown5 > 5)
+					SetSoundEffectState(11 - explosionObject->unknown5, 4);
 				else
 					SetSoundEffectState(data_CCE, 4);
 			}
 			else
-			if (data_CC6->unknown4 == ExplosionType_Snipe)
+			if (explosionObject->unknown4 == ExplosionType_Snipe)
 			{
-				data_CC6->sprite = PointerToFakePointer(data_1352[data_CCE]);
+				explosionObject->sprite = PointerToFakePointer(data_1352[data_CCE]);
 				currentSprite = data_1352[data_CCE];
 				SetSoundEffectState(data_CCE, 3);
 			}
 			else
-			if (data_CC6->unknown4 == ExplosionType_Ghost)
+			if (explosionObject->unknown4 == ExplosionType_Ghost)
 			{
-				data_CC6->sprite = PointerToFakePointer(data_1392[data_CCE]);
+				explosionObject->sprite = PointerToFakePointer(data_1392[data_CCE]);
 				currentSprite = data_1392[data_CCE];
 				SetSoundEffectState(data_CCE, 2);
 			}
 			PlotObjectToMaze();
 		}
-		object = data_CCD;
+		object = nextObject;
 	}
 }
 

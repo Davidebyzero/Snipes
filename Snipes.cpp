@@ -2473,7 +2473,7 @@ int __cdecl main(int argc, char* argv[])
 			if (playbackMode)
 			{
 				if (fread(&replayIO, 1, 1, replayFile) == 0)
-					replayIO = 0;
+					break;
 			}
 			if (main_1AB0(playbackMode, replayIO))
 				break;

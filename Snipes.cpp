@@ -2421,16 +2421,16 @@ int __cdecl main(int argc, char* argv[])
 			}
 		}
 
-		enableElectricWalls = skillLevelLetter >= 'M'-'A';
+		enableElectricWalls          = skillLevelLetter >= 'M'-'A';
+		generatorsResistSnipeBullets = skillLevelLetter >= 'W'-'A';
+		enableRubberBullets          = rubberBulletTable         [skillLevelLetter];
 		snipeShootingAccuracy        = snipeShootingAccuracyTable[skillLevelLetter];
 		enableGhostSnipes            = enableGhostSnipesTable    [skillLevelLetter];
 		ghostBitingAccuracy          = ghostBitingAccuracyTable  [skillLevelLetter];
 		maxSnipes                    = maxSnipesTable            [skillLevelNumber-1];
 		numGeneratorsAtStart         = numGeneratorsTable        [skillLevelNumber-1];
 		numLives                     = numLivesTable             [skillLevelNumber-1];
-		generatorsResistSnipeBullets = skillLevelLetter >= 'W'-'A';
 		data_2AA                     = 2;
-		enableRubberBullets          = rubberBulletTable [skillLevelLetter];
 
 		SetConsoleMode(output, 0);
 		cursorInfo.bVisible = FALSE;

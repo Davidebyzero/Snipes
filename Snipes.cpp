@@ -2364,7 +2364,7 @@ int __cdecl main(int argc, char* argv[])
 {
 	if (argc > 2)
 	{
-		fprintf(stderr, "Usage: %s [filename of replay to play back]\n");
+		fprintf(stderr, "Usage: %s [filename of replay to play back]\n", argv[0]);
 		return -1;
 	}
 	bool playbackMode = argc == 2;

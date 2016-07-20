@@ -1274,7 +1274,7 @@ void UpdateBullets()
 				score += 50;
 				goto main_149B;
 			}
-			if (generatorsResistSnipeBullets && wmemchr((wchar_t*)&data_1002[1], (wchar_t&)*bulletTestPos, _countof(data_1002)-1) || bulletTestPos->ch == 0xFF)
+			if (generatorsResistSnipeBullets && (wmemchr((wchar_t*)&data_1002[1], (wchar_t&)*bulletTestPos, _countof(data_1002)-1) || bulletTestPos->ch == 0xFF))
 				goto main_150E;
 		main_149B:
 			*bulletTestPos = MazeTile(0xF, 0xB2);
@@ -1566,7 +1566,7 @@ void FireBullet(BYTE bulletType)
 	score += 50;
 	goto main_17B4;
 main_1786:
-	if (generatorsResistSnipeBullets && wmemchr((wchar_t*)&data_1002[1], (wchar_t&)maze[data_B5E], _countof(data_1002)-1) || maze[data_B5E].ch == 0xFF)
+	if (generatorsResistSnipeBullets && (wmemchr((wchar_t*)&data_1002[1], (wchar_t&)maze[data_B5E], _countof(data_1002)-1) || maze[data_B5E].ch == 0xFF))
 		goto main_1899;
 main_17B4:
 	maze[data_B5E] = MazeTile(0xF, 0xB2);

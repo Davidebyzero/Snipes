@@ -1934,7 +1934,7 @@ bool IsObjectTaggedToExplode()
 	return false;
 }
 
-void main_E2A()
+void EraseObjectFromMaze()
 {
 	BYTE spriteHeight = ((BYTE*)currentSprite)[0];
 	BYTE spriteWidth  = ((BYTE*)currentSprite)[1];
@@ -1972,7 +1972,7 @@ void UpdateGenerators()
 			numGenerators--;
 			continue;
 		}
-		main_E2A();
+		EraseObjectFromMaze();
 		PlotObjectToMaze();
 		if (--generator.spawnFrame)
 			goto next_generator;
@@ -2092,7 +2092,7 @@ bool MovePlayer()
 	}
 }
 
-bool main_1AB0(bool playbackMode, BYTE &replayIO) // returns true if the match has been lost
+bool UpdatePlayer(bool playbackMode, BYTE &replayIO) // returns true if the match has been lost
 {
 	if (!playbackMode)
 		replayIO = 0;
@@ -2139,7 +2139,7 @@ bool main_1AB0(bool playbackMode, BYTE &replayIO) // returns true if the match h
 		if (IsObjectTaggedToExplode())
 			goto main_1BEE;
 	}
-	main_E2A();
+	EraseObjectFromMaze();
 	static const BYTE data_CAE[] = {0, 2, 6, 0, 4, 3, 5, 0, 0, 1, 7, 0, 0, 0, 0, 0};
 	BYTE moveDirection;
 	if (playbackMode)
@@ -2168,7 +2168,7 @@ playback_move:
 				replayIO += 0x80;
 			if (player.playerUnknown == 1)
 			{
-				main_E2A();
+				EraseObjectFromMaze();
 				if (!MovePlayer())
 				{
 					if (enableElectricWalls)
@@ -2235,7 +2235,7 @@ void UpdateExplosions()
 		currentObject = &objects[object];
 		Explosion &explosion = *(Explosion*)currentObject;
 		currentSprite = FakePointerToPointer(explosion.sprite);
-		main_E2A();
+		EraseObjectFromMaze();
 		BYTE animFrame = (explosion.animFrame + 1) % 6;
 		BYTE nextObject = explosion.next;
 		explosion.animFrame++;
@@ -2549,7 +2549,7 @@ int __cdecl main(int argc, char* argv[])
 				if (fread(&replayIO, 1, 1, replayFile) == 0)
 					break;
 			}
-			if (main_1AB0(playbackMode, replayIO))
+			if (UpdatePlayer(playbackMode, replayIO))
 				break;
 			if (!playbackMode && replayFile)
 				fwrite(&replayIO, 1, 1, replayFile);

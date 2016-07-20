@@ -707,7 +707,18 @@ static const WORD data_137E[] = {SPRITE_SIZE(1,1), 0xC09};
 static const WORD data_1388[] = {SPRITE_SIZE(1,1), 0x407};
 static const WORD *data_1392[] = {data_136A, data_136A, data_136A, data_1374, data_137E, data_1388};
 
-// fake pointers - hacky, but they work for now; should definitely replace them with real pointers once the porting is complete
+bool IsPlayer(BYTE ch)
+{
+	return ch == 0x93 || ch == 0x4F || ch == 0x11 || ch == 0x10;
+}
+bool IsGenerator(MazeTile tile)
+{
+#ifdef FIX_BUGS
+	return tile.ch == 0xDA || tile.ch == 0xBF || tile.ch == 0xC0 || tile.ch == 0xD9 || tile.ch == 0xFF;
+#else
+	return wmemchr((wchar_t*)&data_1002[1], (wchar_t&)tile, _countof(data_1002)-1) || tile.ch == 0xFF;
+#endif
+}
 
 #define FAKE_POINTER_data_1002 0x1002
 #define FAKE_POINTER_data_100C 0x100C
@@ -1276,11 +1287,11 @@ void UpdateBullets()
 				if (memchr(data_128C, find_this, _countof(data_128C)))
 					score += 1;
 				else
-				if (wmemchr((wchar_t*)&data_1002[1], (wchar_t&)*bulletTestPos, _countof(data_1002)-1) || bulletTestPos->ch == 0xFF)
+				if (IsGenerator(*bulletTestPos))
 					score += 50;
 			}
 			else
-			if (generatorsResistSnipeBullets && (wmemchr((wchar_t*)&data_1002[1], (wchar_t&)*bulletTestPos, _countof(data_1002)-1) || bulletTestPos->ch == 0xFF))
+			if (generatorsResistSnipeBullets && IsGenerator(*bulletTestPos))
 				goto main_150E;
 			*bulletTestPos = MazeTile(0xF, 0xB2);
 		}
@@ -1563,11 +1574,11 @@ void FireBullet(BYTE bulletType)
 			if (memchr(data_129D, maze[data_B5E].ch, _countof(data_129D)))
 				score += 1;
 			else
-			if (wmemchr((wchar_t*)&data_1002[1], (wchar_t&)maze[data_B5E], _countof(data_1002)-1) || maze[data_B5E].ch == 0xFF)
+			if (IsGenerator(maze[data_B5E]))
 				score += 50;
 		}
 		else
-		if (generatorsResistSnipeBullets && (wmemchr((wchar_t*)&data_1002[1], (wchar_t&)maze[data_B5E], _countof(data_1002)-1) || maze[data_B5E].ch == 0xFF))
+		if (generatorsResistSnipeBullets && IsGenerator(maze[data_B5E]))
 			goto main_1899;
 		maze[data_B5E] = MazeTile(0xF, 0xB2);
 		goto main_1899;
@@ -1828,7 +1839,7 @@ void UpdateGhosts()
 				di.moveDirection = al;
 				MoveObject_retval result = MoveObject(di);
 				if (result.al && (di.moveDirection & 1))
-					if (result.ah == 0x93 || result.ah == 0x4F || result.ah == 0x11 || result.ah == 0x10) // player character sprite
+					if (IsPlayer(result.ah))
 					{
 						if (GetRandomMasked(ghostBitingAccuracy) == 0)
 						{

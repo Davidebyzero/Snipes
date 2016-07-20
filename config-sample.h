@@ -1,5 +1,6 @@
 //#define USE_MODULO_LOOKUP_TABLE  // might result in slightly better speed, but makes the EXE larger
 
+//#define FIX_BUGS
 //#define EMULATE_LATENT_BUGS
 
 //#define CHEAT_OMNISCIENCE

@@ -2435,7 +2435,30 @@ int __cdecl main(int argc, char* argv[])
 	if (!playbackMode)
 	{
 		SetConsoleTextAttribute(output, FOREGROUND_BLUE | FOREGROUND_GREEN | FOREGROUND_RED);
-		WriteConsole(output, STRING_WITH_LEN("Enter skill level (A-Z)(1-9): "), &operationSize, 0);
+#define _ " "
+#define S "\x01"
+#define i "\x18"
+#define TITLE_SCREEN \
+		"       ported by David Ellsworth\r\n"\
+		"\r\n"\
+		_ _ _ _ i i i _ _ i _ _ _ i _ i i i _ i i i i _ _ i i i i i _ _ i i i "\r\n"\
+		_ _ _ i S S S i _ S _ _ _ S _ S S S _ S S S S i _ S S S S S _ i S S S i "\r\n"\
+		_ _ _ S _ _ _ S _ i i _ _ i _ _ i _ _ i _ _ _ S _ i _ _ _ _ _ S _ _ _ S "\r\n"\
+		_ _ _ i _ _ _ _ _ S S _ _ S _ _ S _ _ S _ _ _ i _ S _ _ _ _ _ i "\r\n"\
+		_ _ _ S i i i _ _ i _ i _ i _ _ i _ _ i i i i S _ i i i i _ _ S i i i "\r\n"\
+		_ _ _ _ S S S i _ S _ S _ S _ _ S _ _ S S S S _ _ S S S S _ _ _ S S S i "\r\n"\
+		_ _ _ _ _ _ _ S _ i _ _ i i _ _ i _ _ i _ _ _ _ _ i _ _ _ _ _ _ _ _ _ S "\r\n"\
+		_ _ _ i _ _ _ i _ S _ _ S S _ _ S _ _ S _ _ _ _ _ S _ _ _ _ _ i _ _ _ i "\r\n"\
+		_ _ _ S i i i S _ i _ _ _ i _ i i i _ i _ _ _ _ _ i i i i i _ S i i i S "\r\n"\
+		_ _ _ _ S S S _ _ S _ _ _ S _ S S S _ S _ _ _ _ _ S S S S S _ _ S S S "\r\n"\
+		"\r\n\r\n"\
+		"(c)Copyright SuperSet Software Corp 1982\r\n"\
+		"All Rights Reserved\r\n"\
+		"\r\n\r\n"
+		WriteConsole(output, STRING_WITH_LEN(TITLE_SCREEN "Enter skill level (A-Z)(1-9): "), &operationSize, 0);
+#undef _
+#undef S
+#undef i
 		ReadSkillLevel();
 		if (DidBreakHappenDuringInput())
 			goto do_not_play_again;

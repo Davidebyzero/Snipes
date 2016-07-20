@@ -381,8 +381,8 @@ DEFINE_MOVING_OBJECT_AND_MEMBERS(Bullet, bulletType,    animFrame    );
 BYTE playerFiringPeriod; // in pairs of frames
 WORD frame;
 static bool playerAnimFrame, data_C73, isPlayerExploding, data_CBF;
-static BYTE lastHUD_numGhosts, lastHUD_numGeneratorsKilled, lastHUD_numSnipes, lastHUD_numPlayerDeaths, objectHead_free, objectHead_bullets, objectHead_explosions, objectHead_ghosts, objectHead_snipes, objectHead_generators, numGenerators, numGhosts, numBullets, numPlayerDeaths, numSnipes, data_C74, currentSoundEffect = SOUNDEFFECT_NONE, currentSoundEffectFrame, data_C96, data_B69, data_C77, data_C78;
-static WORD lastHUD_numGhostsKilled, lastHUD_numSnipesKilled, numGhostsKilled, numSnipesKilled, data_1CA, data_1CC;
+static BYTE lastHUD_numGhosts, lastHUD_numGeneratorsKilled, lastHUD_numSnipes, lastHUD_numPlayerDeaths, objectHead_free, objectHead_bullets, objectHead_explosions, objectHead_ghosts, objectHead_snipes, objectHead_generators, numGenerators, numGhosts, numBullets, numPlayerDeaths, numSnipes, data_C74, currentSoundEffect = SOUNDEFFECT_NONE, currentSoundEffectFrame, data_C96, orthoDistance, data_C77, data_C78;
+static WORD lastHUD_numGhostsKilled, lastHUD_numSnipesKilled, numGhostsKilled, numSnipesKilled, viewportFocusX, viewportFocusY;
 static MazeTile *bulletTestPos;
 static SHORT lastHUD_score, score;
 Object *currentObject;
@@ -994,8 +994,8 @@ void CreateGeneratorsAndPlayer()
 	currentObject = &player;
 	GetRandomUnoccupiedMazeCell();
 	PlotObjectToMaze();
-	data_1CA = player.x;
-	data_1CC = player.y;
+	viewportFocusX = player.x;
+	viewportFocusY = player.y;
 	player.playerUnknown = 1;
 	player.firingFrame = 1;
 }
@@ -1299,10 +1299,22 @@ void UpdateBullets()
 	}
 }
 
-BYTE main_2381(Object &di, WORD &cx)
+struct OrthoDistanceInfo
 {
-	BYTE  bx = 1;
-	SHORT ax = di.x - data_1CA;
+	union
+	{
+		struct {BYTE x, y;};
+		WORD xy;
+	};
+	BYTE direction; // 0..7 = left, left+down, down, left+up, up, right+up, right, right+down
+};
+
+OrthoDistanceInfo GetOrthoDistanceAndDirection(Object &di)
+// Calculates the orthogonal distance between object di and the viewport focus
+{
+	OrthoDistanceInfo result;
+	BYTE bx = 1;
+	int  ax = di.x - viewportFocusX;
 	if (ax <= 0)
 	{
 		bx = 0;
@@ -1313,8 +1325,8 @@ BYTE main_2381(Object &di, WORD &cx)
 		bx ^= 1;
 		ax = MAZE_WIDTH - ax;
 	}
-	((BYTE*)&cx)[0] = (BYTE&)ax;
-	ax = di.y - data_1CC;
+	result.x = ax;
+	ax = di.y - viewportFocusY;
 	if (ax < 0)
 	{
 		bx += 2;
@@ -1325,14 +1337,21 @@ BYTE main_2381(Object &di, WORD &cx)
 		bx ^= 2;
 		ax = MAZE_HEIGHT - ax;
 	}
-	((BYTE*)&cx)[1] = (BYTE&)ax;
-	data_B69 = (BYTE&)ax += ((BYTE*)&cx)[0];
-	if (!((BYTE*)&cx)[0])
-		return bx * 2;
-	if (!((BYTE*)&cx)[1])
-		return bx * 4 + 2;
-	static const BYTE data_CD1[] = {1, 7, 3, 5};
-	return data_CD1[bx];
+	result.y = ax;
+	orthoDistance = result.x + result.y;
+	if (result.x == 0)
+	{
+		result.direction = bx * 2;
+		return result;
+	}
+	if (result.y == 0)
+	{
+		result.direction = bx * 4 + 2;
+		return result;
+	}
+	static const BYTE diagonalDirectionTable[] = {1, 7, 3, 5};
+	result.direction = diagonalDirectionTable[bx];
+	return result;
 }
 
 struct MoveObject_retval {bool al; BYTE ah; WORD cx; MazeTile *bx_si;};
@@ -1595,7 +1614,7 @@ main_1899:
 
 bool FireSnipeBullet()
 {
-	BYTE data_C9C = data_B69 >> snipeShootingAccuracy;
+	BYTE data_C9C = orthoDistance >> snipeShootingAccuracy;
 	if (data_C9C > 10)
 		return false;
 	if (GetRandomMasked(0xFFFF >> (15 - data_C9C)))
@@ -1690,10 +1709,7 @@ void UpdateSnipes()
 		if (GetRandomMasked(3) == 0)
 			snipe.moveDirection = (BYTE)GetRandomMasked(7);
 		else
-		{
-			WORD dummy;
-			snipe.moveDirection = main_2381(snipe, dummy);
-		}
+			snipe.moveDirection = GetOrthoDistanceAndDirection(snipe).direction;
 		for (Uint count=8; count; count--)
 		{
 			MoveObject_retval result = MoveObject(snipe);
@@ -1716,14 +1732,14 @@ void UpdateSnipes()
 			maze[snipe.y * MAZE_WIDTH + snipe.x+1] = (MazeTile&)sprite[1 + 1];
 		else
 			maze[snipe.y * MAZE_WIDTH         ] = (MazeTile&)sprite[1 + 1];
-		WORD cx;
-		BYTE al = main_2381(snipe, cx);
+		OrthoDistanceInfo orthoDist = GetOrthoDistanceAndDirection(snipe);
+		BYTE al = orthoDist.direction;
 		BYTE ah = snipe.moveDirection;
 		if (al != ah)
 			goto main_209E;
-		if (!((BYTE*)&cx)[1] || !((BYTE*)&cx)[0])
+		if (orthoDist.x==0 || orthoDist.y==0)
 			goto main_2083;
-		if (abs((int)((BYTE*)&cx)[0] * MAZE_CELL_HEIGHT - (int)((BYTE*)&cx)[1] * MAZE_CELL_WIDTH) >= MAZE_CELL_WIDTH)
+		if (abs((int)orthoDist.x * MAZE_CELL_HEIGHT - (int)orthoDist.y * MAZE_CELL_WIDTH) >= MAZE_CELL_WIDTH)
 			goto main_20F4;
 		al = snipe.moveDirection;
 	main_2083:
@@ -1737,7 +1753,7 @@ void UpdateSnipes()
 		}
 		goto main_20F9;
 	main_209E:
-		if (((BYTE*)&cx)[1] > 2 || al == 0 || al == 4)
+		if (orthoDist.y > 2 || al == 0 || al == 4)
 			goto main_20C3;
 		if (al > 4)
 			goto main_20BA;
@@ -1752,7 +1768,7 @@ void UpdateSnipes()
 			goto main_2083;
 		}
 	main_20C3:
-		if (((BYTE*)&cx)[0] > 2)
+		if (orthoDist.x > 2)
 			goto main_20F4;
 		al = (al + 1) & 7;
 		if (al == 7 || al == 3)
@@ -1817,9 +1833,10 @@ void UpdateGhosts()
 		bx_si = MazeTile(0x9, ' ');
 		if (di.ghostUnknown1 & 2)
 			goto main_2228;
-		WORD cx;
-		BYTE al = main_2381(di, cx);
-		if (data_B69 <= 4)
+		OrthoDistanceInfo orthoDist;
+		orthoDist = GetOrthoDistanceAndDirection(di);
+		BYTE al = orthoDist.direction;
+		if (orthoDistance <= 4)
 		{
 			di.moveDirection = al;
 			MoveObject_retval result = MoveObject(di);
@@ -1834,9 +1851,9 @@ void UpdateGhosts()
 				}
 		}
 	//main_21C5:
-		if (((BYTE*)&cx)[1] > 1)
+		if (orthoDist.y > 1)
 			goto main_21EC;
-		if (((BYTE*)&cx)[1] < 1)
+		if (orthoDist.y < 1)
 			goto main_21DA;
 		BYTE tmp = al;
 		al = 2;
@@ -1847,21 +1864,21 @@ void UpdateGhosts()
 		di.moveDirection = ++al;
 		{
 			MoveObject_retval result = MoveObject(di);
-			cx = result.cx;
+			orthoDist.xy = result.cx;
 			if (!result.al)
 				goto main_225A;
 		}
 		al -= 2;
 		goto main_220B;
 	main_21EC:
-		if (((BYTE*)&cx)[0] == 1)
+		if (orthoDist.x == 1)
 			al = (al + 1) & 4;
 		else
-		if (((BYTE*)&cx)[0] < 1)
+		if (orthoDist.x < 1)
 		{
 			di.moveDirection = al += 2;
 			MoveObject_retval result = MoveObject(di);
-			cx = result.cx;
+			orthoDist.xy = result.cx;
 			if (!result.al)
 				goto main_225A;
 			al = (al - 4) & 7;
@@ -1870,18 +1887,18 @@ void UpdateGhosts()
 		di.moveDirection = al;
 		{
 			MoveObject_retval result = MoveObject(di);
-			cx = result.cx;
+			orthoDist.xy = result.cx;
 			if (!result.al)
 				goto main_225A;
 		}
-		if (data_B69 >= 0x14)
+		if (orthoDistance >= 20)
 			di.ghostUnknown1 |= 2;
 		di.moveDirection = (BYTE)GetRandomMasked(7);
 	main_2228:
 		for (Uint count=8; count; count--)
 		{
 			MoveObject_retval result = MoveObject(di);
-			cx = result.cx;
+			orthoDist.xy = result.cx;
 			if (!result.al)
 				goto main_225A;
 			di.ghostUnknown1 &= ~2;
@@ -1894,7 +1911,7 @@ void UpdateGhosts()
 		}
 		goto main_225D;
 	main_225A:
-		di.xy = cx;
+		di.xy = orthoDist.xy;
 	main_225D:
 		maze[di.y * MAZE_WIDTH + di.x] = MazeTile(0x5, 0x02);
 		di.ghostUnknown2 = 3;
@@ -1974,12 +1991,11 @@ void UpdateGenerators()
 		PlotObjectToMaze();
 		if (--generator.spawnFrame)
 			goto main_1251;
-		WORD dummy;
-		main_2381(*currentObject, dummy);
+		GetOrthoDistanceAndDirection(*currentObject);
 		if (frame >= 0xF00)
 			generator.spawnFrame = 5;
 		else
-			generator.spawnFrame = 5 + (data_B69 >> (frame/0x100 + 1));
+			generator.spawnFrame = 5 + (orthoDistance >> (frame/0x100 + 1));
 		if (GetRandomMasked(0xF >> (numGeneratorsAtStart - numGenerators)))
 			goto main_1251;
 		currentSprite = data_1112;
@@ -2025,8 +2041,8 @@ bool MovePlayer_helper(BYTE arg)
 	MoveObject_retval result = MoveObject(*(MovingObject*)currentObject);
 	if (result.al)
 		return data_CBF = true;
-	data_1CA = player.x = data_C77;
-	data_1CC = player.y = data_C78;
+	viewportFocusX = player.x = data_C77;
+	viewportFocusY = player.y = data_C78;
 	return false;
 }
 
@@ -2221,8 +2237,8 @@ main_1C03:
 	keyboard_state = PollKeyboard();
 	data_C73 = false;
 	GetRandomUnoccupiedMazeCell();
-	data_1CA = player.x;
-	data_1CC = player.y;
+	viewportFocusX = player.x;
+	viewportFocusY = player.y;
 	PlotObjectToMaze();
 	return false;
 }
@@ -2317,10 +2333,10 @@ void UpdateSound()
 void DrawViewport()
 {
 	WORD outputRow = VIEWPORT_ROW;
-	SHORT data_298 = data_1CC - VIEWPORT_HEIGHT / 2;
+	SHORT data_298 = viewportFocusY - VIEWPORT_HEIGHT / 2;
 	if (data_298 < 0)
 		data_298 += MAZE_HEIGHT;
-	SHORT data_296 = data_1CA - WINDOW_WIDTH / 2;
+	SHORT data_296 = viewportFocusX - WINDOW_WIDTH / 2;
 	if (data_296 < 0)
 		data_296 += MAZE_WIDTH;
 	SHORT wrappingColumn = 0;

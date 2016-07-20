@@ -376,10 +376,12 @@ DEFINE_MOVING_OBJECT_AND_MEMBERS(Snipe,  snipeUnknown1, snipeUnknown2);
 DEFINE_MOVING_OBJECT_AND_MEMBERS(Ghost,  ghostUnknown1, ghostUnknown2);
 DEFINE_MOVING_OBJECT_AND_MEMBERS(Bullet, bulletType,    animFrame    );
 
-BYTE data_2AA;
+#define SOUNDEFFECT_NONE 0xFF
+
+BYTE playerFiringPeriod; // in pairs of frames
 WORD frame;
 static bool playerAnimFrame, data_C73, isPlayerExploding, data_CBF;
-static BYTE lastHUD_numGhosts, lastHUD_numGeneratorsKilled, lastHUD_numSnipes, lastHUD_numPlayerDeaths, objectHead_free, objectHead_bullets, objectHead_explosions, objectHead_ghosts, objectHead_snipes, objectHead_generators, numGenerators, numGhosts, numBullets, numPlayerDeaths, numSnipes, data_C74, data_DF0 = 0xFF, data_DF1, data_C96, data_B69, data_C77, data_C78;
+static BYTE lastHUD_numGhosts, lastHUD_numGeneratorsKilled, lastHUD_numSnipes, lastHUD_numPlayerDeaths, objectHead_free, objectHead_bullets, objectHead_explosions, objectHead_ghosts, objectHead_snipes, objectHead_generators, numGenerators, numGhosts, numBullets, numPlayerDeaths, numSnipes, data_C74, currentSoundEffect = SOUNDEFFECT_NONE, currentSoundEffectFrame, data_C96, data_B69, data_C77, data_C78;
 static WORD lastHUD_numGhostsKilled, lastHUD_numSnipesKilled, numGhostsKilled, numSnipesKilled, data_1CA, data_1CC;
 static MazeTile *bulletTestPos;
 static SHORT lastHUD_score, score;
@@ -998,14 +1000,14 @@ void CreateGeneratorsAndPlayer()
 	player.firingFrame = 1;
 }
 
-void SetSoundEffectState(BYTE arg1, BYTE arg2)
+void SetSoundEffectState(BYTE frame, BYTE index)
 {
-	if (data_DF0 != 0xFF && arg2 < data_DF0)
+	if (currentSoundEffect != SOUNDEFFECT_NONE && index < currentSoundEffect)
 		return;
-	if (!shooting_sound_enabled && !arg2)
+	if (!shooting_sound_enabled && !index)
 		return;
-	data_DF1 = arg1;
-	data_DF0 = arg2;
+	currentSoundEffectFrame = frame;
+	currentSoundEffect      = index;
 }
 
 bool updateHUD() // returns true if the match has been won
@@ -2200,12 +2202,12 @@ playback_fire:
 			replayIO += (fireDirection + 1) * 9;
 		if (--player.firingFrame)
 			return false;
-		BYTE data_CC1 = player.moveDirection;
+		BYTE moveDirection = player.moveDirection;
 		player.moveDirection = fireDirection;
 		FireBullet(0);
 		SetSoundEffectState(0, 0);
-		player.moveDirection = data_CC1;
-		player.firingFrame = player.playerUnknown == 1 ? data_2AA<<1 : data_2AA;
+		player.moveDirection = moveDirection;
+		player.firingFrame = player.playerUnknown == 1 ? playerFiringPeriod<<1 : playerFiringPeriod;
 		return false;
 	}
 	player.firingFrame = 1;
@@ -2281,15 +2283,15 @@ static const WORD sound3[] = {2000, 8000, 6500, 4000, 2500, 1000};
 
 void UpdateSound()
 {
-	if (!sound_enabled || data_DF0 == 0xFF)
+	if (!sound_enabled || currentSoundEffect == SOUNDEFFECT_NONE)
 	{
 		ClearSound();
 		return;
 	}
-	switch (data_DF0)
+	switch (currentSoundEffect)
 	{
 	case 0:
-		if (!data_DF1)
+		if (!currentSoundEffectFrame)
 			PlayTone(1900);
 		else
 			PlayTone(1400);
@@ -2298,18 +2300,18 @@ void UpdateSound()
 		PlayTone(1600);
 		break;
 	case 2:
-		PlayTone(sound1[data_DF1]);
+		PlayTone(sound1[currentSoundEffectFrame]);
 		break;
 	case 3:
-		PlayTone(sound2[data_DF1]);
+		PlayTone(sound2[currentSoundEffectFrame]);
 		break;
 	case 4:
-		PlayTone(sound3[data_DF1]);
+		PlayTone(sound3[currentSoundEffectFrame]);
 		break;
 	default:
 		__assume(0);
 	}
-	data_DF0 = 0xFF;
+	currentSoundEffect = SOUNDEFFECT_NONE;
 }
 
 void DrawViewport()
@@ -2494,7 +2496,7 @@ int __cdecl main(int argc, char* argv[])
 		maxSnipes                    = maxSnipesTable            [skillLevelNumber-1];
 		numGeneratorsAtStart         = numGeneratorsTable        [skillLevelNumber-1];
 		numLives                     = numLivesTable             [skillLevelNumber-1];
-		data_2AA                     = 2;
+		playerFiringPeriod           = 2;
 
 		SetConsoleMode(output, 0);
 		cursorInfo.bVisible = FALSE;
@@ -2505,7 +2507,7 @@ int __cdecl main(int argc, char* argv[])
 		outputHUD();
 		CreateMaze();
 		CreateGeneratorsAndPlayer();
-		SetSoundEffectState(0, 0xFF);
+		SetSoundEffectState(0, SOUNDEFFECT_NONE);
 
 		for (;;)
 		{

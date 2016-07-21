@@ -1860,6 +1860,10 @@ void UpdateGhosts()
 							result.bx_si->ch = 0xB2;
 							goto main_2158;
 						}
+#ifndef FIX_BUGS
+						// a compiler bug manifesting in the original game caused the CX register to be overwritten by the call to GetRandomMasked()
+						orthoDist.xy = 947;
+#endif
 					}
 			}
 			if (orthoDist.y <= 1)

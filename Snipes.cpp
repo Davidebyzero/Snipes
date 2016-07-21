@@ -380,12 +380,22 @@ DEFINE_MOVING_OBJECT_AND_MEMBERS(Snipe,  snipeUnknown1, snipeUnknown2);
 DEFINE_MOVING_OBJECT_AND_MEMBERS(Ghost,  ghostUnknown1, ghostUnknown2);
 DEFINE_MOVING_OBJECT_AND_MEMBERS(Bullet, bulletType,    animFrame    );
 
-#define SOUNDEFFECT_NONE 0xFF
+enum SoundEffect : BYTE
+{
+	SoundEffect_PlayerBullet  = 0,
+	SoundEffect_SnipeBullet   = 1,
+	SoundEffect_ExplodeGhost  = 2,
+	SoundEffect_ExplodeSnipe  = 3,
+	SoundEffect_ExplodePlayer = 4,
+	SoundEffect_None = 0xFF
+};
 
 BYTE playerFiringPeriod; // in pairs of frames
 WORD frame;
 static bool playerAnimFrame, data_C73, isPlayerExploding, data_CBF;
-static BYTE lastHUD_numGhosts, lastHUD_numGeneratorsKilled, lastHUD_numSnipes, lastHUD_numPlayerDeaths, objectHead_free, objectHead_bullets, objectHead_explosions, objectHead_ghosts, objectHead_snipes, objectHead_generators, numGenerators, numGhosts, numBullets, numPlayerDeaths, numSnipes, data_C74, currentSoundEffect = SOUNDEFFECT_NONE, currentSoundEffectFrame, data_C96, orthoDistance, data_C77, data_C78;
+static BYTE lastHUD_numGhosts, lastHUD_numGeneratorsKilled, lastHUD_numSnipes, lastHUD_numPlayerDeaths, objectHead_free, objectHead_bullets, objectHead_explosions, objectHead_ghosts, objectHead_snipes, objectHead_generators, numGenerators, numGhosts, numBullets, numPlayerDeaths, numSnipes, data_C74, data_C96, orthoDistance, data_C77, data_C78;
+static SoundEffect currentSoundEffect = SoundEffect_None;
+static BYTE currentSoundEffectFrame;
 static WORD lastHUD_numGhostsKilled, lastHUD_numSnipesKilled, numGhostsKilled, numSnipesKilled, viewportFocusX, viewportFocusY;
 static MazeTile *bulletTestPos;
 static SHORT lastHUD_score, score;
@@ -1025,9 +1035,9 @@ void CreateGeneratorsAndPlayer()
 	player.firingFrame = 1;
 }
 
-void SetSoundEffectState(BYTE frame, BYTE index)
+void SetSoundEffectState(BYTE frame, SoundEffect index)
 {
-	if (currentSoundEffect != SOUNDEFFECT_NONE && index < currentSoundEffect)
+	if (currentSoundEffect != SoundEffect_None && index < currentSoundEffect)
 		return;
 	if (!shooting_sound_enabled && !index)
 		return;
@@ -1116,7 +1126,7 @@ void ExplodeObject(BYTE arg)
 		currentSprite = data_12C2;
 		explosion.spriteSize = EXPLOSION_SIZE(2,2);
 		explosion.animFrame = 0;
-		SetSoundEffectState(0, 4);
+		SetSoundEffectState(0, SoundEffect_ExplodePlayer);
 	}
 	if (data_CC8 == 1 && data_CC9 == 2)
 	{
@@ -1124,7 +1134,7 @@ void ExplodeObject(BYTE arg)
 		currentSprite = data_1316;
 		explosion.spriteSize = EXPLOSION_SIZE(2,1);
 		explosion.animFrame = 0;
-		SetSoundEffectState(0, 3);
+		SetSoundEffectState(0, SoundEffect_ExplodeSnipe);
 	}
 	if (data_CC8 == 1 && data_CC9 == 1)
 	{
@@ -1132,7 +1142,7 @@ void ExplodeObject(BYTE arg)
 		currentSprite = data_136A;
 		explosion.spriteSize = EXPLOSION_SIZE(1,1);
 		explosion.animFrame = 2;
-		SetSoundEffectState(2, 2);
+		SetSoundEffectState(2, SoundEffect_ExplodeGhost);
 	}
 	PlotObjectToMaze();
 }
@@ -1304,7 +1314,7 @@ void UpdateBullets()
 		{
 			bulletLifetime[object]--;
 			bullet.moveDirection = data_1261[data_C96][bullet.moveDirection];
-			SetSoundEffectState(1, 0);
+			SetSoundEffectState(1, SoundEffect_PlayerBullet);
 			MoveBulletAndTestHit((data_C96 + 2) & 3);
 			goto main_139A;
 		}
@@ -1629,7 +1639,7 @@ bool FireSnipeBullet()
 	if (GetRandomMasked(0xFFFF >> (15 - data_C9C)))
 		return false;
 	FireBullet(BulletType_Snipe);
-	SetSoundEffectState(0, 1);
+	SetSoundEffectState(0, SoundEffect_SnipeBullet);
 	return true;
 }
 
@@ -2221,7 +2231,7 @@ playback_fire:
 		BYTE moveDirection = player.moveDirection;
 		player.moveDirection = fireDirection;
 		FireBullet(BulletType_Player);
-		SetSoundEffectState(0, 0);
+		SetSoundEffectState(0, SoundEffect_PlayerBullet);
 		player.moveDirection = moveDirection;
 		player.firingFrame = player.playerUnknown == 1 ? playerFiringPeriod<<1 : playerFiringPeriod;
 		return false;
@@ -2268,24 +2278,24 @@ void UpdateExplosions()
 			{
 				explosion.sprite = PointerToFakePointer(data_12FE[animFrame]);
 				currentSprite = data_12FE[animFrame];
-				if (object == OBJECT_PLAYEREXPLOSION && explosion.animFrame > 5)
-					SetSoundEffectState(11 - explosion.animFrame, 4);
+				if (object == OBJECT_PLAYEREXPLOSION && explosion.animFrame >= 6)
+					SetSoundEffectState(5 - (explosion.animFrame - 6), SoundEffect_ExplodePlayer);
 				else
-					SetSoundEffectState(animFrame, 4);
+					SetSoundEffectState(animFrame, SoundEffect_ExplodePlayer);
 			}
 			else
 			if (explosion.spriteSize == EXPLOSION_SIZE(2,1))
 			{
 				explosion.sprite = PointerToFakePointer(data_1352[animFrame]);
 				currentSprite = data_1352[animFrame];
-				SetSoundEffectState(animFrame, 3);
+				SetSoundEffectState(animFrame, SoundEffect_ExplodeSnipe);
 			}
 			else
 			if (explosion.spriteSize == EXPLOSION_SIZE(1,1))
 			{
 				explosion.sprite = PointerToFakePointer(data_1392[animFrame]);
 				currentSprite = data_1392[animFrame];
-				SetSoundEffectState(animFrame, 2);
+				SetSoundEffectState(animFrame, SoundEffect_ExplodeGhost);
 			}
 			PlotObjectToMaze();
 		}
@@ -2293,9 +2303,9 @@ void UpdateExplosions()
 	}
 }
 
-static const WORD sound1[] = {100, 100, 1400, 1800, 1600, 1200};
-static const WORD sound2[] = {2200, 6600, 1800, 4400, 8400, 1100};
-static const WORD sound3[] = {2000, 8000, 6500, 4000, 2500, 1000};
+static const WORD sound_ExplodeGhost [] = { 100,  100, 1400, 1800, 1600, 1200};
+static const WORD sound_ExplodeSnipe [] = {2200, 6600, 1800, 4400, 8400, 1100};
+static const WORD sound_ExplodePlayer[] = {2000, 8000, 6500, 4000, 2500, 1000};
 
 void UpdateSound()
 {
@@ -2304,7 +2314,7 @@ void UpdateSound()
 		ClearSound();
 		return;
 	}
-	if (currentSoundEffect == SOUNDEFFECT_NONE)
+	if (currentSoundEffect == SoundEffect_None)
 	{
 #ifdef PLAY_SOUND_DURING_SILENCE
 		PlayTone(0);
@@ -2315,28 +2325,28 @@ void UpdateSound()
 	}
 	switch (currentSoundEffect)
 	{
-	case 0:
+	case SoundEffect_PlayerBullet:
 		if (!currentSoundEffectFrame)
 			PlayTone(1900);
 		else
 			PlayTone(1400);
 		break;
-	case 1:
+	case SoundEffect_SnipeBullet:
 		PlayTone(1600);
 		break;
-	case 2:
-		PlayTone(sound1[currentSoundEffectFrame]);
+	case SoundEffect_ExplodeGhost:
+		PlayTone(sound_ExplodeGhost[currentSoundEffectFrame]);
 		break;
-	case 3:
-		PlayTone(sound2[currentSoundEffectFrame]);
+	case SoundEffect_ExplodeSnipe:
+		PlayTone(sound_ExplodeSnipe[currentSoundEffectFrame]);
 		break;
-	case 4:
-		PlayTone(sound3[currentSoundEffectFrame]);
+	case SoundEffect_ExplodePlayer:
+		PlayTone(sound_ExplodePlayer[currentSoundEffectFrame]);
 		break;
 	default:
 		__assume(0);
 	}
-	currentSoundEffect = SOUNDEFFECT_NONE;
+	currentSoundEffect = SoundEffect_None;
 }
 
 void DrawViewport()
@@ -2555,7 +2565,7 @@ int __cdecl main(int argc, char* argv[])
 		OutputHUD();
 		CreateMaze();
 		CreateGeneratorsAndPlayer();
-		SetSoundEffectState(0, SOUNDEFFECT_NONE);
+		SetSoundEffectState(0, SoundEffect_None);
 
 		for (;;)
 		{

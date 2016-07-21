@@ -2592,12 +2592,10 @@ int __cdecl main(int argc, char* argv[])
 			UpdateGenerators();
 
 			BYTE replayIO;
-			if (playbackMode)
-			{
-				if (fread(&replayIO, 1, 1, replayFile) == 0)
-					break;
-			}
-			if (UpdatePlayer(playbackMode, replayIO))
+			bool playbackFinished = false;
+			if (playbackMode && fread(&replayIO, 1, 1, replayFile) == 0)
+				playbackFinished = true;
+			if (UpdatePlayer(playbackMode, replayIO) || playbackFinished)
 				break;
 			if (!playbackMode && replayFile)
 				fwrite(&replayIO, 1, 1, replayFile);

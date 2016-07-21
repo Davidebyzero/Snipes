@@ -1822,43 +1822,41 @@ void UpdateGhosts()
 {
 	for (BYTE object = objectHead_ghosts; object;)
 	{
-		Ghost &di = (Ghost&)objects[object];
-		MazeTile &bx_si = maze[di.y * MAZE_WIDTH + di.x];
-		if (bx_si.ch != 0xB2)
+		Ghost &ghost = (Ghost&)objects[object];
+		MazeTile &ghostInMaze = maze[ghost.y * MAZE_WIDTH + ghost.x];
+		if (ghostInMaze.ch != 0xB2)
 		{
-			if (--di.ghostUnknown2)
+			if (--ghost.ghostUnknown2)
 			{
-				object = di.next;
+				object = ghost.next;
 				continue;
 			}
 		}
 		else
 		{
-	main_2158:
-			BYTE nextObject = di.next;
+	kill_ghost:
+			BYTE nextObject = ghost.next;
 			FreeObjectInList(&objectHead_ghosts, object);
 			object = nextObject;
 			numGhosts--;
 			numGhostsKilled++;
 			continue;
 		}
-		bx_si = MazeTile(0x9, ' ');
-		BYTE al;
-		if (!(di.ghostUnknown1 & 2))
+		ghostInMaze = MazeTile(0x9, ' ');
+		if (!(ghost.ghostUnknown1 & 2))
 		{
-			OrthoDistanceInfo orthoDist = GetOrthoDistanceAndDirection(di);
-			al = orthoDist.direction;
+			OrthoDistanceInfo orthoDist = GetOrthoDistanceAndDirection(ghost);
 			if (orthoDistance <= 4)
 			{
-				di.moveDirection = al;
-				MoveObject_retval result = MoveObject(di);
-				if (result.al && (di.moveDirection & 1))
+				ghost.moveDirection = orthoDist.direction;
+				MoveObject_retval result = MoveObject(ghost);
+				if (result.al && (ghost.moveDirection & 1))
 					if (IsPlayer(result.ah))
 					{
 						if (GetRandomMasked(ghostBitingAccuracy) == 0)
 						{
 							result.bx_si->ch = 0xB2;
-							goto main_2158;
+							goto kill_ghost;
 						}
 #ifndef FIX_BUGS
 						// a compiler bug manifesting in the original game caused the CX register to be overwritten by the call to GetRandomMasked()
@@ -1866,77 +1864,66 @@ void UpdateGhosts()
 #endif
 					}
 			}
-			if (orthoDist.y <= 1)
+			if (orthoDist.y == 1)
+				orthoDist.direction = orthoDist.direction >= 4 ? 6 : 2;
+			else
+			if (orthoDist.y < 1)
 			{
-				if (orthoDist.y >= 1)
+				ghost.moveDirection = ++orthoDist.direction;
+				MoveObject_retval result = MoveObject(ghost);
+				if (!result.al)
 				{
-					BYTE tmp = al;
-					al = 2;
-					if (tmp >= 4)
-						al = 6;
+					ghost.xy = result.cx;
+					goto plot_ghost_and_continue;
 				}
-				else
-				{
-					di.moveDirection = ++al;
-					{
-						MoveObject_retval result = MoveObject(di);
-						if (!result.al)
-						{
-							di.xy = result.cx;
-							goto main_225D;
-						}
-					}
-					al -= 2;
-				}
+				orthoDist.direction -= 2;
 			}
 			else
 			if (orthoDist.x == 1)
-				al = (al + 1) & 4;
+				orthoDist.direction = (orthoDist.direction + 1) & 4;
 			else
 			if (orthoDist.x < 1)
 			{
-				di.moveDirection = al += 2;
-				MoveObject_retval result = MoveObject(di);
+				ghost.moveDirection = orthoDist.direction += 2;
+				MoveObject_retval result = MoveObject(ghost);
 				if (!result.al)
 				{
-					di.xy = result.cx;
-					goto main_225D;
+					ghost.xy = result.cx;
+					goto plot_ghost_and_continue;
 				}
-				al = (al - 4) & 7;
+				orthoDist.direction = (orthoDist.direction - 4) & 7;
 			}
-			di.moveDirection = al;
+			ghost.moveDirection = orthoDist.direction;
 			{
-				MoveObject_retval result = MoveObject(di);
+				MoveObject_retval result = MoveObject(ghost);
 				if (!result.al)
 				{
-					di.xy = result.cx;
-					goto main_225D;
+					ghost.xy = result.cx;
+					goto plot_ghost_and_continue;
 				}
 			}
 			if (orthoDistance >= 20)
-				di.ghostUnknown1 |= 2;
-			di.moveDirection = (BYTE)GetRandomMasked(7);
+				ghost.ghostUnknown1 |= 2;
+			ghost.moveDirection = (BYTE)GetRandomMasked(7);
 		}
 		for (Uint count=8; count; count--)
 		{
-			MoveObject_retval result = MoveObject(di);
+			MoveObject_retval result = MoveObject(ghost);
 			if (!result.al)
 			{
-				di.xy = result.cx;
-				goto main_225D;
+				ghost.xy = result.cx;
+				break;
 			}
-			di.ghostUnknown1 &= ~2;
-			al = di.moveDirection;
-			if (di.ghostUnknown1 & 1)
-				al = (al - 1) & 7;
+			ghost.ghostUnknown1 &= ~2;
+			if (ghost.ghostUnknown1 & 1)
+				ghost.moveDirection = (ghost.moveDirection - 1) & 7;
 			else
-				al = (al + 1) & 7;
-			di.moveDirection = al;
+				ghost.moveDirection = (ghost.moveDirection + 1) & 7;
 		}
-	main_225D:
-		maze[di.y * MAZE_WIDTH + di.x] = MazeTile(0x5, 0x02);
-		di.ghostUnknown2 = 3;
-		object = di.next;
+	plot_ghost_and_continue:
+		maze[ghost.y * MAZE_WIDTH + ghost.x] = MazeTile(0x5, 0x02);
+		ghost.ghostUnknown2 = 3;
+		object = ghost.next;
 	}
 }
 

@@ -37,28 +37,32 @@ HANDLE output;
 HWAVEOUT waveOutput;
 WAVEHDR waveHeader[WAVE_BUFFER_COUNT];
 double toneFreq;
-Uint currentFreqnum = 0;
+Uint currentFreqnum = -1;
 Uint tonePhase;
 SHORT toneBuf[WAVE_BUFFER_LENGTH * WAVE_BUFFER_COUNT];
 void CALLBACK WaveOutProc(HWAVEOUT hwo, UINT uMsg, DWORD_PTR dwInstance, DWORD_PTR dwParam1, DWORD_PTR dwParam2)
 {
 	if (uMsg != WOM_DONE)
 		return;
-	if (currentFreqnum == 0)
+	if (currentFreqnum == -1)
 		return;
 	WAVEHDR *currentWaveHeader = (WAVEHDR*)dwParam1;
-	for (Uint i=0; i<WAVE_BUFFER_LENGTH; i++)
-	{
-		((SHORT*)currentWaveHeader->lpData)[i] = fmod(tonePhase * toneFreq, 1.) < 0.5 ? 0 : 0x2000;
-		tonePhase++;
-	}
+	if (currentFreqnum == 0)
+		for (Uint i=0; i<WAVE_BUFFER_LENGTH; i++)
+			((SHORT*)currentWaveHeader->lpData)[i] = 0;
+	else
+		for (Uint i=0; i<WAVE_BUFFER_LENGTH; i++)
+		{
+			((SHORT*)currentWaveHeader->lpData)[i] = fmod(tonePhase * toneFreq, 1.) < 0.5 ? 0 : 0x2000;
+			tonePhase++;
+		}
 	waveOutWrite(hwo, currentWaveHeader, sizeof(SHORT)*WAVE_BUFFER_LENGTH);
 }
 void PlayTone(Uint freqnum)
 {
 	if (currentFreqnum == freqnum)
 		return;
-	BOOL soundAlreadyPlaying = currentFreqnum;
+	BOOL soundAlreadyPlaying = currentFreqnum != -1;
 	toneFreq = (13125000. / (TONE_SAMPLE_RATE * 11)) / freqnum;
 	tonePhase = 0;
 	if (soundAlreadyPlaying)
@@ -66,7 +70,7 @@ void PlayTone(Uint freqnum)
 		currentFreqnum = freqnum;
 		return;
 	}
-	currentFreqnum = 0;
+	currentFreqnum = -1;
 	waveOutReset(waveOutput);
 	currentFreqnum = freqnum;
 	for (Uint i=0; i<WAVE_BUFFER_COUNT; i++)
@@ -74,7 +78,7 @@ void PlayTone(Uint freqnum)
 }
 void ClearSound()
 {
-	currentFreqnum = 0;
+	currentFreqnum = -1;
 }
 
 #define KEYSTATE_MOVE_RIGHT (1<<0)
@@ -2295,9 +2299,18 @@ static const WORD sound3[] = {2000, 8000, 6500, 4000, 2500, 1000};
 
 void UpdateSound()
 {
-	if (!sound_enabled || currentSoundEffect == SOUNDEFFECT_NONE)
+	if (!sound_enabled)
 	{
 		ClearSound();
+		return;
+	}
+	if (currentSoundEffect == SOUNDEFFECT_NONE)
+	{
+#ifdef PLAY_SOUND_DURING_SILENCE
+		PlayTone(0);
+#else
+		PlayTone(-1);
+#endif
 		return;
 	}
 	switch (currentSoundEffect)

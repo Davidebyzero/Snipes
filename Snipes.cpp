@@ -1,246 +1,22 @@
-#include <Windows.h>
-#include <MMSystem.h>
 #include <time.h>
 #include <stdio.h>
-#include <math.h>
 #include <wchar.h>
 #include "config.h"
-#pragma comment(lib,"winmm.lib")
+#include "Snipes.h"
+#include "types.h"
+#include "macros.h"
+#include "console.h"
+#include "timer.h"
+#include "sound.h"
+#include "keyboard.h"
 
-typedef unsigned int Uint;
-typedef unsigned long long QWORD;
-
-#define inrange(n,a,b) ((Uint)((n)-(a))<=(Uint)((b)-(a)))
-#define inrangex(n,a,b) ((Uint)((n)-(a))<(Uint)((b)-(a)))
-
-template <size_t size>
-char (*__strlength_helper(char const (&_String)[size]))[size];
-#define strlength(_String) (sizeof(*__strlength_helper(_String))-1)
-
-#define STRING_WITH_LEN(s) s, strlength(s)
-
-QWORD perf_freq;
-
-WORD GetTickCountWord()
-{
-	QWORD time;
-	QueryPerformanceCounter((LARGE_INTEGER*)&time);
-	return (WORD)(time * 13125000 / perf_freq);
-}
-
-HANDLE input;
-HANDLE output;
-
-#define TONE_SAMPLE_RATE 48000
-#define WAVE_BUFFER_LENGTH 200
-#define WAVE_BUFFER_COUNT 11
-HWAVEOUT waveOutput;
-WAVEHDR waveHeader[WAVE_BUFFER_COUNT];
-double toneFreq;
-Uint currentFreqnum = -1;
-Uint tonePhase;
-SHORT toneBuf[WAVE_BUFFER_LENGTH * WAVE_BUFFER_COUNT];
-void CALLBACK WaveOutProc(HWAVEOUT hwo, UINT uMsg, DWORD_PTR dwInstance, DWORD_PTR dwParam1, DWORD_PTR dwParam2)
-{
-	if (uMsg != WOM_DONE)
-		return;
-	if (currentFreqnum == -1)
-		return;
-	WAVEHDR *currentWaveHeader = (WAVEHDR*)dwParam1;
-	if (currentFreqnum == 0)
-		for (Uint i=0; i<WAVE_BUFFER_LENGTH; i++)
-			((SHORT*)currentWaveHeader->lpData)[i] = 0;
-	else
-		for (Uint i=0; i<WAVE_BUFFER_LENGTH; i++)
-		{
-			((SHORT*)currentWaveHeader->lpData)[i] = fmod(tonePhase * toneFreq, 1.) < 0.5 ? 0 : 0x2000;
-			tonePhase++;
-		}
-	waveOutWrite(hwo, currentWaveHeader, sizeof(SHORT)*WAVE_BUFFER_LENGTH);
-}
-void PlayTone(Uint freqnum)
-{
-	if (currentFreqnum == freqnum)
-		return;
-	BOOL soundAlreadyPlaying = currentFreqnum != -1;
-	toneFreq = (13125000. / (TONE_SAMPLE_RATE * 11)) / freqnum;
-	tonePhase = 0;
-	if (soundAlreadyPlaying)
-	{
-		currentFreqnum = freqnum;
-		return;
-	}
-	currentFreqnum = -1;
-	waveOutReset(waveOutput);
-	currentFreqnum = freqnum;
-	for (Uint i=0; i<WAVE_BUFFER_COUNT; i++)
-		WaveOutProc(waveOutput, WOM_DONE, 0, (DWORD_PTR)&waveHeader[i], 0);
-}
-void ClearSound()
-{
-	currentFreqnum = -1;
-}
-
-#define KEYSTATE_MOVE_RIGHT (1<<0)
-#define KEYSTATE_MOVE_LEFT  (1<<1)
-#define KEYSTATE_MOVE_DOWN  (1<<2)
-#define KEYSTATE_MOVE_UP    (1<<3)
-#define KEYSTATE_FIRE_RIGHT (1<<4)
-#define KEYSTATE_FIRE_LEFT  (1<<5)
-#define KEYSTATE_FIRE_DOWN  (1<<6)
-#define KEYSTATE_FIRE_UP    (1<<7)
-
-static bool forfeit_match = false;
-static bool sound_enabled = true;
-static bool shooting_sound_enabled = false;
-static BYTE spacebar_state = false;
+bool got_ctrl_break = false;
+bool forfeit_match = false;
+bool sound_enabled = true;
+bool shooting_sound_enabled = false;
+BYTE fast_forward = false;
+BYTE spacebar_state = false;
 static BYTE keyboard_state = 0;
-BYTE keyState[0x100];
-
-void ClearKeyboard()
-{
-	memset(keyState, 0, sizeof(keyState));
-}
-Uint PollKeyboard()
-{
-	for (;;)
-	{
-		DWORD numread = 0;
-		INPUT_RECORD record;
-		if (!PeekConsoleInput(input, &record, 1, &numread))
-			break;
-		if (!numread)
-			break;
-		ReadConsoleInput(input, &record, 1, &numread);
-		if (!numread)
-			break;
-		if (record.EventType == KEY_EVENT)
-		{
-			if (record.Event.KeyEvent.bKeyDown)
-			{
-				if (record.Event.KeyEvent.wVirtualKeyCode < _countof(keyState))
-					keyState[record.Event.KeyEvent.wVirtualKeyCode] |= record.Event.KeyEvent.dwControlKeyState & ENHANCED_KEY ? 2 : 1;
-
-				if (record.Event.KeyEvent.wVirtualKeyCode == VK_F1)
-					sound_enabled ^= true;
-				else
-				if (record.Event.KeyEvent.wVirtualKeyCode == VK_F2)
-					shooting_sound_enabled ^= true;
-				else
-				if (record.Event.KeyEvent.wVirtualKeyCode == VK_ESCAPE)
-					forfeit_match = true;
-			}
-			else
-			{
-				if (record.Event.KeyEvent.wVirtualKeyCode < _countof(keyState))
-					keyState[record.Event.KeyEvent.wVirtualKeyCode] &= record.Event.KeyEvent.dwControlKeyState & ENHANCED_KEY ? ~2 : ~1;
-			}
-		}
-	}
-	Uint state = 0;
-	if (keyState[VK_RIGHT]) state |= KEYSTATE_MOVE_RIGHT;
-	if (keyState[VK_LEFT ]) state |= KEYSTATE_MOVE_LEFT;
-	if (keyState[VK_DOWN ]) state |= KEYSTATE_MOVE_DOWN;
-	if (keyState[VK_CLEAR]) state |= KEYSTATE_MOVE_DOWN; // center key on numeric keypad with NumLock off
-	if (keyState[0xFF    ]) state |= KEYSTATE_MOVE_DOWN; // center key on cursor pad, on non-inverted-T keyboards
-	if (keyState[VK_UP   ]) state |= KEYSTATE_MOVE_UP;
-	if (keyState['D'     ]) state |= KEYSTATE_FIRE_RIGHT;
-	if (keyState['A'     ]) state |= KEYSTATE_FIRE_LEFT;
-	if (keyState['S'     ]) state |= KEYSTATE_FIRE_DOWN;
-	if (keyState['X'     ]) state |= KEYSTATE_FIRE_DOWN;
-	if (keyState['W'     ]) state |= KEYSTATE_FIRE_UP;
-	spacebar_state = keyState[VK_SPACE];
-	if ((state & (KEYSTATE_MOVE_RIGHT | KEYSTATE_MOVE_LEFT)) == (KEYSTATE_MOVE_RIGHT | KEYSTATE_MOVE_LEFT) ||
-		(state & (KEYSTATE_MOVE_DOWN  | KEYSTATE_MOVE_UP  )) == (KEYSTATE_MOVE_DOWN  | KEYSTATE_MOVE_UP  ))
-		state &= ~(KEYSTATE_MOVE_RIGHT | KEYSTATE_MOVE_LEFT | KEYSTATE_MOVE_DOWN | KEYSTATE_MOVE_UP);
-	if ((state & (KEYSTATE_FIRE_RIGHT | KEYSTATE_FIRE_LEFT)) == (KEYSTATE_FIRE_RIGHT | KEYSTATE_FIRE_LEFT) ||
-		(state & (KEYSTATE_FIRE_DOWN  | KEYSTATE_FIRE_UP  )) == (KEYSTATE_FIRE_DOWN  | KEYSTATE_FIRE_UP  ))
-		state &= ~(KEYSTATE_FIRE_RIGHT | KEYSTATE_FIRE_LEFT | KEYSTATE_FIRE_DOWN | KEYSTATE_FIRE_UP);
-	return state;
-}
-
-#define MAZE_CELL_WIDTH  8
-#define MAZE_CELL_HEIGHT 6
-#define MAZE_WIDTH  (MAZE_CELL_WIDTH  * 16)
-#define MAZE_HEIGHT (MAZE_CELL_HEIGHT * 20)
-
-#define VIEWPORT_ROW 3
-
-#ifdef CHEAT_OMNISCIENCE
- #define WINDOW_WIDTH  MAZE_WIDTH
- #define WINDOW_HEIGHT MAZE_HEIGHT + VIEWPORT_ROW
-#else
- #define WINDOW_WIDTH  40
- #define WINDOW_HEIGHT 25
-#endif
-
-#define VIEWPORT_HEIGHT (WINDOW_HEIGHT - VIEWPORT_ROW)
-
-struct MazeTile
-{
-	BYTE ch;
-	BYTE color;
-	MazeTile() {}
-	MazeTile(BYTE color, BYTE ch) : ch(ch), color(color) {}
-};
-
-void WriteTextMem(Uint count, WORD row, WORD column, MazeTile *src)
-{
-	COORD size;
-	size.X = count;
-	size.Y = 1;
-	COORD srcPos;
-	srcPos.X = 0;
-	srcPos.Y = 0;
-	SMALL_RECT rect;
-	rect.Left   = column;
-	rect.Top    = row;
-	rect.Right  = column + count;
-	rect.Bottom = row + 1;
-	static CHAR_INFO buf[WINDOW_WIDTH];
-	for (Uint i=0; i<count; i++)
-	{
-		buf[i].Char.AsciiChar = src[i].ch;
-		buf[i].Attributes     = src[i].color;
-#if defined(CHEAT_OMNISCIENCE) && defined(CHEAT_OMNISCIENCE_SHOW_NORMAL_VIEWPORT)
-		if (!(inrangex(column+i, WINDOW_WIDTH/2 - 40/2 + 1,
-		                         WINDOW_WIDTH/2 + 40/2 + 1) &&
-		      inrangex(row, VIEWPORT_ROW + VIEWPORT_HEIGHT/2 - (25 - VIEWPORT_ROW)/2 + 1,
-		                    VIEWPORT_ROW + VIEWPORT_HEIGHT/2 + (25 - VIEWPORT_ROW)/2 + 1)) && row >= VIEWPORT_ROW)
-			buf[i].Attributes += 0x40;
-#endif
-	}
-	WriteConsoleOutput(output, buf, size, srcPos, &rect);
-}
-
-DWORD ReadConsole_wrapper(char buffer[], DWORD bufsize)
-{
-	DWORD numread, numreadWithoutNewline;
-	ReadConsole(input, buffer, bufsize, &numread, NULL);
-	if (!numread)
-		return numread;
-
-	numreadWithoutNewline = numread;
-	if (buffer[numread-1] == '\n')
-	{
-		numreadWithoutNewline--;
-		if (numread > 1 && buffer[numread-2] == '\r')
-			numreadWithoutNewline--;
-		return numreadWithoutNewline;
-	}
-	else
-	if (buffer[numread-1] == '\r')
-		numreadWithoutNewline--;
-
-	if (buffer[numread-1] != '\n')
-	{
-		char dummy;
-		do
-			ReadConsole(input, &dummy, 1, &numread, NULL);
-		while (numread && dummy != '\n');
-	}
-	return numreadWithoutNewline;
-}
 
 static WORD random_seed_lo = 33, random_seed_hi = 467;
 WORD GetRandomMasked(WORD mask)
@@ -302,7 +78,7 @@ void ParseSkillLevel(char *skillLevel, DWORD skillLevelLength)
 void ReadSkillLevel()
 {
 	char skillLevel[0x80] = {};
-	DWORD skillLevelLength = ReadConsole_wrapper(skillLevel, _countof(skillLevel));
+	DWORD skillLevelLength = ReadTextFromConsole(skillLevel, _countof(skillLevel));
 
 	if (skillLevel[skillLevelLength-1] == '\n')
 		skillLevelLength--;
@@ -422,38 +198,6 @@ Player    &player          = (Player   &)objects[OBJECT_PLAYER         ];
 Explosion &playerExplosion = (Explosion&)objects[OBJECT_PLAYEREXPLOSION];
 
 static MazeTile maze[MAZE_WIDTH * MAZE_HEIGHT];
-
-void outputText(BYTE color, WORD count, WORD row, WORD column, const char *src)
-{
-	COORD pos;
-	pos.X = column;
-	pos.Y = row;
-	SetConsoleCursorPosition(output, pos);
-	SetConsoleTextAttribute(output, color);
-	DWORD operationSize;
-	WriteConsole(output, src, count, &operationSize, 0);
-}
-
-void outputNumber(BYTE color, bool zeroPadding, WORD count, WORD row, WORD column, Uint number)
-{
-	char textbuf[strlength("4294967295")+1];
-	sprintf_s(textbuf, sizeof(textbuf), zeroPadding ? "%0*u" : "%*u", count, number);
-	outputText(color, count, row, column, textbuf);
-}
-
-void EraseBottomTwoLines()
-{
-	SetConsoleTextAttribute(output, 7);
-	COORD pos;
-	pos.X = 0;
-	for (pos.Y = WINDOW_HEIGHT-2; pos.Y < WINDOW_HEIGHT; pos.Y++)
-	{
-		SetConsoleCursorPosition(output, pos);
-		DWORD operationSize;
-		for (Uint i=0; i < WINDOW_WIDTH; i++)
-			WriteConsole(output, " ", 1, &operationSize, 0);
-	}
-}
 
 static const char statusLine[] = "\xDA\xBF\xB3\x01\x1A\xB3\x02\xB3""Skill""\xC0\xD9\xB3\x01\x1A\xB3\x02\xB3""Time  Men Left                 Score     0  0000001 Man Left""e";
 
@@ -1090,15 +834,8 @@ bool UpdateHUD() // returns true if the match has been won
 		return false;
 
 	EraseBottomTwoLines();
-
-	COORD pos;
-	pos.X = 0;
-	pos.Y = WINDOW_HEIGHT-2;
-	SetConsoleCursorPosition(output, pos);
-	SetConsoleTextAttribute(output, FOREGROUND_BLUE | FOREGROUND_GREEN | FOREGROUND_RED);
-	SetConsoleMode(output, ENABLE_PROCESSED_OUTPUT | ENABLE_WRAP_AT_EOL_OUTPUT);
-	DWORD operationSize;
-	WriteConsole(output, STRING_WITH_LEN("Congratulations --- YOU ACTUALLY WON!!!\r\n"), &operationSize, 0);
+	CloseDirectConsole(WINDOW_HEIGHT-2);
+	WriteTextToConsole("Congratulations --- YOU ACTUALLY WON!!!\r\n");
 	return true;
 }
 
@@ -2128,14 +1865,8 @@ bool UpdatePlayer(bool playbackMode, BYTE &replayIO) // returns true if the matc
 		if (numPlayerDeaths >= numLives)
 		{
 			EraseBottomTwoLines();
-			COORD pos;
-			pos.X = 0;
-			pos.Y = WINDOW_HEIGHT-2;
-			SetConsoleCursorPosition(output, pos);
-			SetConsoleTextAttribute(output, FOREGROUND_BLUE | FOREGROUND_GREEN | FOREGROUND_RED);
-			SetConsoleMode(output, ENABLE_PROCESSED_OUTPUT | ENABLE_WRAP_AT_EOL_OUTPUT);
-			DWORD operationSize;
-			WriteConsole(output, STRING_WITH_LEN("The SNIPES have triumphed!!!\r\n"), &operationSize, 0);
+			CloseDirectConsole(WINDOW_HEIGHT-2);
+			WriteTextToConsole("The SNIPES have triumphed!!!\r\n");
 			return true;
 		}
 		if (!isPlayerExploding)
@@ -2366,25 +2097,6 @@ void DrawViewport()
 	}
 }
 
-BOOL WINAPI ConsoleHandlerRoutine(DWORD dwCtrlType)
-{
-	if (dwCtrlType == CTRL_C_EVENT || dwCtrlType == CTRL_BREAK_EVENT)
-	{
-		forfeit_match = true;
-		return TRUE;
-	}
-	return FALSE;
-}
-
-bool DidBreakHappenDuringInput()
-{
-	DWORD operationSize;
-	Sleep(1); // allow ConsoleHandlerRoutine to be triggered
-	if (forfeit_match)
-		WriteConsole(output, "\r\n", 2, &operationSize, 0);
-	return forfeit_match;
-}
-
 int __cdecl main(int argc, char* argv[])
 {
 	if (argc > 2)
@@ -2394,72 +2106,24 @@ int __cdecl main(int argc, char* argv[])
 	}
 	bool playbackMode = argc == 2;
 
-	input  = GetStdHandle(STD_INPUT_HANDLE);
-	output = GetStdHandle(STD_OUTPUT_HANDLE);
-
-	SetConsoleCP      (437);
-	SetConsoleOutputCP(437);
-	
-	CONSOLE_CURSOR_INFO cursorInfo;
-	GetConsoleCursorInfo(output, &cursorInfo);
-
-	COORD windowSize;
-	windowSize.X = WINDOW_WIDTH;
-	windowSize.Y = WINDOW_HEIGHT;
-	SMALL_RECT window;
-	window.Left   = 0;
-	window.Top    = 0;
-	window.Right  = windowSize.X-1;
-	window.Bottom = windowSize.Y-1;
-	SetConsoleWindowInfo(output, TRUE, &window);
-	SetConsoleScreenBufferSize(output, windowSize);
-
-	SetConsoleCtrlHandler(ConsoleHandlerRoutine, TRUE);
-
-	//timeBeginPeriod(1);
-
-	QueryPerformanceFrequency((LARGE_INTEGER*)&perf_freq);
-	perf_freq *= 11 * 65535;
-
+	if (int result = OpenConsole())
+		return result;
+	if (int result = OpenTimer())
 	{
-		WAVEFORMATEX waveFormat;
-		waveFormat.wFormatTag = WAVE_FORMAT_PCM;
-		waveFormat.nChannels = 1;
-		waveFormat.nSamplesPerSec = TONE_SAMPLE_RATE;
-		waveFormat.nAvgBytesPerSec = TONE_SAMPLE_RATE * 2;
-		waveFormat.nBlockAlign = 2;
-		waveFormat.wBitsPerSample = 16;
-		waveFormat.cbSize = 0;
-		MMRESULT result = waveOutOpen(&waveOutput, WAVE_MAPPER, &waveFormat, (DWORD_PTR)WaveOutProc, NULL, CALLBACK_FUNCTION);
-		if (result != MMSYSERR_NOERROR)
-		{
-			fprintf(stderr, "Error opening wave output\n");
-			//timeEndPeriod(1);
-			return -1;
-		}
-		for (Uint i=0; i<WAVE_BUFFER_COUNT; i++)
-		{
-			waveHeader[i].lpData = (LPSTR)&toneBuf[WAVE_BUFFER_LENGTH * i];
-			waveHeader[i].dwBufferLength = sizeof(SHORT)*WAVE_BUFFER_LENGTH;
-			waveHeader[i].dwBytesRecorded = 0;
-			waveHeader[i].dwUser = i;
-			waveHeader[i].dwFlags = 0;
-			waveHeader[i].dwLoops = 0;
-			waveHeader[i].lpNext = 0;
-			waveHeader[i].reserved = 0;
-			waveOutPrepareHeader(waveOutput, &waveHeader[i], sizeof(waveHeader[i]));
-		}
+		CloseConsole();
+		return result;
+	}
+	if (int result = OpenSound())
+	{
+		CloseConsole();
+		CloseTimer();
+		return result;
 	}
 
-	DWORD operationSize; // dummy in most circumstances
-	COORD pos;
-
-	pos.X = 0;
-	pos.Y = 0;
-	FillConsoleOutputAttribute(output, FOREGROUND_BLUE | FOREGROUND_GREEN | FOREGROUND_RED, windowSize.X*windowSize.Y, pos, &operationSize);
+	ClearConsole();
 	if (!playbackMode)
 	{
-		SetConsoleTextAttribute(output, FOREGROUND_BLUE | FOREGROUND_GREEN | FOREGROUND_RED);
+		SetConsoleOutputTextColor(FOREGROUND_BLUE | FOREGROUND_GREEN | FOREGROUND_RED);
 #define _ " "
 #define S "\x01"
 #define i "\x18"
@@ -2480,12 +2144,12 @@ int __cdecl main(int argc, char* argv[])
 		"(c)Copyright SuperSet Software Corp 1982\r\n"\
 		"All Rights Reserved\r\n"\
 		"\r\n\r\n"
-		WriteConsole(output, STRING_WITH_LEN(TITLE_SCREEN "Enter skill level (A-Z)(1-9): "), &operationSize, 0);
+		WriteTextToConsole(TITLE_SCREEN "Enter skill level (A-Z)(1-9): ");
 #undef _
 #undef S
 #undef i
 		ReadSkillLevel();
-		if (DidBreakHappenDuringInput())
+		if (got_ctrl_break)
 			goto do_not_play_again;
 	}
 
@@ -2547,10 +2211,14 @@ int __cdecl main(int argc, char* argv[])
 		numLives                     = numLivesTable             [skillLevelNumber-1];
 		playerFiringPeriod           = 2;
 
-		SetConsoleMode(output, 0);
-		cursorInfo.bVisible = FALSE;
-		SetConsoleCursorInfo(output, &cursorInfo);
-		ClearKeyboard();
+		OpenDirectConsole();
+		if (int result = OpenKeyboard())
+		{
+			CloseConsole();
+			CloseTimer();
+			CloseSound();
+			return result;
+		}
 
 		frame = 0;
 		OutputHUD();
@@ -2569,9 +2237,9 @@ int __cdecl main(int argc, char* argv[])
 				break;
 
 #ifdef CHEAT_FAST_FORWARD
-			if (!keyState['F'])
+			if (!fast_forward)
 #else
-			if (!playbackMode || !keyState['F'])
+			if (!playbackMode || !fast_forward)
 #endif
 			{
 				for (;;)
@@ -2611,23 +2279,15 @@ int __cdecl main(int argc, char* argv[])
 		if (replayFile)
 			fclose(replayFile);
 
-		cursorInfo.bVisible = TRUE;
-		SetConsoleCursorInfo(output, &cursorInfo);
-		COORD pos;
-		pos.X = 0;
-		pos.Y = WINDOW_HEIGHT-1 - (playbackMode ? 1 : 0);
-		SetConsoleCursorPosition(output, pos);
-		SetConsoleTextAttribute(output, FOREGROUND_BLUE | FOREGROUND_GREEN | FOREGROUND_RED);
-		SetConsoleMode(output, ENABLE_PROCESSED_OUTPUT | ENABLE_WRAP_AT_EOL_OUTPUT);
+		CloseDirectConsole(WINDOW_HEIGHT-1 - (playbackMode ? 1 : 0));
 		if (playbackMode)
 			break;
 		for (;;)
 		{
-			SetConsoleMode(input, ENABLE_PROCESSED_INPUT | ENABLE_LINE_INPUT | ENABLE_ECHO_INPUT);
-			WriteConsole(output, STRING_WITH_LEN("Play another game? (Y or N) "), &operationSize, 0);
+			WriteTextToConsole("Play another game? (Y or N) ");
 			char playAgain;
-			ReadConsole_wrapper(&playAgain, 1);
-			if (DidBreakHappenDuringInput())
+			ReadTextFromConsole(&playAgain, 1);
+			if (got_ctrl_break)
 				goto do_not_play_again;
 			if (playAgain == 'Y' || playAgain == 'y')
 				goto do_play_again;
@@ -2635,16 +2295,15 @@ int __cdecl main(int argc, char* argv[])
 				goto do_not_play_again;
 		}
 	do_play_again:
-		WriteConsole(output, STRING_WITH_LEN("Enter new skill level (A-Z)(1-9): "), &operationSize, 0);
+		WriteTextToConsole("Enter new skill level (A-Z)(1-9): ");
 		ReadSkillLevel();
-		if (DidBreakHappenDuringInput())
+		if (got_ctrl_break)
 			goto do_not_play_again;
 	}
 do_not_play_again:
 
-	for (Uint i=0; i<WAVE_BUFFER_COUNT; i++)
-		waveOutUnprepareHeader(waveOutput, &waveHeader[i], sizeof(waveHeader[i]));
-	waveOutClose(waveOutput);
+	CloseSound();
+	CloseConsole();
 
 	//timeEndPeriod(1);
 

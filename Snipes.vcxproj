@@ -84,11 +84,22 @@
     </Link>
   </ItemDefinitionGroup>
   <ItemGroup>
+    <ClCompile Include="console.cpp" />
+    <ClCompile Include="keyboard.cpp" />
     <ClCompile Include="Snipes.cpp" />
+    <ClCompile Include="sound.cpp" />
+    <ClCompile Include="timer.cpp" />
   </ItemGroup>
   <ItemGroup>
     <ClInclude Include="config-sample.h" />
     <ClInclude Include="config.h" />
+    <ClInclude Include="console.h" />
+    <ClInclude Include="keyboard.h" />
+    <ClInclude Include="macros.h" />
+    <ClInclude Include="Snipes.h" />
+    <ClInclude Include="sound.h" />
+    <ClInclude Include="timer.h" />
+    <ClInclude Include="types.h" />
   </ItemGroup>
   <Import Project="$(VCTargetsPath)\Microsoft.Cpp.targets" />
   <ImportGroup Label="ExtensionTargets">

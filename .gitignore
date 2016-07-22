@@ -1,0 +1,9 @@
+*.vcxproj.user
+*.suo
+ipch
+Release
+Debug
+
+config.h
+
+*.SnipesGame

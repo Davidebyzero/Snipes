@@ -115,7 +115,11 @@ struct Object
 	};
 	BYTE generalPurpose2;
 	BYTE generalPurpose3;
+#ifdef OBJECT_TABLE_BINARY_COMPATIBILITY
 	WORD sprite; // FAKE_POINTER to current sprite frame
+#else
+	const WORD *sprite;
+#endif
 };
 
 #define DEFINE_OBJECT_MEMBER(name,generalPurposeNum,fakeObjectOffset) \
@@ -133,9 +137,9 @@ struct Object
 		DEFINE_OBJECT_MEMBER(member3,generalPurpose3,2);\
 		className() {__debugbreak();}\
 	}
-DEFINE_OBJECT_AND_MEMBERS(Generator,    unused,   spawnFrame,    animFrame     );
-DEFINE_OBJECT_AND_MEMBERS(Explosion,    unused,   spriteSize,    animFrame     );
-DEFINE_OBJECT_AND_MEMBERS(MovingObject, general1, moveDirection, general2      );
+DEFINE_OBJECT_AND_MEMBERS(Generator,    unused,   spawnFrame,    animFrame);
+DEFINE_OBJECT_AND_MEMBERS(Explosion,    unused,   spriteSize,    animFrame);
+DEFINE_OBJECT_AND_MEMBERS(MovingObject, general1, moveDirection, general2 );
 
 #define DEFINE_MOVING_OBJECT_MEMBER(name,generalNum,fakeObjectOffset) \
 	struct\
@@ -478,109 +482,63 @@ bool IsGenerator(MazeTile tile)
 #endif
 }
 
-#define FAKE_POINTER_data_1002 0x1002
-#define FAKE_POINTER_data_100C 0x100C
-#define FAKE_POINTER_data_1016 0x1016
-#define FAKE_POINTER_data_1020 0x1020
-#define FAKE_POINTER_data_102A 0x102A
-#define FAKE_POINTER_data_1034 0x1034
-#define FAKE_POINTER_data_103E 0x103E
-#define FAKE_POINTER_data_1048 0x1048
-#define FAKE_POINTER_data_1052 0x1052
-#define FAKE_POINTER_data_105C 0x105C
-#define FAKE_POINTER_data_1066 0x1066
-#define FAKE_POINTER_data_1070 0x1070
-#define FAKE_POINTER_data_107A 0x107A
-#define FAKE_POINTER_data_1084 0x1084
-#define FAKE_POINTER_data_108E 0x108E
-#define FAKE_POINTER_data_1098 0x1098
-#define FAKE_POINTER_data_10E2 0x10E2
-#define FAKE_POINTER_data_10EC 0x10EC
-#define FAKE_POINTER_data_10FE 0x10FE
-#define FAKE_POINTER_data_1108 0x1108
-#define FAKE_POINTER_data_1112 0x1112
-#define FAKE_POINTER_data_111C 0x111C
-#define FAKE_POINTER_data_1126 0x1126
-#define FAKE_POINTER_data_1150 0x1150
-#define FAKE_POINTER_data_115A 0x115A
-#define FAKE_POINTER_data_1164 0x1164
-#define FAKE_POINTER_data_116E 0x116E
-#define FAKE_POINTER_data_1178 0x1178
-#define FAKE_POINTER_data_1182 0x1182
-#define FAKE_POINTER_data_118C 0x118C
-#define FAKE_POINTER_data_1196 0x1196
-#define FAKE_POINTER_data_11A0 0x11A0
-#define FAKE_POINTER_data_11AA 0x11AA
-#define FAKE_POINTER_data_12C2 0x12C2
-#define FAKE_POINTER_data_12CC 0x12CC
-#define FAKE_POINTER_data_12D6 0x12D6
-#define FAKE_POINTER_data_12E0 0x12E0
-#define FAKE_POINTER_data_12EA 0x12EA
-#define FAKE_POINTER_data_12F4 0x12F4
-#define FAKE_POINTER_data_1316 0x1316
-#define FAKE_POINTER_data_1320 0x1320
-#define FAKE_POINTER_data_132A 0x132A
-#define FAKE_POINTER_data_1334 0x1334
-#define FAKE_POINTER_data_133E 0x133E
-#define FAKE_POINTER_data_1348 0x1348
-#define FAKE_POINTER_data_136A 0x136A
-#define FAKE_POINTER_data_1374 0x1374
-#define FAKE_POINTER_data_137E 0x137E
-#define FAKE_POINTER_data_1388 0x1388
+#ifdef OBJECT_TABLE_BINARY_COMPATIBILITY
+
+#define FAKE_POINTER(n) 0x##n
 
 const WORD *FakePointerToPointer(WORD fakePtr)
 {
 	switch (fakePtr)
 	{
-	case FAKE_POINTER_data_1002: return data_1002;
-	case FAKE_POINTER_data_100C: return data_100C;
-	case FAKE_POINTER_data_1016: return data_1016;
-	case FAKE_POINTER_data_1020: return data_1020;
-	case FAKE_POINTER_data_102A: return data_102A;
-	case FAKE_POINTER_data_1034: return data_1034;
-	case FAKE_POINTER_data_103E: return data_103E;
-	case FAKE_POINTER_data_1048: return data_1048;
-	case FAKE_POINTER_data_1052: return data_1052;
-	case FAKE_POINTER_data_105C: return data_105C;
-	case FAKE_POINTER_data_1066: return data_1066;
-	case FAKE_POINTER_data_1070: return data_1070;
-	case FAKE_POINTER_data_107A: return data_107A;
-	case FAKE_POINTER_data_1084: return data_1084;
-	case FAKE_POINTER_data_108E: return data_108E;
-	case FAKE_POINTER_data_1098: return data_1098;
-	case FAKE_POINTER_data_10E2: return data_10E2;
-	case FAKE_POINTER_data_10EC: return data_10EC;
-	case FAKE_POINTER_data_10FE: return data_10FE;
-	case FAKE_POINTER_data_1108: return data_1108;
-	case FAKE_POINTER_data_1112: return data_1112;
-	case FAKE_POINTER_data_111C: return data_111C;
-	case FAKE_POINTER_data_1126: return data_1126;
-	case FAKE_POINTER_data_1150: return data_1150;
-	case FAKE_POINTER_data_115A: return data_115A;
-	case FAKE_POINTER_data_1164: return data_1164;
-	case FAKE_POINTER_data_116E: return data_116E;
-	case FAKE_POINTER_data_1178: return data_1178;
-	case FAKE_POINTER_data_1182: return data_1182;
-	case FAKE_POINTER_data_118C: return data_118C;
-	case FAKE_POINTER_data_1196: return data_1196;
-	case FAKE_POINTER_data_11A0: return data_11A0;
-	case FAKE_POINTER_data_11AA: return data_11AA;
-	case FAKE_POINTER_data_12C2: return data_12C2;
-	case FAKE_POINTER_data_12CC: return data_12CC;
-	case FAKE_POINTER_data_12D6: return data_12D6;
-	case FAKE_POINTER_data_12E0: return data_12E0;
-	case FAKE_POINTER_data_12EA: return data_12EA;
-	case FAKE_POINTER_data_12F4: return data_12F4;
-	case FAKE_POINTER_data_1316: return data_1316;
-	case FAKE_POINTER_data_1320: return data_1320;
-	case FAKE_POINTER_data_132A: return data_132A;
-	case FAKE_POINTER_data_1334: return data_1334;
-	case FAKE_POINTER_data_133E: return data_133E;
-	case FAKE_POINTER_data_1348: return data_1348;
-	case FAKE_POINTER_data_136A: return data_136A;
-	case FAKE_POINTER_data_1374: return data_1374;
-	case FAKE_POINTER_data_137E: return data_137E;
-	case FAKE_POINTER_data_1388: return data_1388;
+	case FAKE_POINTER(1002): return data_1002;
+	case FAKE_POINTER(100C): return data_100C;
+	case FAKE_POINTER(1016): return data_1016;
+	case FAKE_POINTER(1020): return data_1020;
+	case FAKE_POINTER(102A): return data_102A;
+	case FAKE_POINTER(1034): return data_1034;
+	case FAKE_POINTER(103E): return data_103E;
+	case FAKE_POINTER(1048): return data_1048;
+	case FAKE_POINTER(1052): return data_1052;
+	case FAKE_POINTER(105C): return data_105C;
+	case FAKE_POINTER(1066): return data_1066;
+	case FAKE_POINTER(1070): return data_1070;
+	case FAKE_POINTER(107A): return data_107A;
+	case FAKE_POINTER(1084): return data_1084;
+	case FAKE_POINTER(108E): return data_108E;
+	case FAKE_POINTER(1098): return data_1098;
+	case FAKE_POINTER(10E2): return data_10E2;
+	case FAKE_POINTER(10EC): return data_10EC;
+	case FAKE_POINTER(10FE): return data_10FE;
+	case FAKE_POINTER(1108): return data_1108;
+	case FAKE_POINTER(1112): return data_1112;
+	case FAKE_POINTER(111C): return data_111C;
+	case FAKE_POINTER(1126): return data_1126;
+	case FAKE_POINTER(1150): return data_1150;
+	case FAKE_POINTER(115A): return data_115A;
+	case FAKE_POINTER(1164): return data_1164;
+	case FAKE_POINTER(116E): return data_116E;
+	case FAKE_POINTER(1178): return data_1178;
+	case FAKE_POINTER(1182): return data_1182;
+	case FAKE_POINTER(118C): return data_118C;
+	case FAKE_POINTER(1196): return data_1196;
+	case FAKE_POINTER(11A0): return data_11A0;
+	case FAKE_POINTER(11AA): return data_11AA;
+	case FAKE_POINTER(12C2): return data_12C2;
+	case FAKE_POINTER(12CC): return data_12CC;
+	case FAKE_POINTER(12D6): return data_12D6;
+	case FAKE_POINTER(12E0): return data_12E0;
+	case FAKE_POINTER(12EA): return data_12EA;
+	case FAKE_POINTER(12F4): return data_12F4;
+	case FAKE_POINTER(1316): return data_1316;
+	case FAKE_POINTER(1320): return data_1320;
+	case FAKE_POINTER(132A): return data_132A;
+	case FAKE_POINTER(1334): return data_1334;
+	case FAKE_POINTER(133E): return data_133E;
+	case FAKE_POINTER(1348): return data_1348;
+	case FAKE_POINTER(136A): return data_136A;
+	case FAKE_POINTER(1374): return data_1374;
+	case FAKE_POINTER(137E): return data_137E;
+	case FAKE_POINTER(1388): return data_1388;
 	default:
 		return NULL;
 	}
@@ -588,58 +546,66 @@ const WORD *FakePointerToPointer(WORD fakePtr)
 
 WORD PointerToFakePointer(const WORD *ptr)
 {
-	if (ptr == data_1002) return FAKE_POINTER_data_1002;
-	if (ptr == data_100C) return FAKE_POINTER_data_100C;
-	if (ptr == data_1016) return FAKE_POINTER_data_1016;
-	if (ptr == data_1020) return FAKE_POINTER_data_1020;
-	if (ptr == data_102A) return FAKE_POINTER_data_102A;
-	if (ptr == data_1034) return FAKE_POINTER_data_1034;
-	if (ptr == data_103E) return FAKE_POINTER_data_103E;
-	if (ptr == data_1048) return FAKE_POINTER_data_1048;
-	if (ptr == data_1052) return FAKE_POINTER_data_1052;
-	if (ptr == data_105C) return FAKE_POINTER_data_105C;
-	if (ptr == data_1066) return FAKE_POINTER_data_1066;
-	if (ptr == data_1070) return FAKE_POINTER_data_1070;
-	if (ptr == data_107A) return FAKE_POINTER_data_107A;
-	if (ptr == data_1084) return FAKE_POINTER_data_1084;
-	if (ptr == data_108E) return FAKE_POINTER_data_108E;
-	if (ptr == data_1098) return FAKE_POINTER_data_1098;
-	if (ptr == data_10E2) return FAKE_POINTER_data_10E2;
-	if (ptr == data_10EC) return FAKE_POINTER_data_10EC;
-	if (ptr == data_10FE) return FAKE_POINTER_data_10FE;
-	if (ptr == data_1108) return FAKE_POINTER_data_1108;
-	if (ptr == data_1112) return FAKE_POINTER_data_1112;
-	if (ptr == data_111C) return FAKE_POINTER_data_111C;
-	if (ptr == data_1126) return FAKE_POINTER_data_1126;
-	if (ptr == data_1150) return FAKE_POINTER_data_1150;
-	if (ptr == data_115A) return FAKE_POINTER_data_115A;
-	if (ptr == data_1164) return FAKE_POINTER_data_1164;
-	if (ptr == data_116E) return FAKE_POINTER_data_116E;
-	if (ptr == data_1178) return FAKE_POINTER_data_1178;
-	if (ptr == data_1182) return FAKE_POINTER_data_1182;
-	if (ptr == data_118C) return FAKE_POINTER_data_118C;
-	if (ptr == data_1196) return FAKE_POINTER_data_1196;
-	if (ptr == data_11A0) return FAKE_POINTER_data_11A0;
-	if (ptr == data_11AA) return FAKE_POINTER_data_11AA;
-	if (ptr == data_12C2) return FAKE_POINTER_data_12C2;
-	if (ptr == data_12CC) return FAKE_POINTER_data_12CC;
-	if (ptr == data_12D6) return FAKE_POINTER_data_12D6;
-	if (ptr == data_12E0) return FAKE_POINTER_data_12E0;
-	if (ptr == data_12EA) return FAKE_POINTER_data_12EA;
-	if (ptr == data_12F4) return FAKE_POINTER_data_12F4;
-	if (ptr == data_1316) return FAKE_POINTER_data_1316;
-	if (ptr == data_1320) return FAKE_POINTER_data_1320;
-	if (ptr == data_132A) return FAKE_POINTER_data_132A;
-	if (ptr == data_1334) return FAKE_POINTER_data_1334;
-	if (ptr == data_133E) return FAKE_POINTER_data_133E;
-	if (ptr == data_1348) return FAKE_POINTER_data_1348;
-	if (ptr == data_136A) return FAKE_POINTER_data_136A;
-	if (ptr == data_1374) return FAKE_POINTER_data_1374;
-	if (ptr == data_137E) return FAKE_POINTER_data_137E;
-	if (ptr == data_1388) return FAKE_POINTER_data_1388;
+	if (ptr == data_1002) return FAKE_POINTER(1002);
+	if (ptr == data_100C) return FAKE_POINTER(100C);
+	if (ptr == data_1016) return FAKE_POINTER(1016);
+	if (ptr == data_1020) return FAKE_POINTER(1020);
+	if (ptr == data_102A) return FAKE_POINTER(102A);
+	if (ptr == data_1034) return FAKE_POINTER(1034);
+	if (ptr == data_103E) return FAKE_POINTER(103E);
+	if (ptr == data_1048) return FAKE_POINTER(1048);
+	if (ptr == data_1052) return FAKE_POINTER(1052);
+	if (ptr == data_105C) return FAKE_POINTER(105C);
+	if (ptr == data_1066) return FAKE_POINTER(1066);
+	if (ptr == data_1070) return FAKE_POINTER(1070);
+	if (ptr == data_107A) return FAKE_POINTER(107A);
+	if (ptr == data_1084) return FAKE_POINTER(1084);
+	if (ptr == data_108E) return FAKE_POINTER(108E);
+	if (ptr == data_1098) return FAKE_POINTER(1098);
+	if (ptr == data_10E2) return FAKE_POINTER(10E2);
+	if (ptr == data_10EC) return FAKE_POINTER(10EC);
+	if (ptr == data_10FE) return FAKE_POINTER(10FE);
+	if (ptr == data_1108) return FAKE_POINTER(1108);
+	if (ptr == data_1112) return FAKE_POINTER(1112);
+	if (ptr == data_111C) return FAKE_POINTER(111C);
+	if (ptr == data_1126) return FAKE_POINTER(1126);
+	if (ptr == data_1150) return FAKE_POINTER(1150);
+	if (ptr == data_115A) return FAKE_POINTER(115A);
+	if (ptr == data_1164) return FAKE_POINTER(1164);
+	if (ptr == data_116E) return FAKE_POINTER(116E);
+	if (ptr == data_1178) return FAKE_POINTER(1178);
+	if (ptr == data_1182) return FAKE_POINTER(1182);
+	if (ptr == data_118C) return FAKE_POINTER(118C);
+	if (ptr == data_1196) return FAKE_POINTER(1196);
+	if (ptr == data_11A0) return FAKE_POINTER(11A0);
+	if (ptr == data_11AA) return FAKE_POINTER(11AA);
+	if (ptr == data_12C2) return FAKE_POINTER(12C2);
+	if (ptr == data_12CC) return FAKE_POINTER(12CC);
+	if (ptr == data_12D6) return FAKE_POINTER(12D6);
+	if (ptr == data_12E0) return FAKE_POINTER(12E0);
+	if (ptr == data_12EA) return FAKE_POINTER(12EA);
+	if (ptr == data_12F4) return FAKE_POINTER(12F4);
+	if (ptr == data_1316) return FAKE_POINTER(1316);
+	if (ptr == data_1320) return FAKE_POINTER(1320);
+	if (ptr == data_132A) return FAKE_POINTER(132A);
+	if (ptr == data_1334) return FAKE_POINTER(1334);
+	if (ptr == data_133E) return FAKE_POINTER(133E);
+	if (ptr == data_1348) return FAKE_POINTER(1348);
+	if (ptr == data_136A) return FAKE_POINTER(136A);
+	if (ptr == data_1374) return FAKE_POINTER(1374);
+	if (ptr == data_137E) return FAKE_POINTER(137E);
+	if (ptr == data_1388) return FAKE_POINTER(1388);
 	__debugbreak();
 	return 0;
 }
+
+#else // OBJECT_TABLE_BINARY_COMPATIBILITY
+
+#define FAKE_POINTER(n) (data_##n)
+#define FakePointerToPointer(n) (n)
+#define PointerToFakePointer(n) (n)
+
+#endif // OBJECT_TABLE_BINARY_COMPATIBILITY
 
 #ifdef USE_MODULO_LOOKUP_TABLE
 static const bool data_11E8[] = {
@@ -748,7 +714,7 @@ void CreateGeneratorsAndPlayer()
 		objectHead_generators = newGenerator;
 		currentObject = &objects[newGenerator];
 		Generator &generator = *(Generator*)currentObject;
-		generator.sprite = FAKE_POINTER_data_1002;
+		generator.sprite = FAKE_POINTER(1002);
 		currentSprite = data_1002;
 		GetRandomUnoccupiedMazeCell();
 		generator.unused = 0;
@@ -768,7 +734,7 @@ void CreateGeneratorsAndPlayer()
 	data_C74 = 0;
 	data_C73 = false;
 	isPlayerExploding = false;
-	player.sprite = FAKE_POINTER_data_10E2;
+	player.sprite = FAKE_POINTER(10E2);
 	currentSprite = data_10E2;
 	currentObject = &player;
 	GetRandomUnoccupiedMazeCell();
@@ -847,7 +813,7 @@ void ExplodeObject(BYTE arg)
 		playerExplosion.x = player.x;
 		playerExplosion.y = player.y;
 		playerExplosion.spriteSize = EXPLOSION_SIZE(2,2);
-		playerExplosion.sprite = FAKE_POINTER_data_12C2;
+		playerExplosion.sprite = FAKE_POINTER(12C2);
 		isPlayerExploding = true;
 	}
 	currentObject = &objects[arg];
@@ -859,7 +825,7 @@ void ExplodeObject(BYTE arg)
 	Explosion &explosion = *(Explosion*)currentObject;
 	if (data_CC8 == 2 && data_CC9 == 2)
 	{
-		explosion.sprite = FAKE_POINTER_data_12C2;
+		explosion.sprite = FAKE_POINTER(12C2);
 		currentSprite = data_12C2;
 		explosion.spriteSize = EXPLOSION_SIZE(2,2);
 		explosion.animFrame = 0;
@@ -867,7 +833,7 @@ void ExplodeObject(BYTE arg)
 	}
 	if (data_CC8 == 1 && data_CC9 == 2)
 	{
-		explosion.sprite = FAKE_POINTER_data_1316;
+		explosion.sprite = FAKE_POINTER(1316);
 		currentSprite = data_1316;
 		explosion.spriteSize = EXPLOSION_SIZE(2,1);
 		explosion.animFrame = 0;
@@ -875,7 +841,7 @@ void ExplodeObject(BYTE arg)
 	}
 	if (data_CC8 == 1 && data_CC9 == 1)
 	{
-		explosion.sprite = FAKE_POINTER_data_136A;
+		explosion.sprite = FAKE_POINTER(136A);
 		currentSprite = data_136A;
 		explosion.spriteSize = EXPLOSION_SIZE(1,1);
 		explosion.animFrame = 2;
@@ -1352,7 +1318,7 @@ void FireBullet(BYTE bulletType)
 	}
 	bullet.next = 0;
 	if (bulletType==BulletType_Player)
-		bullet.sprite = FAKE_POINTER_data_1150;
+		bullet.sprite = FAKE_POINTER(1150);
 	else
 		bullet.sprite = PointerToFakePointer(data_11B4[fireDirection]);
 	bullet.x = data_C98;
@@ -1541,7 +1507,7 @@ void UpdateSnipes()
 				object = nextObject;
 			}
 			snipe.snipeUnknown2 = 2;
-			snipe.sprite = FAKE_POINTER_data_10FE;
+			snipe.sprite = FAKE_POINTER(10FE);
 			numGhosts++;
 		}
 		else
@@ -1762,7 +1728,7 @@ void UpdateGenerators()
 			spawnedSnipe.x = x;
 			spawnedSnipe.y = y;
 			spawnedSnipe.moveDirection = 2;
-			spawnedSnipe.sprite = FAKE_POINTER_data_1112;
+			spawnedSnipe.sprite = FAKE_POINTER(1112);
 			PlotObjectToMaze();
 			spawnedSnipe.snipeUnknown1 = (BYTE)GetRandomMasked(1);
 			spawnedSnipe.snipeUnknown2 = 4;

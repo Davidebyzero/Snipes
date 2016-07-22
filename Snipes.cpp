@@ -123,11 +123,11 @@ struct Object
 };
 
 #define DEFINE_OBJECT_MEMBER(name,generalPurposeNum,fakeObjectOffset) \
-	struct\
+	struct __##name\
 	{\
-		operator         BYTE &() {return ((Object*)(this-fakeObjectOffset)-1)->generalPurposeNum;}\
-		BYTE &operator =(BYTE n)  {return ((Object*)(this-fakeObjectOffset)-1)->generalPurposeNum = n;}\
-		BYTE &operator =(int  n)  {return ((Object*)(this-fakeObjectOffset)-1)->generalPurposeNum = n;}\
+		operator         BYTE &() const {return ((Object*)(this-fakeObjectOffset)-1)->generalPurposeNum;}\
+		BYTE &operator =(BYTE n)        {return ((Object*)(this-fakeObjectOffset)-1)->generalPurposeNum = n;}\
+		BYTE &operator =(int  n)        {return ((Object*)(this-fakeObjectOffset)-1)->generalPurposeNum = n;}\
 	} name
 #define DEFINE_OBJECT_AND_MEMBERS(className,member1,member2,member3) \
 	struct className : public Object\
@@ -142,11 +142,11 @@ DEFINE_OBJECT_AND_MEMBERS(Explosion,    unused,   spriteSize,    animFrame);
 DEFINE_OBJECT_AND_MEMBERS(MovingObject, general1, moveDirection, general2 );
 
 #define DEFINE_MOVING_OBJECT_MEMBER(name,generalNum,fakeObjectOffset) \
-	struct\
+	struct __##name \
 	{\
-		operator         BYTE &() {return ((MovingObject*)(this-fakeObjectOffset)-1)->generalNum;}\
-		BYTE &operator =(BYTE n)  {return ((MovingObject*)(this-fakeObjectOffset)-1)->generalNum = n;}\
-		BYTE &operator =(int  n)  {return ((MovingObject*)(this-fakeObjectOffset)-1)->generalNum = n;}\
+		operator         BYTE &() const {return ((MovingObject*)(this-fakeObjectOffset)-1)->generalNum;}\
+		BYTE &operator =(BYTE n)        {return ((MovingObject*)(this-fakeObjectOffset)-1)->generalNum = n;}\
+		BYTE &operator =(int  n)        {return ((MovingObject*)(this-fakeObjectOffset)-1)->generalNum = n;}\
 	} name
 #define DEFINE_MOVING_OBJECT_AND_MEMBERS(className,member1,member2) \
 	struct className : public MovingObject\

@@ -72,6 +72,7 @@ Uint PollKeyboard()
 
 int OpenKeyboard()
 {
+	ClearKeyboard();
 	return 0;
 }
 void CloseKeyboard()

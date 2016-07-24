@@ -104,6 +104,59 @@ static BYTE numLivesTable             ['9'-'1'+1] = {  5,   5,   5,   5,   5,   
 bool enableElectricWalls, enableGhostSnipes, generatorsResistSnipeBullets, enableRubberBullets;
 BYTE snipeShootingAccuracy, ghostBitingAccuracy, maxSnipes, numGeneratorsAtStart, numLives;
 
+enum MoveDirection : BYTE  // progresses from 0 to 7 in the clockwise direction
+{
+	MoveDirection_Up,
+	MoveDirection_UpRight,
+	MoveDirection_Right,
+	MoveDirection_DownRight,
+	MoveDirection_Down,
+	MoveDirection_DownLeft,
+	MoveDirection_Left,
+	MoveDirection_UpLeft,
+	MoveDirection_COUNT
+};
+enum MoveDirectionMask : BYTE
+{
+	MoveDirectionMask_Diagonal = 1,
+	MoveDirectionMask_UpDown   = 4,
+	MoveDirectionMask_All      = MoveDirection_COUNT - 1
+};
+MoveDirection  operator+ (MoveDirection  dir, int n                 ) {return (MoveDirection ) ((BYTE )dir +  n);   }
+MoveDirection  operator- (MoveDirection  dir, int n                 ) {return (MoveDirection ) ((BYTE )dir -  n);   }
+MoveDirection  operator& (MoveDirection  dir, MoveDirectionMask mask) {return (MoveDirection ) ((BYTE )dir &  mask);}
+MoveDirection &operator+=(MoveDirection &dir, int n                 ) {return (MoveDirection&) ((BYTE&)dir += n);   }
+MoveDirection &operator-=(MoveDirection &dir, int n                 ) {return (MoveDirection&) ((BYTE&)dir -= n);   }
+MoveDirection &operator&=(MoveDirection &dir, MoveDirectionMask mask) {return (MoveDirection&) ((BYTE&)dir &= mask);}
+MoveDirection &operator++(MoveDirection &dir                        ) {return (MoveDirection&)++(BYTE&)dir;         }
+MoveDirection &operator--(MoveDirection &dir                        ) {return (MoveDirection&)--(BYTE&)dir;         }
+MoveDirection  operator++(MoveDirection &dir, int                   ) {return (MoveDirection ) ((BYTE&)dir)++;      }
+MoveDirection  operator--(MoveDirection &dir, int                   ) {return (MoveDirection ) ((BYTE&)dir)--;      }
+
+enum OrthogonalDirection : BYTE
+{
+	OrthogonalDirection_Up,
+	OrthogonalDirection_Right,
+	OrthogonalDirection_Down,
+	OrthogonalDirection_Left,
+	OrthogonalDirection_COUNT
+};
+enum OrthogonalDirectionMask : BYTE
+{
+	OrthogonalDirectionMask_All = OrthogonalDirection_COUNT - 1
+};
+OrthogonalDirection  operator+ (OrthogonalDirection  dir, int n                       ) {return (OrthogonalDirection ) ((BYTE )dir +  n);   }
+OrthogonalDirection  operator& (OrthogonalDirection  dir, OrthogonalDirectionMask mask) {return (OrthogonalDirection ) ((BYTE )dir &  mask);}
+MoveDirection OrthoDirectionToMoveDirection(OrthogonalDirection dir) {return (MoveDirection)(dir << 1);}
+
+static const BYTE bulletBounceTable[OrthogonalDirection_COUNT][MoveDirection_COUNT] =
+{
+	{4, 3, 4, 4, 4, 4, 4, 5,},
+	{6, 7, 6, 5, 6, 6, 6, 6,},
+	{0, 0, 0, 1, 0, 7, 0, 0,},
+	{2, 2, 2, 2, 2, 3, 2, 1,},
+};
+
 struct Object
 {
 	BYTE next; // objects[] index of the next object in the linked list of this object's type
@@ -137,9 +190,9 @@ struct Object
 		DEFINE_OBJECT_MEMBER(type3,member3,generalPurpose3,2);\
 		className() {__debugbreak();}\
 	}
-DEFINE_OBJECT_AND_MEMBERS(Generator,    BYTE, unused,   BYTE, spawnFrame,    BYTE, animFrame);
-DEFINE_OBJECT_AND_MEMBERS(Explosion,    BYTE, unused,   BYTE, spriteSize,    BYTE, animFrame);
-DEFINE_OBJECT_AND_MEMBERS(MovingObject, BYTE, general1, BYTE, moveDirection, BYTE, general2 ); // moveDirection 0..7 = up, right+up, right, right+down, down, left+down, left, left+up
+DEFINE_OBJECT_AND_MEMBERS(Generator,    BYTE, unused,   BYTE,          spawnFrame,    BYTE, animFrame);
+DEFINE_OBJECT_AND_MEMBERS(Explosion,    BYTE, unused,   BYTE,          spriteSize,    BYTE, animFrame);
+DEFINE_OBJECT_AND_MEMBERS(MovingObject, BYTE, general1, MoveDirection, moveDirection, BYTE, general2 );
 
 #define DEFINE_MOVING_OBJECT_MEMBER(type,name,generalNum,fakeObjectOffset) \
 	struct __##name \
@@ -181,7 +234,8 @@ enum SoundEffect : BYTE
 BYTE playerFiringPeriod; // in pairs of frames
 WORD frame;
 static bool playerAnimFrame, isPlayerDying, isPlayerExploding, data_CBF;
-static BYTE lastHUD_numGhosts, lastHUD_numGeneratorsKilled, lastHUD_numSnipes, lastHUD_numPlayerDeaths, objectHead_free, objectHead_bullets, objectHead_explosions, objectHead_ghosts, objectHead_snipes, objectHead_generators, numGenerators, numGhosts, numBullets, numPlayerDeaths, numSnipes, data_C74, data_C96, orthoDistance, data_C77, data_C78;
+static BYTE lastHUD_numGhosts, lastHUD_numGeneratorsKilled, lastHUD_numSnipes, lastHUD_numPlayerDeaths, objectHead_free, objectHead_bullets, objectHead_explosions, objectHead_ghosts, objectHead_snipes, objectHead_generators, numGenerators, numGhosts, numBullets, numPlayerDeaths, numSnipes, data_C74, orthoDistance, data_C77, data_C78;
+static OrthogonalDirection bulletCollisionDirection;
 static SoundEffect currentSoundEffect = SoundEffect_None;
 static BYTE currentSoundEffectFrame;
 static WORD lastHUD_numGhostsKilled, lastHUD_numSnipesKilled, numGhostsKilled, numSnipesKilled, viewportFocusX, viewportFocusY;
@@ -633,13 +687,6 @@ bool IsDiagonalDoubledPhase(BYTE n)
 }
 #endif
 
-static const BYTE data_1261[4][8] =
-{
-	4, 3, 4, 4, 4, 4, 4, 5,
-	6, 7, 6, 5, 6, 6, 6, 6,
-	0, 0, 0, 1, 0, 7, 0, 0,
-	2, 2, 2, 2, 2, 3, 2, 1
-};
 static const BYTE data_1281[] = {0xB9, 0xBA, 0xBB, 0xBC, 0xC8, 0xC9, 0xCA, 0xCB, 0xCC, 0xCD, 0xCE};
 static const BYTE data_128C[] = {1, 2, 0x18, 0x1A, 0x19, 0x1B};
 static const BYTE data_1292[] = {0xB9, 0xBA, 0xBB, 0xBC, 0xC8, 0xC9, 0xCA, 0xCB, 0xCC, 0xCD, 0xCE};
@@ -894,11 +941,11 @@ void FreeObjectInList(BYTE *objectHead, BYTE object)
 	FreeObject(object);
 }
 
-bool MoveBulletAndTestHit(BYTE arg)
+bool MoveBulletAndTestHit(OrthogonalDirection arg)
 {
-	switch (data_C96 = arg)
+	switch (bulletCollisionDirection = arg)
 	{
-	case 0:
+	case OrthogonalDirection_Up:
 		bulletTestPos -= MAZE_WIDTH;
 		if (--currentObject->y == 0xFF)
 		{
@@ -906,7 +953,7 @@ bool MoveBulletAndTestHit(BYTE arg)
 			bulletTestPos += _countof(maze);
 		}
 		break;
-	case 1:
+	case OrthogonalDirection_Right:
 		bulletTestPos++;
 		if (++currentObject->x >= MAZE_WIDTH)
 		{
@@ -914,7 +961,7 @@ bool MoveBulletAndTestHit(BYTE arg)
 			bulletTestPos -= MAZE_WIDTH;
 		}
 		break;
-	case 2:
+	case OrthogonalDirection_Down:
 		bulletTestPos += MAZE_WIDTH;
 		if (++currentObject->y >= MAZE_HEIGHT)
 		{
@@ -922,7 +969,7 @@ bool MoveBulletAndTestHit(BYTE arg)
 			bulletTestPos -= _countof(maze);
 		}
 		break;
-	case 3:
+	case OrthogonalDirection_Left:
 		bulletTestPos--;
 		if (--currentObject->x == 0xFF)
 		{
@@ -956,37 +1003,37 @@ void UpdateBullets()
 		*bulletTestPos = MazeTile(0x9, ' ');
 		switch (bullet.moveDirection)
 		{
-		case 1:
-			if (MoveBulletAndTestHit(1) || IsDiagonalDoubledPhase(bullet.y) && MoveBulletAndTestHit(1))
+		case MoveDirection_UpRight:
+			if (MoveBulletAndTestHit(OrthogonalDirection_Right) || IsDiagonalDoubledPhase(bullet.y) && MoveBulletAndTestHit(OrthogonalDirection_Right))
 				break;
-			goto case_0;
-		case 3:
-			if (MoveBulletAndTestHit(2) || IsDiagonalDoubledPhase(bullet.y) && MoveBulletAndTestHit(1))
-				break;
-			// fall through
-		case 2:
-			if (MoveBulletAndTestHit(1))
-				break;
-			goto main_139A;
-		case 4:
-			if (MoveBulletAndTestHit(2))
-				break;
-			goto main_139A;
-		case 5:
-			if (MoveBulletAndTestHit(2) || IsDiagonalDoubledPhase(bullet.y) && MoveBulletAndTestHit(3))
+			goto case_MoveDirection_Up;
+		case MoveDirection_DownRight:
+			if (MoveBulletAndTestHit(OrthogonalDirection_Down) || IsDiagonalDoubledPhase(bullet.y) && MoveBulletAndTestHit(OrthogonalDirection_Right))
 				break;
 			// fall through
-		case 6:
-			if (MoveBulletAndTestHit(3))
+		case MoveDirection_Right:
+			if (MoveBulletAndTestHit(OrthogonalDirection_Right))
 				break;
 			goto main_139A;
-		case 7:
-			if (MoveBulletAndTestHit(3) || IsDiagonalDoubledPhase(bullet.y) && MoveBulletAndTestHit(3))
+		case MoveDirection_Down:
+			if (MoveBulletAndTestHit(OrthogonalDirection_Down))
+				break;
+			goto main_139A;
+		case MoveDirection_DownLeft:
+			if (MoveBulletAndTestHit(OrthogonalDirection_Down) || IsDiagonalDoubledPhase(bullet.y) && MoveBulletAndTestHit(OrthogonalDirection_Left))
 				break;
 			// fall through
-		case 0:
-		case_0:
-			if (MoveBulletAndTestHit(0))
+		case MoveDirection_Left:
+			if (MoveBulletAndTestHit(OrthogonalDirection_Left))
+				break;
+			goto main_139A;
+		case MoveDirection_UpLeft:
+			if (MoveBulletAndTestHit(OrthogonalDirection_Left) || IsDiagonalDoubledPhase(bullet.y) && MoveBulletAndTestHit(OrthogonalDirection_Left))
+				break;
+			// fall through
+		case MoveDirection_Up:
+		case_MoveDirection_Up:
+			if (MoveBulletAndTestHit(OrthogonalDirection_Up))
 				break;
 		main_139A:
 			if (bullet.bulletType!=BulletType_Player)
@@ -1021,12 +1068,12 @@ void UpdateBullets()
 			*bulletTestPos = MazeTile(0xF, 0xB2);
 		}
 		else
-		if (enableRubberBullets && bullet.bulletType==BulletType_Player && bulletLifetime[object] && (bullet.moveDirection & 1))
+		if (enableRubberBullets && bullet.bulletType==BulletType_Player && bulletLifetime[object] && (bullet.moveDirection & MoveDirectionMask_Diagonal))
 		{
 			bulletLifetime[object]--;
-			bullet.moveDirection = data_1261[data_C96][bullet.moveDirection];
+			bullet.moveDirection = (MoveDirection)bulletBounceTable[bulletCollisionDirection][bullet.moveDirection];
 			SetSoundEffectState(1, SoundEffect_PlayerBullet);
-			MoveBulletAndTestHit((data_C96 + 2) & 3);
+			MoveBulletAndTestHit((bulletCollisionDirection + 2) & OrthogonalDirectionMask_All);
 			goto main_139A;
 		}
 	main_150E:
@@ -1048,7 +1095,7 @@ struct OrthoDistanceInfo
 		struct {BYTE x, y;};
 		WORD xy;
 	};
-	BYTE direction; // direction of viewport focus relative to object, in the same enumeration as moveDirection
+	MoveDirection direction;
 };
 
 OrthoDistanceInfo GetOrthoDistanceAndDirection(Object &object)
@@ -1083,15 +1130,15 @@ OrthoDistanceInfo GetOrthoDistanceAndDirection(Object &object)
 	orthoDistance = result.x + result.y;
 	if (result.x == 0)
 	{
-		result.direction = bx * 2;
+		result.direction = (MoveDirection)(bx * 2);
 		return result;
 	}
 	if (result.y == 0)
 	{
-		result.direction = bx * 4 + 2;
+		result.direction = (MoveDirection)(bx * 4 + 2);
 		return result;
 	}
-	static const BYTE diagonalDirectionTable[] = {1, 7, 3, 5};
+	static const MoveDirection diagonalDirectionTable[] = {MoveDirection_UpRight, MoveDirection_UpLeft, MoveDirection_DownRight, MoveDirection_DownLeft};
 	result.direction = diagonalDirectionTable[bx];
 	return result;
 }
@@ -1119,13 +1166,13 @@ MoveObject_retval MoveObject(MovingObject &object)
 	int tmp;
 	switch (object.moveDirection)
 	{
-	case 1:
+	case MoveDirection_UpRight:
 		tmp = cl + (dl = IsDiagonalDoubledPhase(ch) + 1);
 		if (tmp >= MAZE_WIDTH)
 			tmp -= MAZE_WIDTH;
 		cl = tmp;
 		// fall through
-	case 0:
+	case MoveDirection_Up:
 		dh++;
 		tmp = ch - 1;
 		if (tmp < 0)
@@ -1133,14 +1180,14 @@ MoveObject_retval MoveObject(MovingObject &object)
 		ch = tmp;
 		ah = ch;
 		break;
-	case 2:
+	case MoveDirection_Right:
 		dl++;
 		tmp = cl + 1;
 		if (tmp >= MAZE_WIDTH)
 			tmp = 0;
 		cl = tmp;
 		break;
-	case 3:
+	case MoveDirection_DownRight:
 		dh++;
 		tmp = ch + 1;
 		if (tmp >= MAZE_HEIGHT)
@@ -1152,14 +1199,14 @@ MoveObject_retval MoveObject(MovingObject &object)
 			tmp -= MAZE_WIDTH;
 		cl = tmp;
 		break;
-	case 4:
+	case MoveDirection_Down:
 		dh++;
 		tmp = ch + 1;
 		if (tmp >= MAZE_HEIGHT)
 			tmp = 0;
 		ch = tmp;
 		break;
-	case 5:
+	case MoveDirection_DownLeft:
 		dh++;
 		tmp = ch + 1;
 		if (tmp >= MAZE_HEIGHT)
@@ -1172,7 +1219,7 @@ MoveObject_retval MoveObject(MovingObject &object)
 		cl = tmp;
 		al = cl;
 		break;
-	case 6:
+	case MoveDirection_Left:
 		dl++;
 		tmp = cl - 1;
 		if (tmp < 0)
@@ -1180,7 +1227,7 @@ MoveObject_retval MoveObject(MovingObject &object)
 		cl = tmp;
 		al = cl;
 		break;
-	case 7:
+	case MoveDirection_UpLeft:
 		dl = IsDiagonalDoubledPhase(ch) + 1;
 		tmp = cl - dl;
 		if (tmp < 0)
@@ -1236,37 +1283,37 @@ MoveObject_retval MoveObject(MovingObject &object)
 void FireBullet(BYTE bulletType)
 {
 	MovingObject &shooter = *(Bullet*)currentObject;
-	BYTE fireDirection = shooter.moveDirection;
+	MoveDirection fireDirection = shooter.moveDirection;
 	BYTE data_C98 = shooter.x;
 	BYTE data_C99 = shooter.y;
 	switch (fireDirection)
 	{
-	case 1:
+	case MoveDirection_UpRight:
 		data_C98 += ((BYTE*)currentSprite)[1];
-		goto case_0;
-	case 2:
+		goto case_MoveDirection_Up;
+	case MoveDirection_Right:
 		data_C98 += ((BYTE*)currentSprite)[1];
 		break;
-	case 3:
+	case MoveDirection_DownRight:
 		data_C98 += ((BYTE*)currentSprite)[1];
 		goto main_168F;
-	case 4:
+	case MoveDirection_Down:
 		data_C99 += ((BYTE*)currentSprite)[0];
 		data_C98 = data_C98 + ((BYTE*)currentSprite)[1] - 1;
 		break;
-	case 5:
+	case MoveDirection_DownLeft:
 		data_C98--;
 	main_168F:
 		data_C99 += ((BYTE*)currentSprite)[0];
 		break;
-	case 6:
+	case MoveDirection_Left:
 		data_C98--;
 		break;
-	case 7:
+	case MoveDirection_UpLeft:
 		data_C98--;
 		// fall through
-	case 0:
-	case_0:
+	case MoveDirection_Up:
+	case_MoveDirection_Up:
 		data_C99--;
 		break;
 	default:
@@ -1384,14 +1431,14 @@ void UpdateSnipes()
 				if (!result.al)
 				{
 					snipe.xy = result.cx;
-					if (!(snipe.moveDirection & 1))
+					if (!(snipe.moveDirection & MoveDirectionMask_Diagonal))
 						goto main_2021;
 					snipe.moveFrame = 8;
 					goto main_2025;
 				}
 			}
 			if (GetRandomMasked(3) == 0) // 1/4 * 1/4 chance of moving in a random direction
-				snipe.moveDirection = (BYTE)GetRandomMasked(7);
+				snipe.moveDirection = (MoveDirection)GetRandomMasked(MoveDirectionMask_All);
 			else                         // 1/4 * 3/4 chance of moving toward the player
 				snipe.moveDirection = GetOrthoDistanceAndDirection(snipe).direction;
 			for (Uint count=8; count; count--)
@@ -1400,9 +1447,9 @@ void UpdateSnipes()
 				if (!result.al)
 					break;
 				if (snipe.movementFlags & EnemyMovementFlag_TurnDirection)
-					snipe.moveDirection = (snipe.moveDirection - 1) & 7;
+					snipe.moveDirection = (snipe.moveDirection - 1) & MoveDirectionMask_All;
 				else
-					snipe.moveDirection = (snipe.moveDirection + 1) & 7;
+					snipe.moveDirection = (snipe.moveDirection + 1) & MoveDirectionMask_All;
 			}
 			snipe.sprite = PointerToFakePointer(data_1130[snipe.moveDirection]);
 		main_2021:
@@ -1415,8 +1462,8 @@ void UpdateSnipes()
 			else
 				maze[snipe.y * MAZE_WIDTH            ] = (MazeTile&)sprite[1 + 1];
 			OrthoDistanceInfo orthoDist = GetOrthoDistanceAndDirection(snipe);
-			BYTE al = orthoDist.direction;
-			BYTE ah = snipe.moveDirection;
+			MoveDirection al = orthoDist.direction;
+			MoveDirection ah = snipe.moveDirection;
 			if (al != ah)
 				goto main_209E;
 			if (orthoDist.x && orthoDist.y)
@@ -1432,11 +1479,11 @@ void UpdateSnipes()
 					snipe.moveDirection = al;
 					currentObject = &snipe;
 					currentSprite = FakePointerToPointer(snipe.sprite);
-					al = FireSnipeBullet();
+					bool tmp = FireSnipeBullet();
 					snipe.moveDirection = moveDirection;
+					if (!tmp)
+						break;
 				}
-				if (!al)
-					break;
 				if (maze[snipe.y * MAZE_WIDTH + snipe.x].ch != 0x01)
 					maze[snipe.y * MAZE_WIDTH + snipe.x] = MazeTile(0x9, 0xFF);
 				else
@@ -1448,40 +1495,40 @@ void UpdateSnipes()
 				}
 				break;
 			main_209E:
-				if (orthoDist.y <= 2 && al && al != 4)
+				if (orthoDist.y <= 2 && al != MoveDirection_Up && al != MoveDirection_Down)
 				{
-					if (al <= 4)
+					if (al <= MoveDirection_Down)
 					{
-						if (ah && ah <= 3)
+						if (inrange(ah, MoveDirection_UpRight, MoveDirection_DownRight))
 						{
-							al = 2;
+							al = MoveDirection_Right;
 							continue;
 						}
 					}
 					else
-					if (ah >= 5)
+					if (ah >= MoveDirection_DownLeft)
 					{
-						al = 6;
+						al = MoveDirection_Left;
 						continue;
 					}
 				}
 				if (orthoDist.x > 2)
 					break;
-				al = (al + 1) & 7;
-				if (al == 7 || al == 3)
+				al = (al + 1) & MoveDirectionMask_All;
+				if (al == MoveDirection_UpLeft || al == MoveDirection_DownRight)
 					break;
-				if (al <= 3)
+				if (al < MoveDirection_Down)
 				{
-					ah = (ah + 1) & 7;
-					if (ah > 2)
+					ah = (ah + 1) & MoveDirectionMask_All;
+					if (ah > MoveDirection_Right)
 						break;
-					al = 0;
+					al = MoveDirection_Up;
 					continue;
 				}
-				ah = (ah + 2) & 7;
-				if (ah < 5)
+				ah = (ah + 2) & MoveDirectionMask_All;
+				if (ah <= MoveDirection_Down)
 					break;
-				al = 4;
+				al = MoveDirection_Down;
 			}
 			goto next_snipe;
 		}
@@ -1558,7 +1605,7 @@ void UpdateGhosts()
 			{
 				ghost.moveDirection = orthoDist.direction;
 				MoveObject_retval result = MoveObject(ghost);
-				if (result.al && (ghost.moveDirection & 1))
+				if (result.al && (ghost.moveDirection & MoveDirectionMask_Diagonal))
 					if (IsPlayer(result.ah))
 					{
 						if (GetRandomMasked(ghostBitingAccuracy) == 0)
@@ -1573,7 +1620,7 @@ void UpdateGhosts()
 					}
 			}
 			if (orthoDist.y == 1)
-				orthoDist.direction = orthoDist.direction >= 4 ? 6 : 2;
+				orthoDist.direction = orthoDist.direction >= MoveDirection_Down ? MoveDirection_Left : MoveDirection_Right;
 			else
 			if (orthoDist.y < 1)
 			{
@@ -1588,7 +1635,7 @@ void UpdateGhosts()
 			}
 			else
 			if (orthoDist.x == 1)
-				orthoDist.direction = (orthoDist.direction + 1) & 4;
+				orthoDist.direction = (orthoDist.direction + 1) & MoveDirectionMask_UpDown;
 			else
 			if (orthoDist.x < 1)
 			{
@@ -1599,7 +1646,7 @@ void UpdateGhosts()
 					ghost.xy = result.cx;
 					goto plot_ghost_and_continue;
 				}
-				orthoDist.direction = (orthoDist.direction - 4) & 7;
+				orthoDist.direction = (orthoDist.direction - 4) & MoveDirectionMask_All;
 			}
 			ghost.moveDirection = orthoDist.direction;
 			{
@@ -1612,7 +1659,7 @@ void UpdateGhosts()
 			}
 			if (orthoDistance >= 20)
 				ghost.movementFlags |= EnemyMovementFlag_GhostMoveStraight;
-			ghost.moveDirection = (BYTE)GetRandomMasked(7);
+			ghost.moveDirection = (MoveDirection)GetRandomMasked(MoveDirectionMask_All);
 		}
 		for (Uint count=8; count; count--)
 		{
@@ -1624,9 +1671,9 @@ void UpdateGhosts()
 			}
 			ghost.movementFlags &= ~EnemyMovementFlag_GhostMoveStraight;
 			if (ghost.movementFlags & EnemyMovementFlag_TurnDirection)
-				ghost.moveDirection = (ghost.moveDirection - 1) & 7;
+				ghost.moveDirection = (ghost.moveDirection - 1) & MoveDirectionMask_All;
 			else
-				ghost.moveDirection = (ghost.moveDirection + 1) & 7;
+				ghost.moveDirection = (ghost.moveDirection + 1) & MoveDirectionMask_All;
 		}
 	plot_ghost_and_continue:
 		maze[ghost.y * MAZE_WIDTH + ghost.x] = MazeTile(0x5, 0x02);
@@ -1732,7 +1779,7 @@ void UpdateGenerators()
 			objectHead_snipes = spawnedSnipeIndex;
 			spawnedSnipe.x = x;
 			spawnedSnipe.y = y;
-			spawnedSnipe.moveDirection = 2;
+			spawnedSnipe.moveDirection = MoveDirection_Right;
 			spawnedSnipe.sprite = FAKE_POINTER(1112);
 			PlotObjectToMaze();
 			spawnedSnipe.movementFlags = (BYTE)GetRandomMasked(1); // randomly set or clear EnemyMovementFlag_TurnDirection
@@ -1744,9 +1791,9 @@ void UpdateGenerators()
 	}
 }
 
-bool MovePlayer_helper(BYTE arg)
+bool MovePlayer_helper(OrthogonalDirection arg)
 {
-	player.moveDirection = arg << 1;
+	player.moveDirection = OrthoDirectionToMoveDirection(arg);
 	MoveObject_retval result = MoveObject(*(MovingObject*)currentObject);
 	if (result.al)
 		return data_CBF = true;
@@ -1757,59 +1804,59 @@ bool MovePlayer_helper(BYTE arg)
 
 bool MovePlayer()
 {
-	BYTE data_CBE = player.moveDirection;
+	MoveDirection moveDirection = player.moveDirection;
 	data_CBF = false;
-	switch (data_CBE)
+	switch (moveDirection)
 	{
-	case 1:
-		MovePlayer_helper(1);
+	case MoveDirection_UpRight:
+		MovePlayer_helper(OrthogonalDirection_Right);
 		if (!IsDiagonalDoubledPhase(currentObject->y))
-			goto case_0;
-		if (MovePlayer_helper(1))
-			goto case_0;
-		if (!MovePlayer_helper(0))
+			goto case_MoveDirection_Up;
+		if (MovePlayer_helper(OrthogonalDirection_Right))
+			goto case_MoveDirection_Up;
+		if (!MovePlayer_helper(OrthogonalDirection_Up))
 			goto main_1A64;
-		goto main_1A2B;
-	case 3:
-		if (MovePlayer_helper(2))
-			goto main_1A5A;
+		goto case_MoveDirection_Left;
+	case MoveDirection_DownRight:
+		if (MovePlayer_helper(OrthogonalDirection_Down))
+			goto case_MoveDirection_Right;
 		if (IsDiagonalDoubledPhase(currentObject->y))
-			MovePlayer_helper(1);
-		goto main_1A5A;
-	case 4:
-		MovePlayer_helper(2);
+			MovePlayer_helper(OrthogonalDirection_Right);
+		goto case_MoveDirection_Right;
+	case MoveDirection_Down:
+		MovePlayer_helper(OrthogonalDirection_Down);
 		goto main_1A64;
-	case 5:
-		if (MovePlayer_helper(2))
-			goto main_1A2B;
+	case MoveDirection_DownLeft:
+		if (MovePlayer_helper(OrthogonalDirection_Down))
+			goto case_MoveDirection_Left;
 		if (!IsDiagonalDoubledPhase(currentObject->y))
-			goto main_1A2B;
-		MovePlayer_helper(3);
+			goto case_MoveDirection_Left;
+		MovePlayer_helper(OrthogonalDirection_Left);
 		// fall through
-	case 6:
-	main_1A2B:
-		MovePlayer_helper(3);
+	case MoveDirection_Left:
+	case_MoveDirection_Left:
+		MovePlayer_helper(OrthogonalDirection_Left);
 		goto main_1A64;
-	case 7:
-		MovePlayer_helper(3);
+	case MoveDirection_UpLeft:
+		MovePlayer_helper(OrthogonalDirection_Left);
 		if (!IsDiagonalDoubledPhase(currentObject->y))
-			goto case_0;
-		if (MovePlayer_helper(3))
-			goto case_0;
-		if (!MovePlayer_helper(0))
+			goto case_MoveDirection_Up;
+		if (MovePlayer_helper(OrthogonalDirection_Left))
+			goto case_MoveDirection_Up;
+		if (!MovePlayer_helper(OrthogonalDirection_Up))
 			goto main_1A64;
 		// fall through
-	case 2:
-	main_1A5A:
-		MovePlayer_helper(1);
+	case MoveDirection_Right:
+	case_MoveDirection_Right:
+		MovePlayer_helper(OrthogonalDirection_Right);
 		goto main_1A64;
-	case 0:
-	case_0:
-		MovePlayer_helper(0);
+	case MoveDirection_Up:
+	case_MoveDirection_Up:
+		MovePlayer_helper(OrthogonalDirection_Up);
 	main_1A64:
 		if (!data_CBF)
 			PlotObjectToMaze();
-		player.moveDirection = data_CBE;
+		player.moveDirection = moveDirection;
 		return !data_CBF;
 	default:
 		__assume(0);
@@ -1866,7 +1913,25 @@ bool UpdatePlayer(bool playbackMode, BYTE &replayIO) // returns true if the matc
 			goto explode_player;
 	}
 	EraseObjectFromMaze();
-	static const BYTE data_CAE[] = {0, 2, 6, 0, 4, 3, 5, 0, 0, 1, 7, 0, 0, 0, 0, 0};
+	static const BYTE arrowKeyMaskToDirectionTable[] =
+	{
+		0,
+		MoveDirection_Right,
+		MoveDirection_Left,
+		0,
+		MoveDirection_Down,
+		MoveDirection_DownRight,
+		MoveDirection_DownLeft,
+		0,
+		MoveDirection_Up,
+		MoveDirection_UpRight,
+		MoveDirection_UpLeft,
+		0,
+		0,
+		0,
+		0,
+		0,
+	};
 	BYTE moveDirection;
 	if (playbackMode)
 	{
@@ -1881,7 +1946,7 @@ bool UpdatePlayer(bool playbackMode, BYTE &replayIO) // returns true if the matc
 	else
 	if (BYTE keyboardMove = keyboard_state & (KEYSTATE_MOVE_RIGHT | KEYSTATE_MOVE_LEFT | KEYSTATE_MOVE_DOWN | KEYSTATE_MOVE_UP))
 	{
-		moveDirection = data_CAE[keyboardMove];
+		moveDirection = arrowKeyMaskToDirectionTable[keyboardMove];
 playback_move:
 		player.moveDirection = moveDirection;
 		if (!playbackMode)
@@ -1923,17 +1988,17 @@ main_1B8F:
 	else
 	if (!spacebar_state && (keyboard_state & (KEYSTATE_FIRE_RIGHT | KEYSTATE_FIRE_LEFT | KEYSTATE_FIRE_DOWN | KEYSTATE_FIRE_UP)))
 	{
-		fireDirection = data_CAE[keyboard_state >> 4];
+		fireDirection = arrowKeyMaskToDirectionTable[keyboard_state >> 4];
 playback_fire:
 		if (!playbackMode)
 			replayIO += (fireDirection + 1) * 9;
 		if (--player.firingFrame)
 			return false;
-		BYTE moveDirection = player.moveDirection;
+		MoveDirection moveDirection_backup = player.moveDirection;
 		player.moveDirection = fireDirection;
 		FireBullet(BulletType_Player);
 		SetSoundEffectState(0, SoundEffect_PlayerBullet);
-		player.moveDirection = moveDirection;
+		player.moveDirection = moveDirection_backup;
 		player.firingFrame = player.inputFrame == 1 ? playerFiringPeriod<<1 : playerFiringPeriod;
 		return false;
 	}

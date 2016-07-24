@@ -35,7 +35,7 @@ void WriteTextMem(Uint count, WORD row, WORD column, MazeTile *src)
 	static CHAR_INFO buf[WINDOW_WIDTH];
 	for (Uint i=0; i<count; i++)
 	{
-		buf[i].Char.AsciiChar = src[i].ch;
+		buf[i].Char.AsciiChar = src[i].chr;
 		buf[i].Attributes     = src[i].color;
 #if defined(CHEAT_OMNISCIENCE) && defined(CHEAT_OMNISCIENCE_SHOW_NORMAL_VIEWPORT)
 		if (!(inrangex(column+i, WINDOW_WIDTH/2 - 40/2 + 1,

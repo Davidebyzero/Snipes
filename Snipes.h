@@ -38,8 +38,8 @@ extern BYTE fast_forward;
 
 struct MazeTile
 {
-	BYTE ch;
+	BYTE chr;
 	BYTE color;
 	MazeTile() {}
-	MazeTile(BYTE color, BYTE ch) : ch(ch), color(color) {}
+	MazeTile(BYTE color, BYTE chr) : chr(chr), color(color) {}
 };

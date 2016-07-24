@@ -61,15 +61,15 @@ void ParseSkillLevel(char *skillLevel, DWORD skillLevelLength)
 			skillLevelNumber = 1;
 			return;
 		}
-		char ch = *skillLevel;
-		if (inrange(ch, 'a', 'z'))
-			skillLevelLetter = ch - 'a';
+		char chr = *skillLevel;
+		if (inrange(chr, 'a', 'z'))
+			skillLevelLetter = chr - 'a';
 		else
-		if (inrange(ch, 'A', 'Z'))
-			skillLevelLetter = ch - 'A';
+		if (inrange(chr, 'A', 'Z'))
+			skillLevelLetter = chr - 'A';
 		else
-		if (inrange(ch, '0', '9'))
-			skillLevelNumberTmp = skillLevelNumberTmp * 10 + (ch - '0');
+		if (inrange(chr, '0', '9'))
+			skillLevelNumberTmp = skillLevelNumberTmp * 10 + (chr - '0');
 	}
 	if (inrange(skillLevelNumberTmp, 1, 9))
 		skillLevelNumber = skillLevelNumberTmp;
@@ -443,7 +443,7 @@ void CreateMaze()
 					data_1E6 = data_1E2 + MAZE_SCRATCH_BUFFER_SIZE - 0x11;
 			}
 			static BYTE data_EAB[] = {0x20, 0xBA, 0xBA, 0xBA, 0xCD, 0xBC, 0xBB, 0xB9, 0xCD, 0xC8, 0xC9, 0xCC, 0xCD, 0xCA, 0xCB, 0xCE};
-			maze[data_1E4].ch = data_EAB[(mazeScratchBuffer[data_1E2] & 0xA) | (mazeScratchBuffer[data_1E6] & 0x5)];
+			maze[data_1E4].chr = data_EAB[(mazeScratchBuffer[data_1E2] & 0xA) | (mazeScratchBuffer[data_1E6] & 0x5)];
 			maze[data_1E4].color = 0x9;
 			data_1E4 += MAZE_CELL_WIDTH;
 			data_1E2++;
@@ -531,16 +531,16 @@ static const WORD data_137E[] = {SPRITE_SIZE(1,1), 0xC09};
 static const WORD data_1388[] = {SPRITE_SIZE(1,1), 0x407};
 static const WORD *data_1392[] = {data_136A, data_136A, data_136A, data_1374, data_137E, data_1388};
 
-bool IsPlayer(BYTE ch)
+bool IsPlayer(BYTE chr)
 {
-	return ch == 0x93 || ch == 0x4F || ch == 0x11 || ch == 0x10;
+	return chr == 0x93 || chr == 0x4F || chr == 0x11 || chr == 0x10;
 }
 bool IsGenerator(MazeTile tile)
 {
 #ifdef FIX_BUGS
-	return tile.ch == 0xDA || tile.ch == 0xBF || tile.ch == 0xC0 || tile.ch == 0xD9 || tile.ch == 0xFF;
+	return tile.chr == 0xDA || tile.chr == 0xBF || tile.chr == 0xC0 || tile.chr == 0xD9 || tile.chr == 0xFF;
 #else
-	return wmemchr((wchar_t*)&data_1002[1], (wchar_t&)tile, _countof(data_1002)-1) || tile.ch == 0xFF;
+	return wmemchr((wchar_t*)&data_1002[1], (wchar_t&)tile, _countof(data_1002)-1) || tile.chr == 0xFF;
 #endif
 }
 
@@ -705,7 +705,7 @@ bool IsObjectLocationOccupied(BYTE y, BYTE x)
 	{
 		for (BYTE column = 0; column < spriteWidth; column++)
 		{
-			if (mazeTile[x].ch != ' ')
+			if (mazeTile[x].chr != ' ')
 				return true;
 			if (++x >= MAZE_WIDTH)
 				x = 0;
@@ -977,7 +977,7 @@ bool MoveBulletAndTestHit(OrthogonalDirection arg)
 	default:
 		__assume(0);
 	}
-	return bulletTestPos->ch != ' ';
+	return bulletTestPos->chr != ' ';
 }
 
 void UpdateBullets()
@@ -988,7 +988,7 @@ void UpdateBullets()
 		currentObject = &objects[object];
 		Bullet &bullet = *(Bullet*)currentObject;
 		bulletTestPos = &maze[bullet.y * MAZE_WIDTH + bullet.x];
-		if (bulletTestPos->ch == 0xB2)
+		if (bulletTestPos->chr == 0xB2)
 		{
 			BYTE nextObject = bullet.next;
 			*bulletTestPos = MazeTile(0x9, ' ');
@@ -1048,7 +1048,7 @@ void UpdateBullets()
 		default:
 			__assume(0);
 		}
-		BYTE find_this = bulletTestPos->ch;
+		BYTE find_this = bulletTestPos->chr;
 		if (!memchr(mazeWallCharacters, find_this, _countof(mazeWallCharacters)))
 		{
 			if (bullet.bulletType==BulletType_Player)
@@ -1248,11 +1248,11 @@ MoveObject_retval MoveObject(MovingObject &object)
 		ah = dl;
 		for (size_t bx = al;;)
 		{
-			if (si[bx].ch != ' ')
+			if (si[bx].chr != ' ')
 			{
 				MoveObject_retval retval;
 				retval.al = true;
-				retval.ah = si[bx].ch;
+				retval.ah = si[bx].chr;
 				retval.cx = cx;
 				retval.bx_si = &si[bx];
 				return retval;
@@ -1335,11 +1335,11 @@ void FireBullet(BYTE bulletType)
 	if (IsObjectLocationOccupied(data_C99, data_C98))
 	{
 		WORD data_B5E = data_C99 * MAZE_WIDTH + data_C98;
-		if (memchr(mazeWallCharacters, maze[data_B5E].ch, _countof(mazeWallCharacters)))
+		if (memchr(mazeWallCharacters, maze[data_B5E].chr, _countof(mazeWallCharacters)))
 			goto main_1899;
 		if (bulletType==BulletType_Player)
 		{
-			if (memchr(enemyCharacters, maze[data_B5E].ch, _countof(enemyCharacters)))
+			if (memchr(enemyCharacters, maze[data_B5E].chr, _countof(enemyCharacters)))
 				score += 1;
 			else
 			if (IsGenerator(maze[data_B5E]))
@@ -1406,13 +1406,13 @@ void UpdateSnipes()
 		MazeTile * leftPart = &snipeMazeRow[snipe.x];
 		MazeTile *rightPart = snipe.x >= MAZE_WIDTH-1 ? &snipeMazeRow[0] : leftPart + 1;
 		MazeTile *ghostPart;
-		if (leftPart->ch == 0xB2)
+		if (leftPart->chr == 0xB2)
 		{
 			*leftPart = MazeTile(0x9, ' ');
 			ghostPart = rightPart;
 		}
 		else
-		if (rightPart->ch == 0xB2)
+		if (rightPart->chr == 0xB2)
 		{
 			*rightPart = MazeTile(0x9, ' ');
 			ghostPart = leftPart;
@@ -1481,7 +1481,7 @@ void UpdateSnipes()
 					if (!tmp)
 						break;
 				}
-				if (maze[snipe.y * MAZE_WIDTH + snipe.x].ch != 0x01)
+				if (maze[snipe.y * MAZE_WIDTH + snipe.x].chr != 0x01)
 					maze[snipe.y * MAZE_WIDTH + snipe.x] = MazeTile(0x9, 0xFF);
 				else
 				{
@@ -1535,7 +1535,7 @@ void UpdateSnipes()
 			object = snipe.next;
 			continue;
 		}
-		if (enableGhostSnipes && ghostPart->ch == 0x01)
+		if (enableGhostSnipes && ghostPart->chr == 0x01)
 		{
 			*ghostPart = MazeTile(0x5, 0x02);
 			Ghost &ghost = (Ghost&)snipe;
@@ -1576,7 +1576,7 @@ void UpdateGhosts()
 	{
 		Ghost &ghost = (Ghost&)objects[object];
 		MazeTile &ghostInMaze = maze[ghost.y * MAZE_WIDTH + ghost.x];
-		if (ghostInMaze.ch != 0xB2)
+		if (ghostInMaze.chr != 0xB2)
 		{
 			if (--ghost.moveFrame)
 			{
@@ -1607,7 +1607,7 @@ void UpdateGhosts()
 					{
 						if (GetRandomMasked(ghostBitingAccuracy) == 0)
 						{
-							result.bx_si->ch = 0xB2;
+							result.bx_si->chr = 0xB2;
 							goto kill_ghost;
 						}
 #ifndef FIX_BUGS
@@ -1689,7 +1689,7 @@ bool IsObjectTaggedToExplode()
 		BYTE x = currentObject->x;
 		for (BYTE column = 0; column < spriteWidth; column++)
 		{
-			if (mazeTile[x].ch == 0xB2)
+			if (mazeTile[x].chr == 0xB2)
 				return true;
 			if (++x >= MAZE_WIDTH)
 				x = 0;

@@ -122,42 +122,42 @@ struct Object
 #endif
 };
 
-#define DEFINE_OBJECT_MEMBER(name,generalPurposeNum,fakeObjectOffset) \
+#define DEFINE_OBJECT_MEMBER(type,name,generalPurposeNum,fakeObjectOffset) \
 	struct __##name\
 	{\
-		operator         BYTE &() const {return ((Object*)(this-fakeObjectOffset)-1)->generalPurposeNum;}\
-		BYTE &operator =(BYTE n)        {return ((Object*)(this-fakeObjectOffset)-1)->generalPurposeNum = n;}\
-		BYTE &operator =(int  n)        {return ((Object*)(this-fakeObjectOffset)-1)->generalPurposeNum = n;}\
+		operator         type &() const {return (type&)((Object*)(this-fakeObjectOffset)-1)->generalPurposeNum;}\
+		type &operator =(type n)        {return (type&)((Object*)(this-fakeObjectOffset)-1)->generalPurposeNum =       n;}\
+		type &operator =(int  n)        {return (type&)((Object*)(this-fakeObjectOffset)-1)->generalPurposeNum = (type)n;}\
 	} name
-#define DEFINE_OBJECT_AND_MEMBERS(className,member1,member2,member3) \
+#define DEFINE_OBJECT_AND_MEMBERS(className,type1,member1,type2,member2,type3,member3) \
 	struct className : public Object\
 	{\
-		DEFINE_OBJECT_MEMBER(member1,generalPurpose1,0);\
-		DEFINE_OBJECT_MEMBER(member2,generalPurpose2,1);\
-		DEFINE_OBJECT_MEMBER(member3,generalPurpose3,2);\
+		DEFINE_OBJECT_MEMBER(type1,member1,generalPurpose1,0);\
+		DEFINE_OBJECT_MEMBER(type2,member2,generalPurpose2,1);\
+		DEFINE_OBJECT_MEMBER(type3,member3,generalPurpose3,2);\
 		className() {__debugbreak();}\
 	}
-DEFINE_OBJECT_AND_MEMBERS(Generator,    unused,   spawnFrame,    animFrame);
-DEFINE_OBJECT_AND_MEMBERS(Explosion,    unused,   spriteSize,    animFrame);
-DEFINE_OBJECT_AND_MEMBERS(MovingObject, general1, moveDirection, general2 ); // moveDirection 0..7 = up, right+up, right, right+down, down, left+down, left, left+up
+DEFINE_OBJECT_AND_MEMBERS(Generator,    BYTE, unused,   BYTE, spawnFrame,    BYTE, animFrame);
+DEFINE_OBJECT_AND_MEMBERS(Explosion,    BYTE, unused,   BYTE, spriteSize,    BYTE, animFrame);
+DEFINE_OBJECT_AND_MEMBERS(MovingObject, BYTE, general1, BYTE, moveDirection, BYTE, general2 ); // moveDirection 0..7 = up, right+up, right, right+down, down, left+down, left, left+up
 
-#define DEFINE_MOVING_OBJECT_MEMBER(name,generalNum,fakeObjectOffset) \
+#define DEFINE_MOVING_OBJECT_MEMBER(type,name,generalNum,fakeObjectOffset) \
 	struct __##name \
 	{\
-		operator         BYTE &() const {return ((MovingObject*)(this-fakeObjectOffset)-1)->generalNum;}\
-		BYTE &operator =(BYTE n)        {return ((MovingObject*)(this-fakeObjectOffset)-1)->generalNum = n;}\
-		BYTE &operator =(int  n)        {return ((MovingObject*)(this-fakeObjectOffset)-1)->generalNum = n;}\
+		operator         type &() const {return (type&)((MovingObject*)(this-fakeObjectOffset)-1)->generalNum;}\
+		type &operator =(type n)        {return (type&)((MovingObject*)(this-fakeObjectOffset)-1)->generalNum = n;}\
+		type &operator =(int  n)        {return (type&)((MovingObject*)(this-fakeObjectOffset)-1)->generalNum = n;}\
 	} name
-#define DEFINE_MOVING_OBJECT_AND_MEMBERS(className,member1,member2) \
+#define DEFINE_MOVING_OBJECT_AND_MEMBERS(className,type1,member1,type2,member2) \
 	struct className : public MovingObject\
 	{\
-		DEFINE_MOVING_OBJECT_MEMBER(member1,general1,0);\
-		DEFINE_MOVING_OBJECT_MEMBER(member2,general2,1);\
+		DEFINE_MOVING_OBJECT_MEMBER(type1,member1,general1,0);\
+		DEFINE_MOVING_OBJECT_MEMBER(type2,member2,general2,1);\
 		className() {__debugbreak();}\
 	}
-DEFINE_MOVING_OBJECT_AND_MEMBERS(Player, firingFrame,   inputFrame);
-DEFINE_MOVING_OBJECT_AND_MEMBERS(Enemy,  movementFlags, moveFrame );
-DEFINE_MOVING_OBJECT_AND_MEMBERS(Bullet, bulletType,    animFrame );
+DEFINE_MOVING_OBJECT_AND_MEMBERS(Player, BYTE, firingFrame,   BYTE, inputFrame);
+DEFINE_MOVING_OBJECT_AND_MEMBERS(Enemy,  BYTE, movementFlags, BYTE, moveFrame );
+DEFINE_MOVING_OBJECT_AND_MEMBERS(Bullet, BYTE, bulletType,    BYTE, animFrame );
 
 struct Snipe : public Enemy {};
 struct Ghost : public Enemy {};

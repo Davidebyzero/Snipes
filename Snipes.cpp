@@ -93,13 +93,13 @@ void ReadSkillLevel()
 		}
 }
 
-static BYTE snipeShootingAccuracyTable['Z'-'A'+1] = {2, 3, 4, 3, 4, 4, 3, 4, 3, 4, 4, 5, 3, 4, 3, 4, 3, 4, 3, 4, 4, 5, 4, 4, 5, 5};
-static bool enableGhostSnipesTable    ['Z'-'A'+1] = {0, 0, 0, 1, 1, 1, 0, 0, 1, 1, 1, 1, 0, 0, 1, 1, 0, 0, 1, 1, 1, 1, 1, 1, 1, 1};
-static bool rubberBulletTable         ['Z'-'A'+1] = {0, 0, 0, 0, 0, 0, 1, 1, 1, 1, 1, 1, 0, 0, 0, 0, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1};
-static BYTE ghostBitingAccuracyTable  ['Z'-'A'+1] = {0x7F, 0x7F, 0x7F, 0x3F, 0x3F, 0x1F, 0x7F, 0x7F, 0x3F, 0x3F, 0x1F, 0x1F, 0x7F, 0x7F, 0x3F, 0x3F, 0x7F, 0x7F, 0x3F, 0x3F, 0x1F, 0x1F, 0x3F, 0x1F, 0x1F, 0x0F};
-static BYTE maxSnipesTable            ['9'-'1'+1] = { 10,  20,  30,  40,  60,  80, 100, 120, 150};
-static BYTE numGeneratorsTable        ['9'-'1'+1] = {  3,   3,   4,   4,   5,   5,   6,   8,  10};
-static BYTE numLivesTable             ['9'-'1'+1] = {  5,   5,   5,   5,   5,   4,   4,   3,   2};
+static const BYTE snipeShootingAccuracyTable['Z'-'A'+1] = {2, 3, 4, 3, 4, 4, 3, 4, 3, 4, 4, 5, 3, 4, 3, 4, 3, 4, 3, 4, 4, 5, 4, 4, 5, 5};
+static const bool enableGhostSnipesTable    ['Z'-'A'+1] = {0, 0, 0, 1, 1, 1, 0, 0, 1, 1, 1, 1, 0, 0, 1, 1, 0, 0, 1, 1, 1, 1, 1, 1, 1, 1};
+static const bool rubberBulletTable         ['Z'-'A'+1] = {0, 0, 0, 0, 0, 0, 1, 1, 1, 1, 1, 1, 0, 0, 0, 0, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1};
+static const BYTE ghostBitingAccuracyTable  ['Z'-'A'+1] = {0x7F, 0x7F, 0x7F, 0x3F, 0x3F, 0x1F, 0x7F, 0x7F, 0x3F, 0x3F, 0x1F, 0x1F, 0x7F, 0x7F, 0x3F, 0x3F, 0x7F, 0x7F, 0x3F, 0x3F, 0x1F, 0x1F, 0x3F, 0x1F, 0x1F, 0x0F};
+static const BYTE maxSnipesTable            ['9'-'1'+1] = { 10,  20,  30,  40,  60,  80, 100, 120, 150};
+static const BYTE numGeneratorsTable        ['9'-'1'+1] = {  3,   3,   4,   4,   5,   5,   6,   8,  10};
+static const BYTE numLivesTable             ['9'-'1'+1] = {  5,   5,   5,   5,   5,   4,   4,   3,   2};
 
 bool enableElectricWalls, enableGhostSnipes, generatorsResistSnipeBullets, enableRubberBullets;
 BYTE snipeShootingAccuracy, ghostBitingAccuracy, maxSnipes, numGeneratorsAtStart, numLives;
@@ -687,10 +687,8 @@ bool IsDiagonalDoubledPhase(BYTE n)
 }
 #endif
 
-static const BYTE data_1281[] = {0xB9, 0xBA, 0xBB, 0xBC, 0xC8, 0xC9, 0xCA, 0xCB, 0xCC, 0xCD, 0xCE};
-static const BYTE data_128C[] = {1, 2, 0x18, 0x1A, 0x19, 0x1B};
-static const BYTE data_1292[] = {0xB9, 0xBA, 0xBB, 0xBC, 0xC8, 0xC9, 0xCA, 0xCB, 0xCC, 0xCD, 0xCE};
-static const BYTE data_129D[] = {1, 2, 0x18, 0x1A, 0x19, 0x1B};
+static const BYTE mazeWallCharacters[] = {0xB9, 0xBA, 0xBB, 0xBC, 0xC8, 0xC9, 0xCA, 0xCB, 0xCC, 0xCD, 0xCE};
+static const BYTE    enemyCharacters[] = {0x01, 0x02, 0x18, 0x1A, 0x19, 0x1B};
 
 void FreeObject(BYTE object)
 {
@@ -698,24 +696,23 @@ void FreeObject(BYTE object)
 	objectHead_free = object;
 }
 
-bool IsObjectLocationOccupied(WORD row, BYTE column)
+bool IsObjectLocationOccupied(BYTE y, BYTE x)
 {
-	BYTE data_C79 = ((BYTE*)currentSprite)[0];
-	BYTE data_C7A = ((BYTE*)currentSprite)[1];
-	WORD data_B50 = (WORD)row * MAZE_WIDTH;
-	for (BYTE data_C7B = 0; data_C7B < data_C79; data_C7B++)
+	BYTE spriteHeight = ((BYTE*)currentSprite)[0];
+	BYTE spriteWidth  = ((BYTE*)currentSprite)[1];
+	MazeTile *mazeTile = &maze[y * MAZE_WIDTH];
+	for (BYTE row = 0; row < spriteHeight; row++)
 	{
-		BYTE data_C7D = column;
-		for (BYTE data_C7C = 0; data_C7C < data_C7A; data_C7C++)
+		for (BYTE column = 0; column < spriteWidth; column++)
 		{
-			if (maze[data_C7D + data_B50].ch != ' ')
+			if (mazeTile[x].ch != ' ')
 				return true;
-			if (++data_C7D >= MAZE_WIDTH)
-				data_C7D = 0;
+			if (++x >= MAZE_WIDTH)
+				x = 0;
 		}
-		data_B50 += MAZE_WIDTH;
-		if (data_B50 >= _countof(maze))
-			data_B50 -= _countof(maze);
+		mazeTile += MAZE_WIDTH;
+		if (mazeTile >= &maze[_countof(maze)])
+			mazeTile -=       _countof(maze);
 	}
 	return false;
 }
@@ -725,19 +722,19 @@ void PlotObjectToMaze() // plots object currentObject with sprite currentSprite
 	BYTE spriteHeight = ((BYTE*)currentSprite)[0];
 	BYTE spriteWidth  = ((BYTE*)currentSprite)[1];
 	MazeTile *spriteTile = (MazeTile*)&currentSprite[1];
-	WORD data_B52 = (WORD)currentObject->y * MAZE_WIDTH;
-	for (BYTE data_C81 = 0; data_C81 < spriteHeight; data_C81++)
+	MazeTile *mazeTile = &maze[currentObject->y * MAZE_WIDTH];
+	for (BYTE row = 0; row < spriteHeight; row++)
 	{
-		BYTE data_C80 = currentObject->x;
-		for (BYTE data_C82 = 0; data_C82 < spriteWidth; data_C82++)
+		BYTE x = currentObject->x;
+		for (BYTE column = 0; column < spriteWidth; column++)
 		{
-			maze[data_B52 + data_C80] = *spriteTile++;
-			if (++data_C80 >= MAZE_WIDTH)
-				data_C80 = 0;
+			mazeTile[x] = *spriteTile++;
+			if (++x >= MAZE_WIDTH)
+				x = 0;
 		}
-		data_B52 += MAZE_WIDTH;
-		if (data_B52 >= _countof(maze))
-			data_B52 -= _countof(maze);
+		mazeTile += MAZE_WIDTH;
+		if (mazeTile >= &maze[_countof(maze)])
+			mazeTile -=       _countof(maze);
 	}
 }
 
@@ -1052,11 +1049,11 @@ void UpdateBullets()
 			__assume(0);
 		}
 		BYTE find_this = bulletTestPos->ch;
-		if (!memchr(data_1281, find_this, _countof(data_1281)))
+		if (!memchr(mazeWallCharacters, find_this, _countof(mazeWallCharacters)))
 		{
 			if (bullet.bulletType==BulletType_Player)
 			{
-				if (memchr(data_128C, find_this, _countof(data_128C)))
+				if (memchr(enemyCharacters, find_this, _countof(enemyCharacters)))
 					score += 1;
 				else
 				if (IsGenerator(*bulletTestPos))
@@ -1299,7 +1296,7 @@ void FireBullet(BYTE bulletType)
 		goto main_168F;
 	case MoveDirection_Down:
 		data_C99 += ((BYTE*)currentSprite)[0];
-		data_C98 = data_C98 + ((BYTE*)currentSprite)[1] - 1;
+		data_C98 += ((BYTE*)currentSprite)[1] - 1;
 		break;
 	case MoveDirection_DownLeft:
 		data_C98--;
@@ -1338,11 +1335,11 @@ void FireBullet(BYTE bulletType)
 	if (IsObjectLocationOccupied(data_C99, data_C98))
 	{
 		WORD data_B5E = data_C99 * MAZE_WIDTH + data_C98;
-		if (memchr(data_1292, maze[data_B5E].ch, _countof(data_1292)))
+		if (memchr(mazeWallCharacters, maze[data_B5E].ch, _countof(mazeWallCharacters)))
 			goto main_1899;
 		if (bulletType==BulletType_Player)
 		{
-			if (memchr(data_129D, maze[data_B5E].ch, _countof(data_129D)))
+			if (memchr(enemyCharacters, maze[data_B5E].ch, _countof(enemyCharacters)))
 				score += 1;
 			else
 			if (IsGenerator(maze[data_B5E]))
@@ -1390,10 +1387,10 @@ main_1899:
 
 bool FireSnipeBullet()
 {
-	BYTE data_C9C = orthoDistance >> snipeShootingAccuracy;
-	if (data_C9C > 10)
+	BYTE shiftCount = orthoDistance >> snipeShootingAccuracy;
+	if (shiftCount > 10)
 		return false;
-	if (GetRandomMasked(0xFFFF >> (15 - data_C9C)))
+	if (GetRandomMasked(0xFFFF >> (15 - shiftCount)))
 		return false;
 	FireBullet(BulletType_Snipe);
 	SetSoundEffectState(0, SoundEffect_SnipeBullet);
@@ -1686,21 +1683,20 @@ bool IsObjectTaggedToExplode()
 {
 	BYTE spriteHeight = ((BYTE*)currentSprite)[0];
 	BYTE spriteWidth  = ((BYTE*)currentSprite)[1];
-	WORD data_B56 = currentObject->y * MAZE_WIDTH;
+	MazeTile *mazeTile = &maze[currentObject->y * MAZE_WIDTH];
 	for (BYTE row = 0; row < spriteHeight; row++)
 	{
-		BYTE data_C8B = currentObject->x;
+		BYTE x = currentObject->x;
 		for (BYTE column = 0; column < spriteWidth; column++)
 		{
-			if (maze[data_B56 + data_C8B].ch == 0xB2)
+			if (mazeTile[x].ch == 0xB2)
 				return true;
-			data_C8B++;
-			if (data_C8B >= MAZE_WIDTH)
-				data_C8B = 0;
+			if (++x >= MAZE_WIDTH)
+				x = 0;
 		}
-		data_B56 += MAZE_WIDTH;
-		if (data_B56 >= _countof(maze))
-			data_B56 -= _countof(maze);
+		mazeTile += MAZE_WIDTH;
+		if (mazeTile >= &maze[_countof(maze)])
+			mazeTile -=       _countof(maze);
 	}
 	return false;
 }
@@ -1709,19 +1705,19 @@ void EraseObjectFromMaze()
 {
 	BYTE spriteHeight = ((BYTE*)currentSprite)[0];
 	BYTE spriteWidth  = ((BYTE*)currentSprite)[1];
-	WORD data_B54 = currentObject->y * MAZE_WIDTH;
+	MazeTile *mazeTile = &maze[currentObject->y * MAZE_WIDTH];
 	for (BYTE row = 0; row < spriteHeight; row++)
 	{
-		BYTE data_C86 = currentObject->x;
+		BYTE x = currentObject->x;
 		for (BYTE column = 0; column < spriteWidth; column++)
 		{
-			maze[data_B54 + data_C86] = MazeTile(0x9, ' ');
-			if (++data_C86 >= MAZE_WIDTH)
-				data_C86 = 0;
+			mazeTile[x] = MazeTile(0x9, ' ');
+			if (++x >= MAZE_WIDTH)
+				x = 0;
 		}
-		data_B54 += MAZE_WIDTH;
-		if (data_B54 >= _countof(maze))
-			data_B54 -= _countof(maze);
+		mazeTile += MAZE_WIDTH;
+		if (mazeTile >= &maze[_countof(maze)])
+			mazeTile -=       _countof(maze);
 	}
 }
 

@@ -157,6 +157,16 @@ static const BYTE bulletBounceTable[OrthogonalDirection_COUNT][MoveDirection_COU
 	{2, 2, 2, 2, 2, 3, 2, 1,},
 };
 
+struct Coord
+{
+	union
+	{
+		struct {BYTE x,y;};
+		WORD xy;
+	};
+	Coord &operator=(WORD _xy) {xy = _xy; return *this;}
+};
+
 struct Object
 {
 	BYTE next; // objects[] index of the next object in the linked list of this object's type
@@ -164,7 +174,7 @@ struct Object
 	union
 	{
 		struct {BYTE x, y;};
-		WORD xy;
+		Coord xy;
 	};
 	BYTE generalPurpose2;
 	BYTE generalPurpose3;
@@ -233,8 +243,8 @@ enum SoundEffect : BYTE
 
 BYTE playerFiringPeriod; // in pairs of frames
 WORD frame;
-static bool playerAnimFrame, isPlayerDying, isPlayerExploding, data_CBF;
-static BYTE lastHUD_numGhosts, lastHUD_numGeneratorsKilled, lastHUD_numSnipes, lastHUD_numPlayerDeaths, objectHead_free, objectHead_bullets, objectHead_explosions, objectHead_ghosts, objectHead_snipes, objectHead_generators, numGenerators, numGhosts, numBullets, numPlayerDeaths, numSnipes, data_C74, orthoDistance, data_C77, data_C78;
+static bool playerAnimFrame, isPlayerDying, isPlayerExploding;
+static BYTE lastHUD_numGhosts, lastHUD_numGeneratorsKilled, lastHUD_numSnipes, lastHUD_numPlayerDeaths, objectHead_free, objectHead_bullets, objectHead_explosions, objectHead_ghosts, objectHead_snipes, objectHead_generators, numGenerators, numGhosts, numBullets, numPlayerDeaths, numSnipes, data_C74, orthoDistance;
 static OrthogonalDirection bulletCollisionDirection;
 static SoundEffect currentSoundEffect = SoundEffect_None;
 static BYTE currentSoundEffectFrame;
@@ -1090,7 +1100,7 @@ struct OrthoDistanceInfo
 	union
 	{
 		struct {BYTE x, y;};
-		WORD xy;
+		Coord xy;
 	};
 	MoveDirection direction;
 };
@@ -1140,139 +1150,117 @@ OrthoDistanceInfo GetOrthoDistanceAndDirection(Object &object)
 	return result;
 }
 
-struct MoveObject_retval {bool al; BYTE ah; WORD cx; MazeTile *bx_si;};
+struct MoveObject_retval {bool hitObstruction; BYTE chrHit; Coord cx; MazeTile *bx_si;};
 MoveObject_retval MoveObject(MovingObject &object)
 {
-	union
-	{
-		WORD ax;
-		struct {BYTE al, ah;};
-	};
-	union
-	{
-		WORD cx;
-		struct {BYTE cl, ch;};
-	};
-	union
-	{
-		WORD dx;
-		struct {BYTE dl, dh;};
-	};
+	Coord ax, cx, dx;
 	ax = cx = object.xy;
 	dx = 0;
 	int tmp;
 	switch (object.moveDirection)
 	{
 	case MoveDirection_UpRight:
-		tmp = cl + (dl = IsDiagonalDoubledPhase(ch) + 1);
+		tmp = cx.x + (dx.x = IsDiagonalDoubledPhase(cx.y) + 1);
 		if (tmp >= MAZE_WIDTH)
 			tmp -= MAZE_WIDTH;
-		cl = tmp;
+		cx.x = tmp;
 		// fall through
 	case MoveDirection_Up:
-		dh++;
-		tmp = ch - 1;
+		dx.y++;
+		tmp = cx.y - 1;
 		if (tmp < 0)
 			tmp = MAZE_HEIGHT - 1;
-		ch = tmp;
-		ah = ch;
+		ax.y = cx.y = tmp;
 		break;
 	case MoveDirection_Right:
-		dl++;
-		tmp = cl + 1;
+		dx.x++;
+		tmp = cx.x + 1;
 		if (tmp >= MAZE_WIDTH)
 			tmp = 0;
-		cl = tmp;
+		cx.x = tmp;
 		break;
 	case MoveDirection_DownRight:
-		dh++;
-		tmp = ch + 1;
+		dx.y++;
+		tmp = cx.y + 1;
 		if (tmp >= MAZE_HEIGHT)
 			tmp = 0;
-		ch = tmp;
-		dl = IsDiagonalDoubledPhase(ch) + 1;
-		tmp = cl + dl;
+		cx.y = tmp;
+		tmp = cx.x + (dx.x = IsDiagonalDoubledPhase(cx.y) + 1);
 		if (tmp >= MAZE_WIDTH)
 			tmp -= MAZE_WIDTH;
-		cl = tmp;
+		cx.x = tmp;
 		break;
 	case MoveDirection_Down:
-		dh++;
-		tmp = ch + 1;
+		dx.y++;
+		tmp = cx.y + 1;
 		if (tmp >= MAZE_HEIGHT)
 			tmp = 0;
-		ch = tmp;
+		cx.y = tmp;
 		break;
 	case MoveDirection_DownLeft:
-		dh++;
-		tmp = ch + 1;
+		dx.y++;
+		tmp = cx.y + 1;
 		if (tmp >= MAZE_HEIGHT)
 			tmp = 0;
-		ch = tmp;
-		dl = IsDiagonalDoubledPhase(ch) + 1;
-		tmp = cl - dl;
+		cx.y = tmp;
+		tmp = cx.x - (dx.x = IsDiagonalDoubledPhase(cx.y) + 1);
 		if (tmp < 0)
 			tmp += MAZE_WIDTH;
-		cl = tmp;
-		al = cl;
+		ax.x = cx.x = tmp;
 		break;
 	case MoveDirection_Left:
-		dl++;
-		tmp = cl - 1;
+		dx.x++;
+		tmp = cx.x - 1;
 		if (tmp < 0)
 			tmp = MAZE_WIDTH - 1;
-		cl = tmp;
-		al = cl;
+		ax.x = cx.x = tmp;
 		break;
 	case MoveDirection_UpLeft:
-		dl = IsDiagonalDoubledPhase(ch) + 1;
-		tmp = cl - dl;
+		tmp = cx.x - (dx.x = IsDiagonalDoubledPhase(cx.y) + 1);
 		if (tmp < 0)
 			tmp += MAZE_WIDTH;
-		cl = tmp;
-		dh++;
-		tmp = ch - 1;
+		cx.x = tmp;
+		dx.y++;
+		tmp = cx.y - 1;
 		if (tmp < 0)
 			tmp = MAZE_HEIGHT - 1;
-		ch = tmp;
+		cx.y = tmp;
 		ax = cx;
 		break;
 	default:
 		__assume(0);
 	}
 	const WORD *ptr = FakePointerToPointer(object.sprite);
-	dl += ((BYTE*)ptr)[1];
-	dh += ((BYTE*)ptr)[0];
-	for (MazeTile *si = &maze[ah * MAZE_WIDTH];;)
+	dx.x += ((BYTE*)ptr)[1];
+	dx.y += ((BYTE*)ptr)[0];
+	for (MazeTile *mazeRow = &maze[ax.y * MAZE_WIDTH];;)
 	{
-		ah = dl;
-		for (size_t bx = al;;)
+		BYTE countX = dx.x;
+		for (size_t x = ax.x;;)
 		{
-			if (si[bx].chr != ' ')
+			if (mazeRow[x].chr != ' ')
 			{
 				MoveObject_retval retval;
-				retval.al = true;
-				retval.ah = si[bx].chr;
+				retval.hitObstruction = true;
+				retval.chrHit = mazeRow[x].chr;
 				retval.cx = cx;
-				retval.bx_si = &si[bx];
+				retval.bx_si = &mazeRow[x];
 				return retval;
 			}
-			if (--ah == 0)
+			if (--countX == 0)
 				break;
-			if (++bx >= MAZE_WIDTH)
-				bx = 0;
+			if (++x >= MAZE_WIDTH)
+				x = 0;
 		}
-		if (--dh == 0)
+		if (--dx.y == 0)
 			break;
-		si += MAZE_WIDTH;
-		if (si >= &maze[_countof(maze)])
-			si -=       _countof(maze);
+		mazeRow += MAZE_WIDTH;
+		if (mazeRow >= &maze[_countof(maze)])
+			mazeRow -=       _countof(maze);
 	}
-	data_C77 = cl;
-	data_C78 = ch;
 	MoveObject_retval retval;
-	retval.al = false;
-	retval.ah = 0;
+	retval.hitObstruction = false;
+	retval.chrHit = 0;
 	retval.cx = cx;
 	return retval;
 }
@@ -1425,7 +1413,7 @@ void UpdateSnipes()
 			if (GetRandomMasked(3) != 0) // 3/4 chance of moving in the same direction as before
 			{
 				MoveObject_retval result = MoveObject(snipe);
-				if (!result.al)
+				if (!result.hitObstruction)
 				{
 					snipe.xy = result.cx;
 					if (!(snipe.moveDirection & MoveDirectionMask_Diagonal))
@@ -1441,7 +1429,7 @@ void UpdateSnipes()
 			for (Uint count=8; count; count--)
 			{
 				MoveObject_retval result = MoveObject(snipe);
-				if (!result.al)
+				if (!result.hitObstruction)
 					break;
 				if (snipe.movementFlags & EnemyMovementFlag_TurnDirection)
 					snipe.moveDirection = (snipe.moveDirection - 1) & MoveDirectionMask_All;
@@ -1602,8 +1590,8 @@ void UpdateGhosts()
 			{
 				ghost.moveDirection = orthoDist.direction;
 				MoveObject_retval result = MoveObject(ghost);
-				if (result.al && (ghost.moveDirection & MoveDirectionMask_Diagonal))
-					if (IsPlayer(result.ah))
+				if (result.hitObstruction && (ghost.moveDirection & MoveDirectionMask_Diagonal))
+					if (IsPlayer(result.chrHit))
 					{
 						if (GetRandomMasked(ghostBitingAccuracy) == 0)
 						{
@@ -1623,7 +1611,7 @@ void UpdateGhosts()
 			{
 				ghost.moveDirection = ++orthoDist.direction;
 				MoveObject_retval result = MoveObject(ghost);
-				if (!result.al)
+				if (!result.hitObstruction)
 				{
 					ghost.xy = result.cx;
 					goto plot_ghost_and_continue;
@@ -1638,7 +1626,7 @@ void UpdateGhosts()
 			{
 				ghost.moveDirection = orthoDist.direction += 2;
 				MoveObject_retval result = MoveObject(ghost);
-				if (!result.al)
+				if (!result.hitObstruction)
 				{
 					ghost.xy = result.cx;
 					goto plot_ghost_and_continue;
@@ -1648,7 +1636,7 @@ void UpdateGhosts()
 			ghost.moveDirection = orthoDist.direction;
 			{
 				MoveObject_retval result = MoveObject(ghost);
-				if (!result.al)
+				if (!result.hitObstruction)
 				{
 					ghost.xy = result.cx;
 					goto plot_ghost_and_continue;
@@ -1661,7 +1649,7 @@ void UpdateGhosts()
 		for (Uint count=8; count; count--)
 		{
 			MoveObject_retval result = MoveObject(ghost);
-			if (!result.al)
+			if (!result.hitObstruction)
 			{
 				ghost.xy = result.cx;
 				break;
@@ -1787,76 +1775,76 @@ void UpdateGenerators()
 	}
 }
 
-bool MovePlayer_helper(OrthogonalDirection arg)
+bool MovePlayer_helper(bool &hitObstruction, OrthogonalDirection arg)
 {
 	player.moveDirection = OrthoDirectionToMoveDirection(arg);
 	MoveObject_retval result = MoveObject(*(MovingObject*)currentObject);
-	if (result.al)
-		return data_CBF = true;
-	viewportFocusX = player.x = data_C77;
-	viewportFocusY = player.y = data_C78;
+	if (result.hitObstruction)
+		return hitObstruction = true;
+	viewportFocusX = player.x = result.cx.x;
+	viewportFocusY = player.y = result.cx.y;
 	return false;
 }
 
 bool MovePlayer()
 {
 	MoveDirection moveDirection = player.moveDirection;
-	data_CBF = false;
+	bool hitObstruction = false;
 	switch (moveDirection)
 	{
 	case MoveDirection_UpRight:
-		MovePlayer_helper(OrthogonalDirection_Right);
+		MovePlayer_helper(hitObstruction, OrthogonalDirection_Right);
 		if (!IsDiagonalDoubledPhase(currentObject->y))
 			goto case_MoveDirection_Up;
-		if (MovePlayer_helper(OrthogonalDirection_Right))
+		if (MovePlayer_helper(hitObstruction, OrthogonalDirection_Right))
 			goto case_MoveDirection_Up;
-		if (!MovePlayer_helper(OrthogonalDirection_Up))
-			goto main_1A64;
+		if (!MovePlayer_helper(hitObstruction, OrthogonalDirection_Up))
+			break;
 		goto case_MoveDirection_Left;
 	case MoveDirection_DownRight:
-		if (MovePlayer_helper(OrthogonalDirection_Down))
+		if (MovePlayer_helper(hitObstruction, OrthogonalDirection_Down))
 			goto case_MoveDirection_Right;
 		if (IsDiagonalDoubledPhase(currentObject->y))
-			MovePlayer_helper(OrthogonalDirection_Right);
+			MovePlayer_helper(hitObstruction, OrthogonalDirection_Right);
 		goto case_MoveDirection_Right;
 	case MoveDirection_Down:
-		MovePlayer_helper(OrthogonalDirection_Down);
-		goto main_1A64;
+		MovePlayer_helper(hitObstruction, OrthogonalDirection_Down);
+		break;
 	case MoveDirection_DownLeft:
-		if (MovePlayer_helper(OrthogonalDirection_Down))
+		if (MovePlayer_helper(hitObstruction, OrthogonalDirection_Down))
 			goto case_MoveDirection_Left;
 		if (!IsDiagonalDoubledPhase(currentObject->y))
 			goto case_MoveDirection_Left;
-		MovePlayer_helper(OrthogonalDirection_Left);
+		MovePlayer_helper(hitObstruction, OrthogonalDirection_Left);
 		// fall through
 	case MoveDirection_Left:
 	case_MoveDirection_Left:
-		MovePlayer_helper(OrthogonalDirection_Left);
-		goto main_1A64;
+		MovePlayer_helper(hitObstruction, OrthogonalDirection_Left);
+		break;
 	case MoveDirection_UpLeft:
-		MovePlayer_helper(OrthogonalDirection_Left);
+		MovePlayer_helper(hitObstruction, OrthogonalDirection_Left);
 		if (!IsDiagonalDoubledPhase(currentObject->y))
 			goto case_MoveDirection_Up;
-		if (MovePlayer_helper(OrthogonalDirection_Left))
+		if (MovePlayer_helper(hitObstruction, OrthogonalDirection_Left))
 			goto case_MoveDirection_Up;
-		if (!MovePlayer_helper(OrthogonalDirection_Up))
-			goto main_1A64;
+		if (!MovePlayer_helper(hitObstruction, OrthogonalDirection_Up))
+			break;
 		// fall through
 	case MoveDirection_Right:
 	case_MoveDirection_Right:
-		MovePlayer_helper(OrthogonalDirection_Right);
-		goto main_1A64;
+		MovePlayer_helper(hitObstruction, OrthogonalDirection_Right);
+		break;
 	case MoveDirection_Up:
 	case_MoveDirection_Up:
-		MovePlayer_helper(OrthogonalDirection_Up);
-	main_1A64:
-		if (!data_CBF)
-			PlotObjectToMaze();
-		player.moveDirection = moveDirection;
-		return !data_CBF;
+		MovePlayer_helper(hitObstruction, OrthogonalDirection_Up);
+		break;
 	default:
 		__assume(0);
 	}
+	if (!hitObstruction)
+		PlotObjectToMaze();
+	player.moveDirection = moveDirection;
+	return !hitObstruction;
 }
 
 bool UpdatePlayer(bool playbackMode, BYTE &replayIO) // returns true if the match has been lost

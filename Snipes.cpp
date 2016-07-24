@@ -139,7 +139,7 @@ struct Object
 	}
 DEFINE_OBJECT_AND_MEMBERS(Generator,    unused,   spawnFrame,    animFrame);
 DEFINE_OBJECT_AND_MEMBERS(Explosion,    unused,   spriteSize,    animFrame);
-DEFINE_OBJECT_AND_MEMBERS(MovingObject, general1, moveDirection, general2 );
+DEFINE_OBJECT_AND_MEMBERS(MovingObject, general1, moveDirection, general2 ); // moveDirection 0..7 = up, right+up, right, right+down, down, left+down, left, left+up
 
 #define DEFINE_MOVING_OBJECT_MEMBER(name,generalNum,fakeObjectOffset) \
 	struct __##name \
@@ -155,10 +155,18 @@ DEFINE_OBJECT_AND_MEMBERS(MovingObject, general1, moveDirection, general2 );
 		DEFINE_MOVING_OBJECT_MEMBER(member2,general2,1);\
 		className() {__debugbreak();}\
 	}
-DEFINE_MOVING_OBJECT_AND_MEMBERS(Player, firingFrame,   playerUnknown);
-DEFINE_MOVING_OBJECT_AND_MEMBERS(Snipe,  snipeUnknown1, snipeUnknown2);
-DEFINE_MOVING_OBJECT_AND_MEMBERS(Ghost,  ghostUnknown1, ghostUnknown2);
-DEFINE_MOVING_OBJECT_AND_MEMBERS(Bullet, bulletType,    animFrame    );
+DEFINE_MOVING_OBJECT_AND_MEMBERS(Player, firingFrame,   inputFrame);
+DEFINE_MOVING_OBJECT_AND_MEMBERS(Enemy,  movementFlags, moveFrame );
+DEFINE_MOVING_OBJECT_AND_MEMBERS(Bullet, bulletType,    animFrame );
+
+struct Snipe : public Enemy {};
+struct Ghost : public Enemy {};
+
+enum EnemyMovementFlag : BYTE
+{
+	EnemyMovementFlag_TurnDirection     = 1 << 0, // clear = clockwise, set = counterclockwise; set in stone when a snipe comes out of a generator
+	EnemyMovementFlag_GhostMoveStraight = 1 << 1, // for ghosts only; clear = move based on direction of player, set = keep moving in current direction until an obstacle is hit
+};
 
 enum SoundEffect : BYTE
 {
@@ -172,7 +180,7 @@ enum SoundEffect : BYTE
 
 BYTE playerFiringPeriod; // in pairs of frames
 WORD frame;
-static bool playerAnimFrame, data_C73, isPlayerExploding, data_CBF;
+static bool playerAnimFrame, isPlayerDying, isPlayerExploding, data_CBF;
 static BYTE lastHUD_numGhosts, lastHUD_numGeneratorsKilled, lastHUD_numSnipes, lastHUD_numPlayerDeaths, objectHead_free, objectHead_bullets, objectHead_explosions, objectHead_ghosts, objectHead_snipes, objectHead_generators, numGenerators, numGhosts, numBullets, numPlayerDeaths, numSnipes, data_C74, data_C96, orthoDistance, data_C77, data_C78;
 static SoundEffect currentSoundEffect = SoundEffect_None;
 static BYTE currentSoundEffectFrame;
@@ -686,7 +694,7 @@ void PlotObjectToMaze() // plots object currentObject with sprite currentSprite
 	}
 }
 
-void GetRandomUnoccupiedMazeCell()
+void PlaceObjectInRandomUnoccupiedMazeCell()
 {
 	do
 	{
@@ -716,7 +724,7 @@ void CreateGeneratorsAndPlayer()
 		Generator &generator = *(Generator*)currentObject;
 		generator.sprite = FAKE_POINTER(1002);
 		currentSprite = data_1002;
-		GetRandomUnoccupiedMazeCell();
+		PlaceObjectInRandomUnoccupiedMazeCell();
 		generator.unused = 0;
 		generator.animFrame = (BYTE)GetRandomMasked(0xF);
 		generator.spawnFrame = 1;
@@ -732,16 +740,16 @@ void CreateGeneratorsAndPlayer()
 	score = 0;
 	playerAnimFrame = false;
 	data_C74 = 0;
-	data_C73 = false;
+	isPlayerDying = false;
 	isPlayerExploding = false;
 	player.sprite = FAKE_POINTER(10E2);
 	currentSprite = data_10E2;
 	currentObject = &player;
-	GetRandomUnoccupiedMazeCell();
+	PlaceObjectInRandomUnoccupiedMazeCell();
 	PlotObjectToMaze();
 	viewportFocusX = player.x;
 	viewportFocusY = player.y;
-	player.playerUnknown = 1;
+	player.inputFrame = 1;
 	player.firingFrame = 1;
 }
 
@@ -1089,7 +1097,7 @@ OrthoDistanceInfo GetOrthoDistanceAndDirection(Object &di)
 }
 
 struct MoveObject_retval {bool al; BYTE ah; WORD cx; MazeTile *bx_si;};
-MoveObject_retval MoveObject(MovingObject &di)
+MoveObject_retval MoveObject(MovingObject &object)
 {
 	union
 	{
@@ -1106,11 +1114,10 @@ MoveObject_retval MoveObject(MovingObject &di)
 		WORD dx;
 		struct {BYTE dl, dh;};
 	};
-	cx = di.xy;
-	ax = cx;
+	ax = cx = object.xy;
 	dx = 0;
 	int tmp;
-	switch (di.moveDirection)
+	switch (object.moveDirection)
 	{
 	case 1:
 		tmp = cl + (dl = IsDiagonalDoubledPhase(ch) + 1);
@@ -1189,7 +1196,7 @@ MoveObject_retval MoveObject(MovingObject &di)
 	default:
 		__assume(0);
 	}
-	const WORD *ptr = FakePointerToPointer(di.sprite);
+	const WORD *ptr = FakePointerToPointer(object.sprite);
 	dl += ((BYTE*)ptr)[1];
 	dh += ((BYTE*)ptr)[0];
 	for (MazeTile *si = &maze[ah * MAZE_WIDTH];;)
@@ -1351,9 +1358,9 @@ void UpdateSnipes()
 	for (BYTE object = objectHead_snipes; object;)
 	{
 		Snipe &snipe = (Snipe&)objects[object];
-		MazeTile *bx = &maze[snipe.y * MAZE_WIDTH];
-		MazeTile * leftPart = &bx[snipe.x];
-		MazeTile *rightPart = snipe.x >= MAZE_WIDTH-1 ? &bx[0] : leftPart + 1;
+		MazeTile *snipeMazeRow = &maze[snipe.y * MAZE_WIDTH];
+		MazeTile * leftPart = &snipeMazeRow[snipe.x];
+		MazeTile *rightPart = snipe.x >= MAZE_WIDTH-1 ? &snipeMazeRow[0] : leftPart + 1;
 		MazeTile *ghostPart;
 		if (leftPart->ch == 0xB2)
 		{
@@ -1367,11 +1374,11 @@ void UpdateSnipes()
 			ghostPart = leftPart;
 		}
 		else
-		if (--snipe.snipeUnknown2 == 0)
+		if (--snipe.moveFrame == 0)
 		{
 			* leftPart = MazeTile(0x9, ' ');
 			*rightPart = MazeTile(0x9, ' ');
-			if (GetRandomMasked(3) != 0)
+			if (GetRandomMasked(3) != 0) // 3/4 chance of moving in the same direction as before
 			{
 				MoveObject_retval result = MoveObject(snipe);
 				if (!result.al)
@@ -1379,29 +1386,27 @@ void UpdateSnipes()
 					snipe.xy = result.cx;
 					if (!(snipe.moveDirection & 1))
 						goto main_2021;
-					snipe.snipeUnknown2 = 8;
+					snipe.moveFrame = 8;
 					goto main_2025;
 				}
 			}
-			if (GetRandomMasked(3) == 0)
+			if (GetRandomMasked(3) == 0) // 1/4 * 1/4 chance of moving in a random direction
 				snipe.moveDirection = (BYTE)GetRandomMasked(7);
-			else
+			else                         // 1/4 * 3/4 chance of moving toward the player
 				snipe.moveDirection = GetOrthoDistanceAndDirection(snipe).direction;
 			for (Uint count=8; count; count--)
 			{
 				MoveObject_retval result = MoveObject(snipe);
 				if (!result.al)
 					break;
-				BYTE al = snipe.moveDirection;
-				if (snipe.snipeUnknown1 & 1)
-					al = (al - 1) & 7;
+				if (snipe.movementFlags & EnemyMovementFlag_TurnDirection)
+					snipe.moveDirection = (snipe.moveDirection - 1) & 7;
 				else
-					al = (al + 1) & 7;
-				snipe.moveDirection = al;
+					snipe.moveDirection = (snipe.moveDirection + 1) & 7;
 			}
 			snipe.sprite = PointerToFakePointer(data_1130[snipe.moveDirection]);
 		main_2021:
-			snipe.snipeUnknown2 = 6;
+			snipe.moveFrame = 6;
 		main_2025:
 			const WORD *sprite = FakePointerToPointer(snipe.sprite);
 			maze[snipe.y * MAZE_WIDTH + snipe.x] = (MazeTile&)sprite[1 + 0];
@@ -1489,25 +1494,25 @@ void UpdateSnipes()
 		if (enableGhostSnipes && ghostPart->ch == 0x01)
 		{
 			*ghostPart = MazeTile(0x5, 0x02);
-			snipe.x = ghostPart - bx;
+			Ghost &ghost = (Ghost&)snipe;
+			ghost.x = ghostPart - snipeMazeRow;
 
 			// TODO: make the typecasting here less hacky; currently it only works because "next" is the first member of struct Object
-			Object *prevObject;
 			for (Object *objectInList = (Object*)&objectHead_snipes;;)
 			{
-				prevObject = objectInList;
+				Object *prevObject = objectInList;
 				objectInList = &objects[objectInList->next];
-				if (objectInList == &snipe)
+				if (objectInList == &ghost)
+				{
+					BYTE nextObject = prevObject->next = ghost.next;
+					ghost.next = objectHead_ghosts;
+					objectHead_ghosts = object;
+					object = nextObject;
 					break;
+				}
 			}
-			{
-				BYTE nextObject = prevObject->next = snipe.next;
-				{BYTE tmp = objectHead_ghosts; objectHead_ghosts = object; object = tmp;}
-				snipe.next = object;
-				object = nextObject;
-			}
-			snipe.snipeUnknown2 = 2;
-			snipe.sprite = FAKE_POINTER(10FE);
+			ghost.moveFrame = 2;
+			ghost.sprite = FAKE_POINTER(10FE);
 			numGhosts++;
 		}
 		else
@@ -1529,7 +1534,7 @@ void UpdateGhosts()
 		MazeTile &ghostInMaze = maze[ghost.y * MAZE_WIDTH + ghost.x];
 		if (ghostInMaze.ch != 0xB2)
 		{
-			if (--ghost.ghostUnknown2)
+			if (--ghost.moveFrame)
 			{
 				object = ghost.next;
 				continue;
@@ -1546,7 +1551,7 @@ void UpdateGhosts()
 			continue;
 		}
 		ghostInMaze = MazeTile(0x9, ' ');
-		if (!(ghost.ghostUnknown1 & 2))
+		if (!(ghost.movementFlags & EnemyMovementFlag_GhostMoveStraight))
 		{
 			OrthoDistanceInfo orthoDist = GetOrthoDistanceAndDirection(ghost);
 			if (orthoDistance <= 4)
@@ -1606,7 +1611,7 @@ void UpdateGhosts()
 				}
 			}
 			if (orthoDistance >= 20)
-				ghost.ghostUnknown1 |= 2;
+				ghost.movementFlags |= EnemyMovementFlag_GhostMoveStraight;
 			ghost.moveDirection = (BYTE)GetRandomMasked(7);
 		}
 		for (Uint count=8; count; count--)
@@ -1617,15 +1622,15 @@ void UpdateGhosts()
 				ghost.xy = result.cx;
 				break;
 			}
-			ghost.ghostUnknown1 &= ~2;
-			if (ghost.ghostUnknown1 & 1)
+			ghost.movementFlags &= ~EnemyMovementFlag_GhostMoveStraight;
+			if (ghost.movementFlags & EnemyMovementFlag_TurnDirection)
 				ghost.moveDirection = (ghost.moveDirection - 1) & 7;
 			else
 				ghost.moveDirection = (ghost.moveDirection + 1) & 7;
 		}
 	plot_ghost_and_continue:
 		maze[ghost.y * MAZE_WIDTH + ghost.x] = MazeTile(0x5, 0x02);
-		ghost.ghostUnknown2 = 3;
+		ghost.moveFrame = 3;
 		object = ghost.next;
 	}
 }
@@ -1730,8 +1735,8 @@ void UpdateGenerators()
 			spawnedSnipe.moveDirection = 2;
 			spawnedSnipe.sprite = FAKE_POINTER(1112);
 			PlotObjectToMaze();
-			spawnedSnipe.snipeUnknown1 = (BYTE)GetRandomMasked(1);
-			spawnedSnipe.snipeUnknown2 = 4;
+			spawnedSnipe.movementFlags = (BYTE)GetRandomMasked(1); // randomly set or clear EnemyMovementFlag_TurnDirection
+			spawnedSnipe.moveFrame = 4;
 			continue;
 		}
 	next_generator:
@@ -1825,7 +1830,7 @@ bool UpdatePlayer(bool playbackMode, BYTE &replayIO) // returns true if the matc
 		currentSprite = data_10E2;
 	else
 		currentSprite = data_10EC;
-	if (data_C73)
+	if (isPlayerDying)
 	{
 		keyboard_state = PollKeyboard();
 		if (numPlayerDeaths >= numLives)
@@ -1836,21 +1841,29 @@ bool UpdatePlayer(bool playbackMode, BYTE &replayIO) // returns true if the matc
 			return true;
 		}
 		if (!isPlayerExploding)
-			goto main_1C03;
+		{
+			keyboard_state = PollKeyboard();
+			isPlayerDying = false;
+			PlaceObjectInRandomUnoccupiedMazeCell();
+			viewportFocusX = player.x;
+			viewportFocusY = player.y;
+			PlotObjectToMaze();
+			return false;
+		}
 		return false;
 	}
 	else
 	{
-		if (--player.playerUnknown)
+		if (--player.inputFrame)
 		{
 			if (IsObjectTaggedToExplode())
-				goto main_1BEE;
+				goto explode_player;
 			return false;
 		}
 		keyboard_state = PollKeyboard();
-		player.playerUnknown = 2;
+		player.inputFrame = 2;
 		if (IsObjectTaggedToExplode())
-			goto main_1BEE;
+			goto explode_player;
 	}
 	EraseObjectFromMaze();
 	static const BYTE data_CAE[] = {0, 2, 6, 0, 4, 3, 5, 0, 0, 1, 7, 0, 0, 0, 0, 0};
@@ -1879,21 +1892,21 @@ playback_move:
 				goto main_1B8F;
 			if (!playbackMode)
 				replayIO += 0x80;
-			if (player.playerUnknown == 1)
+			if (player.inputFrame == 1)
 			{
 				EraseObjectFromMaze();
 				if (!MovePlayer())
 				{
 					if (enableElectricWalls)
-						goto main_1BEE;
+						goto explode_player;
 					PlotObjectToMaze();
 				}
 			}
-			player.playerUnknown = 1;
+			player.inputFrame = 1;
 			goto main_1B8F;
 		}
 		if (enableElectricWalls)
-			goto main_1BEE;
+			goto explode_player;
 	}
 	PlotObjectToMaze();
 main_1B8F:
@@ -1921,23 +1934,15 @@ playback_fire:
 		FireBullet(BulletType_Player);
 		SetSoundEffectState(0, SoundEffect_PlayerBullet);
 		player.moveDirection = moveDirection;
-		player.firingFrame = player.playerUnknown == 1 ? playerFiringPeriod<<1 : playerFiringPeriod;
+		player.firingFrame = player.inputFrame == 1 ? playerFiringPeriod<<1 : playerFiringPeriod;
 		return false;
 	}
 	player.firingFrame = 1;
 	return false;
-main_1BEE:
+explode_player:
 	FreeObjectInList(&player.next, OBJECT_PLAYER); // explode the player
-	data_C73 = true;
+	isPlayerDying = true;
 	numPlayerDeaths++;
-	return false;
-main_1C03:
-	keyboard_state = PollKeyboard();
-	data_C73 = false;
-	GetRandomUnoccupiedMazeCell();
-	viewportFocusX = player.x;
-	viewportFocusY = player.y;
-	PlotObjectToMaze();
 	return false;
 }
 

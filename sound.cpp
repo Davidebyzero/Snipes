@@ -35,16 +35,16 @@ void CALLBACK WaveOutProc(HWAVEOUT hwo, UINT uMsg, DWORD_PTR dwInstance, DWORD_P
 }
 void PlayTone(Uint freqnum)
 {
-	if (currentFreqnum == freqnum)
-		return;
 	BOOL soundAlreadyPlaying = currentFreqnum != -1;
+	double prevPhase = fmod(tonePhase * toneFreq, 1.);
 	toneFreq = (13125000. / (TONE_SAMPLE_RATE * 11)) / freqnum;
-	tonePhase = 0;
 	if (soundAlreadyPlaying)
 	{
+		tonePhase = (Uint)(prevPhase / toneFreq);
 		currentFreqnum = freqnum;
 		return;
 	}
+	tonePhase = 0;
 	currentFreqnum = -1;
 	waveOutReset(waveOutput);
 	currentFreqnum = freqnum;

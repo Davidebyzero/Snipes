@@ -1048,15 +1048,15 @@ struct OrthoDistanceInfo
 		struct {BYTE x, y;};
 		WORD xy;
 	};
-	BYTE direction; // 0..7 = left, left+down, down, left+up, up, right+up, right, right+down
+	BYTE direction; // direction of viewport focus relative to object, in the same enumeration as moveDirection
 };
 
-OrthoDistanceInfo GetOrthoDistanceAndDirection(Object &di)
-// Calculates the orthogonal distance between object di and the viewport focus
+OrthoDistanceInfo GetOrthoDistanceAndDirection(Object &object)
+// Calculates the orthogonal distance between object and the viewport focus
 {
 	OrthoDistanceInfo result;
 	BYTE bx = 1;
-	int  ax = di.x - viewportFocusX;
+	int  ax = object.x - viewportFocusX;
 	if (ax <= 0)
 	{
 		bx = 0;
@@ -1068,7 +1068,7 @@ OrthoDistanceInfo GetOrthoDistanceAndDirection(Object &di)
 		ax = MAZE_WIDTH - ax;
 	}
 	result.x = ax;
-	ax = di.y - viewportFocusY;
+	ax = object.y - viewportFocusY;
 	if (ax < 0)
 	{
 		bx += 2;

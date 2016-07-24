@@ -243,8 +243,8 @@ enum SoundEffect : BYTE
 
 BYTE playerFiringPeriod; // in pairs of frames
 WORD frame;
-static bool playerAnimFrame, isPlayerDying, isPlayerExploding;
-static BYTE lastHUD_numGhosts, lastHUD_numGeneratorsKilled, lastHUD_numSnipes, lastHUD_numPlayerDeaths, objectHead_free, objectHead_bullets, objectHead_explosions, objectHead_ghosts, objectHead_snipes, objectHead_generators, numGenerators, numGhosts, numBullets, numPlayerDeaths, numSnipes, data_C74, orthoDistance;
+static bool playerAnimEyesNotWide, isPlayerDying, isPlayerExploding;
+static BYTE lastHUD_numGhosts, lastHUD_numGeneratorsKilled, lastHUD_numSnipes, lastHUD_numPlayerDeaths, objectHead_free, objectHead_bullets, objectHead_explosions, objectHead_ghosts, objectHead_snipes, objectHead_generators, numGenerators, numGhosts, numBullets, numPlayerDeaths, numSnipes, playerEyeAnimFrame, orthoDistance;
 static OrthogonalDirection bulletCollisionDirection;
 static SoundEffect currentSoundEffect = SoundEffect_None;
 static BYTE currentSoundEffectFrame;
@@ -321,19 +321,19 @@ void OutputHUD()
 	lastHUD_score = -1;
 }
 
-#define MAZE_SCRATCH_BUFFER_SIZE 320
+#define MAZE_SCRATCH_BUFFER_SIZE (MAZE_WIDTH_IN_CELLS * MAZE_HEIGHT_IN_CELLS)
 
-void CreateMaze_helper(SHORT &data_1E0, BYTE &data_2AF)
+void CreateMaze_helper(SHORT &data_1E0, BYTE data_2AF)
 {
 	switch (data_2AF)
 	{
 	case 0:
-		data_1E0 -= 0x10;
+		data_1E0 -= MAZE_WIDTH_IN_CELLS;
 		if (data_1E0 < 0)
 			data_1E0 += MAZE_SCRATCH_BUFFER_SIZE;
 		break;
 	case 1:
-		data_1E0 += 0x10;
+		data_1E0 += MAZE_WIDTH_IN_CELLS;
 		if (data_1E0 >= MAZE_SCRATCH_BUFFER_SIZE)
 			data_1E0 -= MAZE_SCRATCH_BUFFER_SIZE;
 		break;
@@ -356,29 +356,28 @@ void CreateMaze_helper(SHORT &data_1E0, BYTE &data_2AF)
 
 void CreateMaze()
 {
-	static WORD data_1DE, data_1E0, data_1E2, data_1E4, data_1E6, data_1EA;
-	static BYTE data_2AF, data_2B0;
-
 	BYTE (&mazeScratchBuffer)[MAZE_SCRATCH_BUFFER_SIZE] = (BYTE(&)[MAZE_SCRATCH_BUFFER_SIZE])objects;
 
 	memset(mazeScratchBuffer, 0xF, MAZE_SCRATCH_BUFFER_SIZE);
 	mazeScratchBuffer[0] = 0xE;
 	mazeScratchBuffer[1] = 0xD;
-	data_1EA = 0x13E;
+	Uint numMazeCellsUninitialized = MAZE_SCRATCH_BUFFER_SIZE - 2;
 
-	static BYTE data_EA3[] = {8, 4, 2, 1};
-	static BYTE data_EA7[] = {4, 8, 1, 2};
+	static const BYTE data_EA3[] = {8, 4, 2, 1};
+	static const BYTE data_EA7[] = {4, 8, 1, 2};
 
 	for (;;)
 	{
 	outer_loop:
-		if (!data_1EA)
+		if (!numMazeCellsUninitialized)
 			break;
-		data_1DE = GetRandomRanged<MAZE_SCRATCH_BUFFER_SIZE>();
+		WORD data_1DE = GetRandomRanged<MAZE_SCRATCH_BUFFER_SIZE>();
 		if (mazeScratchBuffer[data_1DE] != 0xF)
 			continue;
-		data_1E2 = GetRandomMasked(3);
-		data_1E4 = 0;
+		WORD data_1E0;
+		WORD data_1E2 = GetRandomMasked(3);
+		WORD data_1E4 = 0;
+		BYTE data_2AF;
 		for (;;)
 		{
 			if (data_1E4 > 3)
@@ -391,14 +390,14 @@ void CreateMaze()
 			data_1E2++;
 			data_1E4++;
 		}
-		data_1EA--;
+		numMazeCellsUninitialized--;
 		mazeScratchBuffer[data_1E0] ^= data_EA7[data_2AF];
 		mazeScratchBuffer[data_1DE] ^= data_EA3[data_2AF];
 		data_1E2 = data_1DE;
 		for (;;)
 		{
-			data_2AF = (BYTE)GetRandomMasked(3);
-			data_2B0 = (BYTE)GetRandomMasked(3) + 1;
+			BYTE data_2AF = (BYTE)GetRandomMasked(3);
+			BYTE data_2B0 = (BYTE)GetRandomMasked(3) + 1;
 			data_1E0 = data_1E2;
 			for (;;)
 			{
@@ -407,7 +406,7 @@ void CreateMaze()
 					break;
 				mazeScratchBuffer[data_1E0] ^= data_EA7[data_2AF];
 				mazeScratchBuffer[data_1E2] ^= data_EA3[data_2AF];
-				data_1EA--;
+				numMazeCellsUninitialized--;
 				data_2B0--;
 				data_1E2 = data_1E0;
 			}
@@ -415,42 +414,43 @@ void CreateMaze()
 				goto outer_loop;
 		}
 	}
-	for (data_1DE = 1; data_1DE <= 0x40; data_1DE++)
+	for (WORD data_1DE = 0; data_1DE < 0x40; data_1DE++)
 	{
-		data_1E0 = GetRandomRanged<MAZE_SCRATCH_BUFFER_SIZE>();
-		data_2AF = (BYTE)GetRandomMasked(3);
+		WORD data_1E0 = GetRandomRanged<MAZE_SCRATCH_BUFFER_SIZE>();
+		BYTE data_2AF = (BYTE)GetRandomMasked(3);
 		mazeScratchBuffer[data_1E0] &= ~data_EA3[data_2AF];
 		CreateMaze_helper((SHORT&)data_1E0, data_2AF);
 		mazeScratchBuffer[data_1E0] &= ~data_EA7[data_2AF];
 	}
 	for (Uint i=0; i<_countof(maze); i++)
 		maze[i] = MazeTile(0x9, ' ');
-	data_1E4 = 0;
-	data_1E2 = 0;
-	for (data_1DE = 0; data_1DE < MAZE_HEIGHT/MAZE_CELL_HEIGHT; data_1DE++)
+	WORD data_1E4 = 0;
+	WORD data_1E2 = 0;
+	for (WORD data_1DE = 0; data_1DE < MAZE_HEIGHT_IN_CELLS; data_1DE++)
 	{
-		for (data_1E0 = 0; data_1E0 < MAZE_WIDTH/MAZE_CELL_WIDTH; data_1E0++)
+		for (WORD data_1E0 = 0; data_1E0 < MAZE_WIDTH_IN_CELLS; data_1E0++)
 		{
 			if (mazeScratchBuffer[data_1E2] & 8)
 				for (Uint i=0; i<MAZE_CELL_WIDTH-1; i++)
 					maze[data_1E4 + 1 + i] = MazeTile(0x9, 0xCD);
 			if (mazeScratchBuffer[data_1E2] & 2)
 			{
-				data_1E6 = data_1E4 + MAZE_WIDTH;
+				WORD data_1E6 = data_1E4 + MAZE_WIDTH;
 				for (WORD data_1E8 = 1; data_1E8 <= MAZE_CELL_HEIGHT-1; data_1E8++)
 				{
 					maze[data_1E6] = MazeTile(0x9, 0xBA);
 					data_1E6 += MAZE_WIDTH;
 				}
 			}
+			WORD data_1E6;
 			if (data_1DE)
-				data_1E6 = data_1E2 - (!data_1E0 ? 1 : 0x11);
+				data_1E6 = data_1E2 - (!data_1E0 ? 1 : 1 + MAZE_WIDTH_IN_CELLS);
 			else
 			{
 				if (!data_1E0)
 					data_1E6 = MAZE_SCRATCH_BUFFER_SIZE - 1;
 				else
-					data_1E6 = data_1E2 + MAZE_SCRATCH_BUFFER_SIZE - 0x11;
+					data_1E6 = data_1E2 + MAZE_SCRATCH_BUFFER_SIZE - (1 + MAZE_WIDTH_IN_CELLS);
 			}
 			static BYTE data_EAB[] = {0x20, 0xBA, 0xBA, 0xBA, 0xCD, 0xBC, 0xBB, 0xB9, 0xCD, 0xC8, 0xC9, 0xCC, 0xCD, 0xCA, 0xCB, 0xCE};
 			maze[data_1E4].chr = data_EAB[(mazeScratchBuffer[data_1E2] & 0xA) | (mazeScratchBuffer[data_1E6] & 0x5)];
@@ -792,8 +792,8 @@ void CreateGeneratorsAndPlayer()
 	numPlayerDeaths = 0;
 	numSnipes = 0;
 	score = 0;
-	playerAnimFrame = false;
-	data_C74 = 0;
+	playerAnimEyesNotWide = false;
+	playerEyeAnimFrame = 0;
 	isPlayerDying = false;
 	isPlayerExploding = false;
 	player.sprite = FAKE_POINTER(10E2);
@@ -1852,12 +1852,12 @@ bool UpdatePlayer(bool playbackMode, BYTE &replayIO) // returns true if the matc
 	if (!playbackMode)
 		replayIO = 0;
 	currentObject = &player;
-	if (++data_C74 > 7)
+	if (++playerEyeAnimFrame > 7)
 	{
-		data_C74 = 0;
-		playerAnimFrame ^= true;
+		playerEyeAnimFrame = 0;
+		playerAnimEyesNotWide ^= true;
 	}
-	if (playerAnimFrame)
+	if (playerAnimEyesNotWide)
 		currentSprite = data_10E2;
 	else
 		currentSprite = data_10EC;

@@ -1,5 +1,6 @@
 #include <Windows.h>
 #include <stdio.h>
+#include "config.h"
 #include "Snipes.h"
 #include "macros.h"
 

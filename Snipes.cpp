@@ -1,5 +1,6 @@
 #include <time.h>
 #include <stdio.h>
+#include <io.h>
 #include <wchar.h>
 #include "config.h"
 #include "Snipes.h"
@@ -17,6 +18,11 @@ bool shooting_sound_enabled = false;
 BYTE fast_forward = false;
 BYTE spacebar_state = false;
 static BYTE keyboard_state = 0;
+#ifdef CHEAT
+int single_step = 0;
+int step_backwards = 0;
+WORD skip_to_frame = 0;
+#endif
 
 static WORD random_seed_lo = 33, random_seed_hi = 467;
 WORD GetRandomMasked(WORD mask)
@@ -2209,7 +2215,11 @@ int __cdecl main(int argc, char* argv[])
 					1900+rectime_gmt->tm_year, rectime_gmt->tm_mon+1, rectime_gmt->tm_mday,
 					rectime_gmt->tm_hour, rectime_gmt->tm_min, rectime_gmt->tm_sec);
 
+#ifdef CHEAT
+			replayFile = fopen(replayFilename, "w+b");
+#else
 			replayFile = fopen(replayFilename, "wb");
+#endif
 			if (replayFile)
 			{
 				setvbuf(replayFile, NULL, _IOFBF, 64);
@@ -2240,6 +2250,12 @@ int __cdecl main(int argc, char* argv[])
 			return result;
 		}
 
+#ifdef CHEAT
+		WORD init_random_seed_lo = random_seed_lo;
+		WORD init_random_seed_hi = random_seed_hi;
+
+	restart:
+#endif
 		frame = 0;
 		OutputHUD();
 		CreateMaze();
@@ -2248,6 +2264,48 @@ int __cdecl main(int argc, char* argv[])
 
 		for (;;)
 		{
+#ifdef CHEAT
+			if (skip_to_frame && frame == skip_to_frame)
+			{
+				skip_to_frame = 0;
+				playbackMode = false;
+				long fileSize = ftell(replayFile);
+				_chsize(_fileno(replayFile), fileSize);
+				BYTE dummy;
+				size_t blah = fread(&dummy, 1, 1, replayFile);
+				fseek(replayFile, fileSize, SEEK_SET);
+			}
+			if (!skip_to_frame)
+			{
+				DrawViewport();
+				if (single_step > 0)
+					single_step--;
+				while (single_step == 0 && !step_backwards)
+				{
+					PollKeyboard();
+					if (frame == 0)
+						step_backwards = 0;
+				}
+				if (step_backwards)
+				{
+					skip_to_frame = frame - step_backwards;
+					step_backwards = 0;
+					single_step = 0;
+					playbackMode = true;
+					fflush(replayFile);
+					fseek(replayFile, 6, SEEK_SET);
+
+					random_seed_lo = init_random_seed_lo;
+					random_seed_hi = init_random_seed_hi;
+					currentSoundEffect = SoundEffect_None;
+
+					goto restart;
+				}
+			}
+#else
+			DrawViewport();
+#endif
+
 			if (forfeit_match)
 			{
 				EraseBottomTwoLines();
@@ -2256,8 +2314,8 @@ int __cdecl main(int argc, char* argv[])
 			if (UpdateHUD())
 				break;
 
-#ifdef CHEAT_FAST_FORWARD
-			if (!fast_forward)
+#ifdef CHEAT
+			if (!fast_forward && single_step<0 && !skip_to_frame)
 #else
 			if (!playbackMode || !fast_forward)
 #endif
@@ -2290,7 +2348,6 @@ int __cdecl main(int argc, char* argv[])
 
 			UpdateExplosions();
 			UpdateSound();
-			DrawViewport();
 		}
 
 		ClearSound();

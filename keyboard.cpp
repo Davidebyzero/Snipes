@@ -1,4 +1,5 @@
 #include <Windows.h>
+#include "config.h"
 #include "Snipes.h"
 #include "types.h"
 #include "keyboard.h"
@@ -49,6 +50,14 @@ Uint PollKeyboard()
 				else
 				if (record.Event.KeyEvent.wVirtualKeyCode == VK_ESCAPE)
 					forfeit_match = true;
+#ifdef CHEAT
+				else
+				if (record.Event.KeyEvent.wVirtualKeyCode == VK_OEM_PERIOD)
+					single_step++;
+				else
+				if (record.Event.KeyEvent.wVirtualKeyCode == VK_OEM_COMMA)
+					step_backwards++;
+#endif
 			}
 			else
 			{

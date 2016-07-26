@@ -10,6 +10,10 @@ extern bool sound_enabled;
 extern bool shooting_sound_enabled;
 extern BYTE spacebar_state;
 extern BYTE fast_forward;
+#ifdef CHEAT
+extern int single_step;
+extern int step_backwards;
+#endif
 
 #define KEYSTATE_MOVE_RIGHT (1<<0)
 #define KEYSTATE_MOVE_LEFT  (1<<1)

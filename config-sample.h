@@ -2,6 +2,8 @@
 
 //#define PLAY_SOUND_DURING_SILENCE
 
+//#define USE_SCANCODES_FOR_LETTER_KEYS  // useful if you use a non-QWERTY keyboard layout
+
 //#define USE_MODULO_LOOKUP_TABLE  // might result in slightly better speed, but makes the EXE larger
 
 //#define FIX_BUGS

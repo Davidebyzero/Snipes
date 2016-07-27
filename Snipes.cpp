@@ -283,7 +283,7 @@ static MazeTile maze[MAZE_WIDTH * MAZE_HEIGHT];
 
 static const char statusLine[] = "\xDA\xBF\xB3\x01\x1A\xB3\x02\xB3""Skill""\xC0\xD9\xB3\x01\x1A\xB3\x02\xB3""Time  Men Left                 Score     0  0000001 Man Left""e";
 
-void OutputHUD()
+void InitializeHUD()
 {
 	char (&scratchBuffer)[WINDOW_WIDTH] = (char(&)[WINDOW_WIDTH])maze;
 
@@ -2257,7 +2257,7 @@ int __cdecl main(int argc, char* argv[])
 	restart:
 #endif
 		frame = 0;
-		OutputHUD();
+		InitializeHUD();
 		CreateMaze();
 		CreateGeneratorsAndPlayer();
 		SetSoundEffectState(0, SoundEffect_None);

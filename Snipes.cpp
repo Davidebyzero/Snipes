@@ -2149,7 +2149,6 @@ int __cdecl main(int argc, char* argv[])
 	ClearConsole();
 	if (!playbackMode)
 	{
-		SetConsoleOutputTextColor(FOREGROUND_BLUE | FOREGROUND_GREEN | FOREGROUND_RED);
 #define _ " "
 #define S "\x01"
 #define i "\x18"

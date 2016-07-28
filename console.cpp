@@ -4,6 +4,8 @@
 #include "Snipes.h"
 #include "macros.h"
 
+#define DEFAULT_TEXT_COLOR 0x7 // (FOREGROUND_BLUE | FOREGROUND_GREEN | FOREGROUND_RED)
+
 HANDLE input;
 HANDLE output;
 
@@ -148,7 +150,7 @@ void CloseDirectConsole(Uint lineNum)
 	pos.X = 0;
 	pos.Y = lineNum;
 	SetConsoleCursorPosition(output, pos);
-	SetConsoleTextAttribute(output, FOREGROUND_BLUE | FOREGROUND_GREEN | FOREGROUND_RED);
+	SetConsoleTextAttribute(output, DEFAULT_TEXT_COLOR);
 	SetConsoleMode(output, ENABLE_PROCESSED_OUTPUT | ENABLE_WRAP_AT_EOL_OUTPUT);
 }
 
@@ -158,7 +160,8 @@ void ClearConsole()
 	pos.X = 0;
 	pos.Y = 0;
 	DWORD numwritten;
-	FillConsoleOutputAttribute(output, FOREGROUND_BLUE | FOREGROUND_GREEN | FOREGROUND_RED, windowSize.X*windowSize.Y, pos, &numwritten);
+	FillConsoleOutputAttribute(output, DEFAULT_TEXT_COLOR, windowSize.X*windowSize.Y, pos, &numwritten);
+	SetConsoleTextAttribute(output, DEFAULT_TEXT_COLOR);
 }
 
 int OpenConsole()

@@ -1,6 +1,5 @@
 #pragma once
 
-#include <Windows.h>
 #include "types.h"
 #include "macros.h"
 
@@ -13,13 +12,9 @@ void EraseBottomTwoLines();
 DWORD ReadTextFromConsole(char buffer[], DWORD bufsize);
 
 void SetConsoleOutputTextColor(WORD wAttributes);
-template <size_t LENGTH>
-void WriteTextToConsole(char const (&text)[LENGTH])
-{
-	extern HANDLE output;
-	DWORD numwritten;
-	WriteConsole(output, text, strlength(text), &numwritten, 0);
-}
+
+void WriteTextToConsole(char const *text, size_t length);
+template <size_t LENGTH> void WriteTextToConsole(char const (&text)[LENGTH]) { WriteTextToConsole(text, LENGTH); }
 
 void OpenDirectConsole();
 void CloseDirectConsole(Uint lineNum);

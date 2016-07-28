@@ -22,3 +22,8 @@ int OpenTimer()
 void CloseTimer()
 {
 }
+
+void SleepMilliseconds(DWORD dwMsecs)
+{
+	Sleep(dwMsecs);
+}

@@ -135,6 +135,12 @@ void SetConsoleOutputTextColor(WORD wAttributes)
 	SetConsoleTextAttribute(output, wAttributes);
 }
 
+void WriteTextToConsole(char const *text, size_t length)
+{
+	DWORD numwritten;
+	WriteConsole(output, text, length, &numwritten, 0);
+}
+
 void OpenDirectConsole()
 {
 	SetConsoleMode(output, 0);

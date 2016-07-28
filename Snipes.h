@@ -1,6 +1,5 @@
 #pragma once
 
-#include <Windows.h>
 #include "config.h"
 #include "types.h"
 

@@ -2,6 +2,8 @@
 #include <stdio.h>
 #include <io.h>
 #include <wchar.h>
+#include <string.h>
+#include <math.h>
 #include "config.h"
 #include "Snipes.h"
 #include "types.h"
@@ -2208,7 +2210,7 @@ int __cdecl main(int argc, char* argv[])
 			struct tm *rectime_gmt;
 			rectime_gmt = gmtime(&rectime);
 
-			char replayFilename[MAX_PATH];
+			char replayFilename[1024];
 			sprintf(replayFilename,
 					"%04d-%02d-%02d %02d.%02d.%02d.SnipesGame",
 					1900+rectime_gmt->tm_year, rectime_gmt->tm_mon+1, rectime_gmt->tm_mday,
@@ -2321,7 +2323,7 @@ int __cdecl main(int argc, char* argv[])
 			{
 				for (;;)
 				{
-					Sleep(1);
+					SleepMilliseconds(1);
 					WORD tick_count2 = GetTickCountWord();
 					if (tick_count2 != tick_count)
 					{

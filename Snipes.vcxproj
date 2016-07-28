@@ -84,11 +84,11 @@
     </Link>
   </ItemDefinitionGroup>
   <ItemGroup>
-    <ClCompile Include="console.cpp" />
-    <ClCompile Include="keyboard.cpp" />
+    <ClCompile Include="windows/console.cpp" />
+    <ClCompile Include="windows/keyboard.cpp" />
     <ClCompile Include="Snipes.cpp" />
-    <ClCompile Include="sound.cpp" />
-    <ClCompile Include="timer.cpp" />
+    <ClCompile Include="windows/sound.cpp" />
+    <ClCompile Include="windows/timer.cpp" />
   </ItemGroup>
   <ItemGroup>
     <ClInclude Include="config-sample.h" />

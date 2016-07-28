@@ -1,8 +1,8 @@
 #include <Windows.h>
-#include "config.h"
-#include "Snipes.h"
-#include "types.h"
-#include "keyboard.h"
+#include "../config.h"
+#include "../Snipes.h"
+#include "../types.h"
+#include "../keyboard.h"
 
 extern HANDLE input;
 

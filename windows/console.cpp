@@ -1,8 +1,8 @@
 #include <Windows.h>
 #include <stdio.h>
-#include "config.h"
-#include "Snipes.h"
-#include "macros.h"
+#include "../config.h"
+#include "../Snipes.h"
+#include "../macros.h"
 
 #define DEFAULT_TEXT_COLOR 0x7 // (FOREGROUND_BLUE | FOREGROUND_GREEN | FOREGROUND_RED)
 

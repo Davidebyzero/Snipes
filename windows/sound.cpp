@@ -2,8 +2,8 @@
 #include <MMSystem.h>
 #include <stdio.h>
 #include <math.h>
-#include "config.h"
-#include "sound.h"
+#include "../config.h"
+#include "../sound.h"
 #pragma comment(lib,"winmm.lib")
 
 #define TONE_SAMPLE_RATE 48000

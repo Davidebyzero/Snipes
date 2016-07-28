@@ -1,5 +1,5 @@
 #include <Windows.h>
-#include "types.h"
+#include "../types.h"
 
 QWORD perf_freq;
 

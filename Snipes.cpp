@@ -1,8 +1,8 @@
 #include <time.h>
 #include <stdio.h>
-#include <io.h>
 #include <wchar.h>
 #include <string.h>
+#include <stdlib.h>
 #include <math.h>
 #include "config.h"
 #include "Snipes.h"
@@ -12,6 +12,7 @@
 #include "timer.h"
 #include "sound.h"
 #include "keyboard.h"
+#include "platform.h"
 
 bool got_ctrl_break = false;
 bool forfeit_match = false;

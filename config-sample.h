@@ -16,5 +16,5 @@
 
 // SDL options
 #define TILE_WIDTH  20
-#define TILE_HEIGHT 30
-#define FONT_SIZE 32
+#define TILE_HEIGHT 32
+#define FONT_SIZE TILE_HEIGHT

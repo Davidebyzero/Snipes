@@ -80,6 +80,12 @@ void HandleKey(SDL_KeyboardEvent* e)
 			InputBuffer[InputBufferWriteIndex] = '\n';
 			InputBufferWriteIndex = (InputBufferWriteIndex+1) % InputBufferSize;
 		}
+		else
+		if (e->keysym.sym == SDLK_BACKSPACE)
+		{
+			InputBuffer[InputBufferWriteIndex] = '\b';
+			InputBufferWriteIndex = (InputBufferWriteIndex+1) % InputBufferSize;
+		}
 
 	}
 	else

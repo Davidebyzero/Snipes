@@ -1,4 +1,4 @@
-#include <stdio.h>
+﻿#include <stdio.h>
 #include <SDL2/SDL.h>
 #include <SDL2/SDL_ttf.h>
 #include "../config.h"
@@ -27,18 +27,6 @@ static bool Exiting = false;
 void WriteTextMem(Uint count, WORD row, WORD column, MazeTile *src)
 {
 	MazeTile* dst = &Screen[row][column];
-	// COORD size;
-	// size.X = count;
-	// size.Y = 1;
-	// COORD srcPos;
-	// srcPos.X = 0;
-	// srcPos.Y = 0;
-	// SMALL_RECT rect;
-	// rect.Left   = column;
-	// rect.Top    = row;
-	// rect.Right  = column + count;
-	// rect.Bottom = row + 1;
-	// static CHAR_INFO buf[WINDOW_WIDTH];
 	for (Uint i=0; i<count; i++)
 	{
 		if ((size_t)(dst - &Screen[0][0]) >= WINDOW_WIDTH*WINDOW_HEIGHT)
@@ -98,16 +86,36 @@ DWORD ReadTextFromConsole(char buffer[], DWORD bufsize)
 	SDL_StartTextInput();
 
 	DWORD numread = 0;
-	while (numread < bufsize)
+	while (!forfeit_match)
 	{
-		while (InputBufferReadIndex == InputBufferWriteIndex)
+		while (InputBufferReadIndex == InputBufferWriteIndex && !forfeit_match)
 			SDL_Delay(1);
+		CheckForBreak();
 		char c = InputBuffer[InputBufferReadIndex];
 		InputBufferReadIndex = (InputBufferReadIndex+1) % InputBufferSize;
 		if (c == '\n')
+		{
+			WriteTextToConsole("\r\n", 2);;
 			break;
-		WriteTextToConsole(&c, 1);;
-		buffer[numread++] = c;
+		}
+		else
+		if (c == '\b') // Backspace
+		{
+			if (numread)
+			{
+				WriteTextToConsole(&c, 1);;
+				numread--;
+			}
+		}
+		else
+		{
+			if (numread < bufsize)
+			{
+				WriteTextToConsole(&c, 1);;
+				buffer[numread] = c;
+				numread++;
+			}
+		}
 	}
 
 	SDL_StopTextInput();
@@ -122,6 +130,7 @@ void SetConsoleOutputTextColor(WORD wAttributes)
 void WriteTextToConsole(char const *text, size_t length)
 {
 	for (Uint n=0; n<length; n++)
+	{
 		switch (text[n])
 		{
 			case '\r':
@@ -130,12 +139,26 @@ void WriteTextToConsole(char const *text, size_t length)
 			case '\n':
 				OutputCursorY++;
 				break;
+			case '\b':
+				if (OutputCursorX)
+				{
+					OutputCursorX--;
+					outputText(OutputTextColor, 1, OutputCursorY, OutputCursorX, " ");
+				}
+				break;
 			default:
 				outputText(OutputTextColor, 1, OutputCursorY, OutputCursorX, text+n);
 				OutputCursorX++;
 				// TODO: wrap?
 				break;
 		}
+
+		if (OutputCursorY == WINDOW_HEIGHT) // Scroll down
+		{
+			memmove(&Screen[0], &Screen[1], sizeof(Screen[0]) * (WINDOW_HEIGHT-1));
+			OutputCursorY--;
+		}
+	}
 }
 
 void OpenDirectConsole()
@@ -164,22 +187,27 @@ void ClearConsole()
 
 void HandleKey(SDL_KeyboardEvent* e);
 
-static SDL_Color ConvertColor(BYTE Color)
+static const SDL_Color ScreenColors[16] =
 {
-	SDL_Color c;
-	// TODO: use real VGA colors
-	c.r = (Color&4)?0x3F:0x00;
-	c.g = (Color&2)?0x3F:0x00;
-	c.b = (Color&1)?0x3F:0x00;
-	if (Color&8)
-	{
-		c.r += 0x80;
-		c.g += 0x80;
-		c.b += 0x80;
-	}
-	c.a = 255;
-	return c;
-}
+	{ 0x00, 0x00, 0x00, 0xFF },
+	{ 0x00, 0x00, 0xAA, 0xFF },
+	{ 0x00, 0xAA, 0x00, 0xFF },
+	{ 0x00, 0xAA, 0xAA, 0xFF },
+	{ 0xAA, 0x00, 0x00, 0xFF },
+	{ 0xAA, 0x00, 0xAA, 0xFF },
+	{ 0xAA, 0x55, 0x00, 0xFF },
+	{ 0xAA, 0xAA, 0xAA, 0xFF },
+	{ 0x55, 0x55, 0x55, 0xFF },
+	{ 0x55, 0x55, 0xFF, 0xFF },
+	{ 0x55, 0xFF, 0x55, 0xFF },
+	{ 0x55, 0xFF, 0xFF, 0xFF },
+	{ 0xFF, 0x55, 0x55, 0xFF },
+	{ 0xFF, 0x55, 0xFF, 0xFF },
+	{ 0xFF, 0xFF, 0x55, 0xFF },
+	{ 0xFF, 0xFF, 0xFF, 0xFF },
+};
+
+static SDL_Texture* Glyphs[256][256] = {{}};
 
 static int ConsoleThreadFunc(void*)
 {
@@ -196,7 +224,7 @@ static int ConsoleThreadFunc(void*)
 		return 1;
 	}
 
-	TTF_Font* font = TTF_OpenFont("SnipesConsole.ttf", FONT_SIZE);
+	TTF_Font* font = TTF_OpenFont(FONT_FILENAME, FONT_SIZE);
 	if (!font)
 	{
 		fprintf(stderr, "TTF_OpenFont: %s\n", SDL_GetError());
@@ -225,6 +253,8 @@ static int ConsoleThreadFunc(void*)
 		SDL_Quit();
 		return 1;
 	}
+
+	memset(Glyphs, 0, sizeof(Glyphs));
 
 	while (!Exiting)
 	{
@@ -257,31 +287,63 @@ static int ConsoleThreadFunc(void*)
 		for (Uint y = 0; y < WINDOW_HEIGHT; y++)
 			for (Uint x = 0; x < WINDOW_WIDTH; x++)
 			{
-				SDL_Color fg = ConvertColor(Screen[y][x].color & 15);
-				SDL_Color bg = ConvertColor(Screen[y][x].color >> 4);
+				MazeTile tile = Screen[y][x];
+				SDL_Color fg = ScreenColors[tile.color & 15];
+				SDL_Color bg = ScreenColors[tile.color >> 4];
 				SDL_SetRenderDrawColor(ren, bg.r, bg.g, bg.b, bg.a);
 				SDL_Rect rect = { x * TILE_WIDTH, y * TILE_HEIGHT, TILE_WIDTH, TILE_HEIGHT };
 				SDL_RenderFillRect(ren, &rect);
 
-				char str[2];
-				// TODO: Translate DOS codepage to Unicode
-				str[0] = Screen[y][x].chr;
-				str[1] = 0;
-				// TODO: Cache
-				SDL_Surface *s = TTF_RenderText_Shaded(font, str, fg, bg);
-				if (s)
+				SDL_Texture*& t = Glyphs[tile.color][tile.chr];
+				if (!t)
 				{
-					SDL_Texture *t = SDL_CreateTextureFromSurface(ren, s);
-					// TODO: Center-align
-					SDL_Rect r = { x * TILE_WIDTH, y * TILE_HEIGHT, s->w, s->h };
-					SDL_RenderCopy(ren, t, NULL, &r);
-					SDL_DestroyTexture(t);
+					static const wchar_t Chars[257] =
+						L" ☺☻♥♦♣♠•◘○◙♂♀♪♫☼"
+						"►◄↕‼¶§▬↨↑↓→←∟↔▲▼"
+						" !\"#$%&'()*+,-./"
+						"0123456789:;<=>?"
+						"@ABCDEFGHIJKLMNO"
+						"PQRSTUVWXYZ[\\]^_"
+						"`abcdefghijklmno"
+						"pqrstuvwxyz{|}~⌂"
+						"ÇüéâäàåçêëèïîìÄÅ"
+						"ÉæÆôöòûùÿÖÜ¢£¥₧ƒ"
+						"áíóúñÑªº¿⌐¬½¼¡«»"
+						"░▒▓│┤╡╢╖╕╣║╗╝╜╛┐"
+						"└┴┬├─┼╞╟╚╔╩╦╠═╬╧"
+						"╨╤╥╙╘╒╓╫╪┘┌█▄▌▐▀"
+						"αßΓπΣσµτΦΘΩδ∞φε∩"
+						"≡±≥≤⌠⌡÷≈°∙·√ⁿ²■ ";
+
+					wchar_t str[2];
+					str[0] = Chars[tile.chr];
+					str[1] = 0;
+					SDL_Surface *s = TTF_RenderUNICODE_Shaded(font, (Uint16*)str, fg, bg);
+					t = SDL_CreateTextureFromSurface(ren, s);
 					SDL_FreeSurface(s);
 				}
+
+				int w, h;
+				SDL_QueryTexture(t, NULL, NULL, &w, &h);
+				SDL_Rect r = { x * TILE_WIDTH + (TILE_WIDTH - w) / 2, y * TILE_HEIGHT + (TILE_HEIGHT - h) / 2, w, h };
+				SDL_RenderCopy(ren, t, NULL, &r);
 			}
+
+		if (OutputCursorVisible && SDL_GetTicks() % 500 < 250)
+		{
+			SDL_Color c = ScreenColors[OutputTextColor];
+			SDL_SetRenderDrawColor(ren, c.r, c.g, c.b, c.a);
+			SDL_Rect rect = { OutputCursorX * TILE_WIDTH, OutputCursorY * TILE_HEIGHT, TILE_WIDTH, TILE_HEIGHT };
+			SDL_RenderFillRect(ren, &rect);
+		}
 
 		SDL_RenderPresent(ren);
 	}
+
+	for (Uint color=0; color<256; color++)
+		for (Uint chr=0; chr<256; chr++)
+			if (Glyphs[color][chr])
+				SDL_DestroyTexture(Glyphs[color][chr]);
 
 	SDL_DestroyRenderer(ren);
 	SDL_DestroyWindow(win);

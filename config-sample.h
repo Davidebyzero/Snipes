@@ -15,6 +15,7 @@
 //#define CHEAT
 
 // SDL options
-#define TILE_WIDTH  32
-#define TILE_HEIGHT TILE_WIDTH
+#define TILE_WIDTH  20
+#define TILE_HEIGHT 32
+#define FONT_FILENAME "SnipesConsole.ttf"
 #define FONT_SIZE TILE_HEIGHT

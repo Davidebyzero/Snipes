@@ -1,7 +1,7 @@
 #include <Windows.h>
 #include "../types.h"
 
-QWORD perf_freq;
+QWORD perf_freq; // ticks per 11*65535 seconds
 
 WORD GetTickCountWord()
 {

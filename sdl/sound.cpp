@@ -5,7 +5,7 @@
 #include <SDL/SDL_audio.h>
 
 #define TONE_SAMPLE_RATE 48000
-#define WAVE_BUFFER_LENGTH 2048
+#define WAVE_BUFFER_LENGTH 512
 // #define WAVE_BUFFER_COUNT 11
 
 double toneFreq;

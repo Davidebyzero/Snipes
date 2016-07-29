@@ -1276,7 +1276,7 @@ MoveObject_retval MoveObject(MovingObject &object)
 
 void FireBullet(BYTE bulletType)
 {
-	MovingObject &shooter = *(Bullet*)currentObject;
+	MovingObject &shooter = *(MovingObject*)currentObject;
 	MoveDirection fireDirection = shooter.moveDirection;
 	BYTE data_C98 = shooter.x;
 	BYTE data_C99 = shooter.y;
@@ -1469,7 +1469,7 @@ void UpdateSnipes()
 			for (;;)
 			{
 				{
-					BYTE moveDirection = snipe.moveDirection;
+					MoveDirection moveDirection = snipe.moveDirection;
 					snipe.moveDirection = al;
 					currentObject = &snipe;
 					currentSprite = FakePointerToPointer(snipe.sprite);
@@ -1941,7 +1941,7 @@ bool UpdatePlayer(bool playbackMode, BYTE &replayIO) // returns true if the matc
 	{
 		moveDirection = arrowKeyMaskToDirectionTable[keyboardMove];
 playback_move:
-		player.moveDirection = moveDirection;
+		player.moveDirection = (MoveDirection)moveDirection;
 		if (!playbackMode)
 			replayIO = moveDirection + 1;
 		if (MovePlayer())
@@ -1988,7 +1988,7 @@ playback_fire:
 		if (--player.firingFrame)
 			return false;
 		MoveDirection moveDirection_backup = player.moveDirection;
-		player.moveDirection = fireDirection;
+		player.moveDirection = (MoveDirection)fireDirection;
 		FireBullet(BulletType_Player);
 		SetSoundEffectState(0, SoundEffect_PlayerBullet);
 		player.moveDirection = moveDirection_backup;

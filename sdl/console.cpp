@@ -1,4 +1,4 @@
-#include <stdio.h>
+﻿#include <stdio.h>
 #include <SDL2/SDL.h>
 #include <SDL2/SDL_ttf.h>
 #include "../config.h"
@@ -263,12 +263,29 @@ static int ConsoleThreadFunc(void*)
 				SDL_Rect rect = { x * TILE_WIDTH, y * TILE_HEIGHT, TILE_WIDTH, TILE_HEIGHT };
 				SDL_RenderFillRect(ren, &rect);
 
-				char str[2];
-				// TODO: Translate DOS codepage to Unicode
-				str[0] = Screen[y][x].chr;
+				static const wchar_t Chars[257] =
+					L" ☺☻♥♦♣♠•◘○◙♂♀♪♫☼"
+					"►◄↕‼¶§▬↨↑↓→←∟↔▲▼"
+					" !\"#$%&'()*+,-./"
+					"0123456789:;<=>?"
+					"@ABCDEFGHIJKLMNO"
+					"PQRSTUVWXYZ[\\]^_"
+					"`abcdefghijklmno"
+					"pqrstuvwxyz{|}~⌂"
+					"ÇüéâäàåçêëèïîìÄÅ"
+					"ÉæÆôöòûùÿÖÜ¢£¥₧ƒ"
+					"áíóúñÑªº¿⌐¬½¼¡«»"
+					"░▒▓│┤╡╢╖╕╣║╗╝╜╛┐"
+					"└┴┬├─┼╞╟╚╔╩╦╠═╬╧"
+					"╨╤╥╙╘╒╓╫╪┘┌█▄▌▐▀"
+					"αßΓπΣσµτΦΘΩδ∞φε∩"
+					"≡±≥≤⌠⌡÷≈°∙·√ⁿ²■ ";
+
+				wchar_t str[2];
+				str[0] = Chars[Screen[y][x].chr];
 				str[1] = 0;
 				// TODO: Cache
-				SDL_Surface *s = TTF_RenderText_Shaded(font, str, fg, bg);
+				SDL_Surface *s = TTF_RenderUNICODE_Shaded(font, (Uint16*)str, fg, bg);
 				if (s)
 				{
 					SDL_Texture *t = SDL_CreateTextureFromSurface(ren, s);

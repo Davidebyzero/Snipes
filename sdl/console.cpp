@@ -93,24 +93,29 @@ DWORD ReadTextFromConsole(char buffer[], DWORD bufsize)
 		CheckForBreak();
 		char c = InputBuffer[InputBufferReadIndex];
 		InputBufferReadIndex = (InputBufferReadIndex+1) % InputBufferSize;
-		WriteTextToConsole(&c, 1);;
 		if (c == '\n')
 		{
-			WriteTextToConsole("\r", 1);;
+			WriteTextToConsole("\r\n", 2);;
 			break;
 		}
 		else
 		if (c == '\b') // Backspace
 		{
 			if (numread)
+			{
+				WriteTextToConsole(&c, 1);;
 				numread--;
+			}
 		}
 		else
 		{
 			if (numread < bufsize)
+			{
+				WriteTextToConsole(&c, 1);;
 				buffer[numread] = c;
+				numread++;
+			}
 		}
-		numread++;
 	}
 
 	SDL_StopTextInput();

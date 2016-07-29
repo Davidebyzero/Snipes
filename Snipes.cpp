@@ -1352,36 +1352,38 @@ void FireBullet(BYTE bulletType)
 		maze[data_B5E] = MazeTile(0xF, 0xB2);
 		goto main_1899;
 	}
-	ObjectIndex newBullet = CreateNewObject();
-	if (!newBullet || numBullets > 50)
-		goto main_1899;
-	numBullets++;
-	Object *currentObject_backup = currentObject;
-	currentObject = &objects[newBullet];
-	Bullet &bullet = *(Bullet*)currentObject;
-	if (!objectHead_bullets)
-		objectHead_bullets = newBullet;
-	else
 	{
-		ObjectIndex objectTail_bullets = objectHead_bullets;
-		while (ObjectIndex nextObject = objects[objectTail_bullets].next)
-			objectTail_bullets = nextObject;
-		objects[objectTail_bullets].next = newBullet;
+		ObjectIndex newBullet = CreateNewObject();
+		if (!newBullet || numBullets > 50)
+			goto main_1899;
+		numBullets++;
+		Object *currentObject_backup = currentObject;
+		currentObject = &objects[newBullet];
+		Bullet &bullet = *(Bullet*)currentObject;
+		if (!objectHead_bullets)
+			objectHead_bullets = newBullet;
+		else
+		{
+			ObjectIndex objectTail_bullets = objectHead_bullets;
+			while (ObjectIndex nextObject = objects[objectTail_bullets].next)
+				objectTail_bullets = nextObject;
+			objects[objectTail_bullets].next = newBullet;
+		}
+		bullet.next = 0;
+		if (bulletType==BulletType_Player)
+			bullet.sprite = FAKE_POINTER(1150);
+		else
+			bullet.sprite = PointerToFakePointer(data_11B4[fireDirection]);
+		bullet.x = data_C98;
+		bullet.y = data_C99;
+		bullet.moveDirection = fireDirection;
+		bullet.animFrame = 0;
+		bullet.bulletType = bulletType;
+		bulletLifetime[newBullet] = (BYTE)GetRandomMasked(7) + 1;
+		currentSprite = FakePointerToPointer(bullet.sprite);
+		PlotObjectToMaze();
+		currentObject = currentObject_backup;
 	}
-	bullet.next = 0;
-	if (bulletType==BulletType_Player)
-		bullet.sprite = FAKE_POINTER(1150);
-	else
-		bullet.sprite = PointerToFakePointer(data_11B4[fireDirection]);
-	bullet.x = data_C98;
-	bullet.y = data_C99;
-	bullet.moveDirection = fireDirection;
-	bullet.animFrame = 0;
-	bullet.bulletType = bulletType;
-	bulletLifetime[newBullet] = (BYTE)GetRandomMasked(7) + 1;
-	currentSprite = FakePointerToPointer(bullet.sprite);
-	PlotObjectToMaze();
-	currentObject = currentObject_backup;
 main_1899:
 	currentSprite = currentSprite_backup;
 }
@@ -1750,36 +1752,38 @@ void UpdateGenerators()
 		if (GetRandomMasked(0xF >> (numGeneratorsAtStart - numGenerators)))
 			goto next_generator;
 		currentSprite = data_1112;
-		BYTE x = generator.x + 2;
-#ifdef EMULATE_LATENT_BUGS
-		if (x  > MAZE_WIDTH - 1)
-			x -= MAZE_WIDTH - 1;
-#else
-		if (x >= MAZE_WIDTH)
-			x -= MAZE_WIDTH;
-#endif
-		BYTE y = generator.y;
-		if (IsObjectLocationOccupied(y, x))
-			goto next_generator;
-		if (numSnipes + numGhosts < maxSnipes)
 		{
-			ObjectIndex spawnedSnipeIndex = CreateNewObject();
-			if (!spawnedSnipeIndex)
+			BYTE x = generator.x + 2;
+#ifdef EMULATE_LATENT_BUGS
+			if (x  > MAZE_WIDTH - 1)
+				x -= MAZE_WIDTH - 1;
+#else
+			if (x >= MAZE_WIDTH)
+				x -= MAZE_WIDTH;
+#endif
+			BYTE y = generator.y;
+			if (IsObjectLocationOccupied(y, x))
 				goto next_generator;
-			numSnipes++;
-			object = generator.next;
-			currentObject = &objects[spawnedSnipeIndex];
-			Snipe &spawnedSnipe = *(Snipe*)currentObject;
-			spawnedSnipe.next = objectHead_snipes;
-			objectHead_snipes = spawnedSnipeIndex;
-			spawnedSnipe.x = x;
-			spawnedSnipe.y = y;
-			spawnedSnipe.moveDirection = MoveDirection_Right;
-			spawnedSnipe.sprite = FAKE_POINTER(1112);
-			PlotObjectToMaze();
-			spawnedSnipe.movementFlags = (BYTE)GetRandomMasked(1); // randomly set or clear EnemyMovementFlag_TurnDirection
-			spawnedSnipe.moveFrame = 4;
-			continue;
+			if (numSnipes + numGhosts < maxSnipes)
+			{
+				ObjectIndex spawnedSnipeIndex = CreateNewObject();
+				if (!spawnedSnipeIndex)
+					goto next_generator;
+				numSnipes++;
+				object = generator.next;
+				currentObject = &objects[spawnedSnipeIndex];
+				Snipe &spawnedSnipe = *(Snipe*)currentObject;
+				spawnedSnipe.next = objectHead_snipes;
+				objectHead_snipes = spawnedSnipeIndex;
+				spawnedSnipe.x = x;
+				spawnedSnipe.y = y;
+				spawnedSnipe.moveDirection = MoveDirection_Right;
+				spawnedSnipe.sprite = FAKE_POINTER(1112);
+				PlotObjectToMaze();
+				spawnedSnipe.movementFlags = (BYTE)GetRandomMasked(1); // randomly set or clear EnemyMovementFlag_TurnDirection
+				spawnedSnipe.moveFrame = 4;
+				continue;
+			}
 		}
 	next_generator:
 		object = generator.next;
@@ -1927,7 +1931,7 @@ bool UpdatePlayer(bool playbackMode, BYTE &replayIO) // returns true if the matc
 		0,
 		0,
 	};
-	BYTE moveDirection;
+	BYTE moveDirection, keyboardMove;
 	if (playbackMode)
 	{
 		spacebar_state = replayIO >> 7;
@@ -1939,7 +1943,7 @@ bool UpdatePlayer(bool playbackMode, BYTE &replayIO) // returns true if the matc
 		}
 	}
 	else
-	if (BYTE keyboardMove = keyboard_state & (KEYSTATE_MOVE_RIGHT | KEYSTATE_MOVE_LEFT | KEYSTATE_MOVE_DOWN | KEYSTATE_MOVE_UP))
+	if (keyboardMove = keyboard_state & (KEYSTATE_MOVE_RIGHT | KEYSTATE_MOVE_LEFT | KEYSTATE_MOVE_DOWN | KEYSTATE_MOVE_UP))
 	{
 		moveDirection = arrowKeyMaskToDirectionTable[keyboardMove];
 playback_move:
@@ -2155,6 +2159,8 @@ extern "C" int __cdecl SDL_main(int argc, char* argv[])
 		return result;
 	}
 
+	WORD tick_count;
+
 	ClearConsole();
 	if (!playbackMode)
 	{
@@ -2187,7 +2193,7 @@ extern "C" int __cdecl SDL_main(int argc, char* argv[])
 			goto do_not_play_again;
 	}
 
-	WORD tick_count = GetTickCountWord();
+	tick_count = GetTickCountWord();
 	random_seed_lo = (BYTE)tick_count;
 	if (!random_seed_lo)
 		random_seed_lo = 444;

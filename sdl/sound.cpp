@@ -1,4 +1,5 @@
 #include "../sound.h"
+#include "../platform.h"
 
 #include <math.h>
 #include <stdio.h>

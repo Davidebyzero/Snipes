@@ -6,6 +6,7 @@
 #include "../Snipes.h"
 #include "../macros.h"
 #include "../console.h"
+#include "../platform.h"
 #include "../timer.h"
 #include "sdl.h"
 

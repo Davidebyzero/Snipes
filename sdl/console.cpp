@@ -1,9 +1,11 @@
 #include <stdio.h>
 #include <SDL2/SDL.h>
+#include <SDL2/SDL_ttf.h>
 #include "../config.h"
 #include "../Snipes.h"
 #include "../macros.h"
 #include "../console.h"
+#include "../config.h"
 #include "sdl.h"
 
 #define DEFAULT_TEXT_COLOR 0x7 // (FOREGROUND_BLUE | FOREGROUND_GREEN | FOREGROUND_RED)
@@ -21,9 +23,6 @@ char InputBuffer[InputBufferSize];
 Uint InputBufferReadIndex = 0, InputBufferWriteIndex = 0;
 
 static bool Exiting = false;
-
-#define TILE_WIDTH  16
-#define TILE_HEIGHT 16
 
 void WriteTextMem(Uint count, WORD row, WORD column, MazeTile *src)
 {
@@ -165,7 +164,24 @@ void ClearConsole()
 
 void HandleKey(SDL_KeyboardEvent* e);
 
-static int ConsoleThreadFunc(void* ptr)
+static SDL_Color ConvertColor(BYTE Color)
+{
+	SDL_Color c;
+	// TODO: use real VGA colors
+	c.r = (Color&4)?0x3F:0x00;
+	c.g = (Color&2)?0x3F:0x00;
+	c.b = (Color&1)?0x3F:0x00;
+	if (Color&8)
+	{
+		c.r += 0x80;
+		c.g += 0x80;
+		c.b += 0x80;
+	}
+	c.a = 255;
+	return c;
+}
+
+static int ConsoleThreadFunc(void*)
 {
 	if (SDL_Init(SDL_INIT_VIDEO | SDL_INIT_AUDIO) != 0)
 	{
@@ -173,10 +189,28 @@ static int ConsoleThreadFunc(void* ptr)
 		return 1;
 	}
 
+	if (TTF_Init() != 0)
+	{
+		fprintf(stderr, "TTF_Init: %s\n", SDL_GetError());
+		SDL_Quit();
+		return 1;
+	}
+
+	TTF_Font* font = TTF_OpenFont("SnipesConsole.ttf", FONT_SIZE);
+	if (!font)
+	{
+		fprintf(stderr, "TTF_OpenFont: %s\n", SDL_GetError());
+		TTF_Quit();
+		SDL_Quit();
+		return 1;
+	}
+	
 	SDL_Window *win = SDL_CreateWindow("Snipes", 100, 100, WINDOW_WIDTH * TILE_WIDTH, WINDOW_HEIGHT * TILE_HEIGHT , SDL_WINDOW_SHOWN);
 	if (!win)
 	{
 		fprintf(stderr, "SDL_CreateWindow: %s\n", SDL_GetError());
+		TTF_CloseFont(font);
+		TTF_Quit();
 		SDL_Quit();
 		return 1;
 	}
@@ -186,6 +220,8 @@ static int ConsoleThreadFunc(void* ptr)
 	{
 		SDL_DestroyWindow(win);
 		fprintf(stderr, "SDL_CreateRenderer: %s\n", SDL_GetError());
+		TTF_CloseFont(font);
+		TTF_Quit();
 		SDL_Quit();
 		return 1;
 	}
@@ -198,7 +234,7 @@ static int ConsoleThreadFunc(void* ptr)
 			switch (e.type)
 			{
 				case SDL_QUIT:
-					Exiting = true;
+					forfeit_match = got_ctrl_break = true;
 					break;
 				case SDL_KEYDOWN:
 				case SDL_KEYUP:
@@ -221,9 +257,27 @@ static int ConsoleThreadFunc(void* ptr)
 		for (Uint y = 0; y < WINDOW_HEIGHT; y++)
 			for (Uint x = 0; x < WINDOW_WIDTH; x++)
 			{
-				SDL_SetRenderDrawColor(ren, Screen[y][x].color*16, Screen[y][x].chr/16*16, Screen[y][x].chr%16*16, 255);
+				SDL_Color fg = ConvertColor(Screen[y][x].color & 15);
+				SDL_Color bg = ConvertColor(Screen[y][x].color >> 4);
+				SDL_SetRenderDrawColor(ren, bg.r, bg.g, bg.b, bg.a);
 				SDL_Rect rect = { x * TILE_WIDTH, y * TILE_HEIGHT, TILE_WIDTH, TILE_HEIGHT };
 				SDL_RenderFillRect(ren, &rect);
+
+				char str[2];
+				// TODO: Translate DOS codepage to Unicode
+				str[0] = Screen[y][x].chr;
+				str[1] = 0;
+				// TODO: Cache
+				SDL_Surface *s = TTF_RenderText_Shaded(font, str, fg, bg);
+				if (s)
+				{
+					SDL_Texture *t = SDL_CreateTextureFromSurface(ren, s);
+					// TODO: Center-align
+					SDL_Rect r = { x * TILE_WIDTH, y * TILE_HEIGHT, s->w, s->h };
+					SDL_RenderCopy(ren, t, NULL, &r);
+					SDL_DestroyTexture(t);
+					SDL_FreeSurface(s);
+				}
 			}
 
 		SDL_RenderPresent(ren);
@@ -231,6 +285,8 @@ static int ConsoleThreadFunc(void* ptr)
 
 	SDL_DestroyRenderer(ren);
 	SDL_DestroyWindow(win);
+	TTF_CloseFont(font);
+	TTF_Quit();
 	SDL_Quit();
 
 	return 0;

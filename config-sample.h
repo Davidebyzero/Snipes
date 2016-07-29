@@ -13,3 +13,8 @@
 //#define CHEAT_OMNISCIENCE
 #define CHEAT_OMNISCIENCE_SHOW_NORMAL_VIEWPORT  // only has an effect if CHEAT_OMNISCIENCE is also enabled
 //#define CHEAT
+
+// SDL options
+#define TILE_WIDTH  32
+#define TILE_HEIGHT TILE_WIDTH
+#define FONT_SIZE TILE_HEIGHT

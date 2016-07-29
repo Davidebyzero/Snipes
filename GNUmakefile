@@ -1,5 +1,5 @@
 SOURCES=$(addsuffix .cpp, Snipes $(addprefix sdl/, console keyboard sound timer))
-CFLAGS=-fpermissive $(shell sdl2-config --cflags --libs) -lm # -g -fsanitize=address -fsanitize=undefined
+CFLAGS=-fpermissive $(shell sdl2-config --cflags --libs) -lm -lSDL2_ttf # -g -fsanitize=address -fsanitize=undefined
 
-snipes : $(SOURCES) GNUmakefile
+snipes : $(SOURCES) config.h GNUmakefile
 	g++ -o $@ $(CFLAGS) $(SOURCES)

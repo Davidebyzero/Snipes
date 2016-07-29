@@ -89,14 +89,16 @@ DWORD ReadTextFromConsole(char buffer[], DWORD bufsize)
 	SDL_StartTextInput();
 
 	DWORD numread = 0;
-	while (!forfeit_match)
+	while (true)
 	{
-		while (InputBufferReadIndex == InputBufferWriteIndex && !forfeit_match)
+		while (InputBufferReadIndex == InputBufferWriteIndex)
+		{
+			CheckForBreak();
+			if (forfeit_match)
+				goto done;
 			SleepTimeslice();
-		CheckForBreak();
+		}
 		char c = InputBuffer[InputBufferReadIndex];
-		if (!c && forfeit_match)
-			break;
 		InputBufferReadIndex = (InputBufferReadIndex+1) % InputBufferSize;
 		if (c == '\n')
 		{
@@ -123,6 +125,7 @@ DWORD ReadTextFromConsole(char buffer[], DWORD bufsize)
 		}
 	}
 
+done:
 	SDL_StopTextInput();
 	return numread;
 }

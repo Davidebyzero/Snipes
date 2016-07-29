@@ -166,22 +166,25 @@ void ClearConsole()
 
 void HandleKey(SDL_KeyboardEvent* e);
 
-static SDL_Color ConvertColor(BYTE Color)
+static const SDL_Color ScreenColors[16] =
 {
-	SDL_Color c;
-	// TODO: use real VGA colors
-	c.r = (Color&4)?0x3F:0x00;
-	c.g = (Color&2)?0x3F:0x00;
-	c.b = (Color&1)?0x3F:0x00;
-	if (Color&8)
-	{
-		c.r += 0x80;
-		c.g += 0x80;
-		c.b += 0x80;
-	}
-	c.a = 255;
-	return c;
-}
+	{ 0x00, 0x00, 0x00, 0xFF },
+	{ 0x00, 0x00, 0xAA, 0xFF },
+	{ 0x00, 0xAA, 0x00, 0xFF },
+	{ 0x00, 0xAA, 0xAA, 0xFF },
+	{ 0xAA, 0x00, 0x00, 0xFF },
+	{ 0xAA, 0x00, 0xAA, 0xFF },
+	{ 0xAA, 0x55, 0x00, 0xFF },
+	{ 0xAA, 0xAA, 0xAA, 0xFF },
+	{ 0x55, 0x55, 0x55, 0xFF },
+	{ 0x55, 0x55, 0xFF, 0xFF },
+	{ 0x55, 0xFF, 0x55, 0xFF },
+	{ 0x55, 0xFF, 0xFF, 0xFF },
+	{ 0xFF, 0x55, 0x55, 0xFF },
+	{ 0xFF, 0x55, 0xFF, 0xFF },
+	{ 0xFF, 0xFF, 0x55, 0xFF },
+	{ 0xFF, 0xFF, 0xFF, 0xFF },
+};
 
 static SDL_Texture* Glyphs[256][256] = {{}};
 
@@ -264,8 +267,8 @@ static int ConsoleThreadFunc(void*)
 			for (Uint x = 0; x < WINDOW_WIDTH; x++)
 			{
 				MazeTile tile = Screen[y][x];
-				SDL_Color fg = ConvertColor(tile.color & 15);
-				SDL_Color bg = ConvertColor(tile.color >> 4);
+				SDL_Color fg = ScreenColors[tile.color & 15];
+				SDL_Color bg = ScreenColors[tile.color >> 4];
 				SDL_SetRenderDrawColor(ren, bg.r, bg.g, bg.b, bg.a);
 				SDL_Rect rect = { x * TILE_WIDTH, y * TILE_HEIGHT, TILE_WIDTH, TILE_HEIGHT };
 				SDL_RenderFillRect(ren, &rect);
@@ -307,7 +310,7 @@ static int ConsoleThreadFunc(void*)
 
 		if (OutputCursorVisible && SDL_GetTicks() % 500 < 250)
 		{
-			SDL_Color c = ConvertColor(OutputTextColor);
+			SDL_Color c = ScreenColors[OutputTextColor];
 			SDL_SetRenderDrawColor(ren, c.r, c.g, c.b, c.a);
 			SDL_Rect rect = { OutputCursorX * TILE_WIDTH, OutputCursorY * TILE_HEIGHT, TILE_WIDTH, TILE_HEIGHT };
 			SDL_RenderFillRect(ren, &rect);

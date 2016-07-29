@@ -94,6 +94,8 @@ DWORD ReadTextFromConsole(char buffer[], DWORD bufsize)
 			SleepTimeslice();
 		CheckForBreak();
 		char c = InputBuffer[InputBufferReadIndex];
+		if (!c && forfeit_match)
+			break;
 		InputBufferReadIndex = (InputBufferReadIndex+1) % InputBufferSize;
 		if (c == '\n')
 		{

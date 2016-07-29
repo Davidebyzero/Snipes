@@ -5,14 +5,20 @@ Project("{8BC9CEB8-8B4A-11D0-8D11-00A0C91BC942}") = "Snipes", "Snipes.vcxproj", 
 EndProject
 Global
 	GlobalSection(SolutionConfigurationPlatforms) = preSolution
-		Debug|Win32 = Debug|Win32
-		Release|Win32 = Release|Win32
+		Debug|Win32 console = Debug|Win32 console
+		Debug|Win32 SDL = Debug|Win32 SDL
+		Release|Win32 console = Release|Win32 console
+		Release|Win32 SDL = Release|Win32 SDL
 	EndGlobalSection
 	GlobalSection(ProjectConfigurationPlatforms) = postSolution
-		{17767A7D-37D6-46C2-9B14-BC4514766BDF}.Debug|Win32.ActiveCfg = Debug|Win32
-		{17767A7D-37D6-46C2-9B14-BC4514766BDF}.Debug|Win32.Build.0 = Debug|Win32
-		{17767A7D-37D6-46C2-9B14-BC4514766BDF}.Release|Win32.ActiveCfg = Release|Win32
-		{17767A7D-37D6-46C2-9B14-BC4514766BDF}.Release|Win32.Build.0 = Release|Win32
+		{17767A7D-37D6-46C2-9B14-BC4514766BDF}.Debug|Win32 console.ActiveCfg = Debug|Win32
+		{17767A7D-37D6-46C2-9B14-BC4514766BDF}.Debug|Win32 console.Build.0 = Debug|Win32
+		{17767A7D-37D6-46C2-9B14-BC4514766BDF}.Debug|Win32 SDL.ActiveCfg = SDL Debug|Win32
+		{17767A7D-37D6-46C2-9B14-BC4514766BDF}.Debug|Win32 SDL.Build.0 = SDL Debug|Win32
+		{17767A7D-37D6-46C2-9B14-BC4514766BDF}.Release|Win32 console.ActiveCfg = Release|Win32
+		{17767A7D-37D6-46C2-9B14-BC4514766BDF}.Release|Win32 console.Build.0 = Release|Win32
+		{17767A7D-37D6-46C2-9B14-BC4514766BDF}.Release|Win32 SDL.ActiveCfg = SDL Release|Win32
+		{17767A7D-37D6-46C2-9B14-BC4514766BDF}.Release|Win32 SDL.Build.0 = SDL Release|Win32
 	EndGlobalSection
 	GlobalSection(SolutionProperties) = preSolution
 		HideSolutionNode = FALSE

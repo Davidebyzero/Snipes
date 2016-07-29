@@ -1,6 +1,7 @@
 #include "../sound.h"
 
 #include <math.h>
+#include <stdio.h>
 #include <SDL/SDL_audio.h>
 
 #define TONE_SAMPLE_RATE 48000
@@ -12,7 +13,7 @@ int currentFreqnum = 0;
 Uint tonePhase;
 
 //void CALLBACK WaveOutProc(HWAVEOUT hwo, UINT uMsg, DWORD_PTR dwInstance, DWORD_PTR dwParam1, DWORD_PTR dwParam2)
-void SoundCallback(void *, Uint8 *_stream, int _length)
+void __cdecl SoundCallback(void *, Uint8 *_stream, int _length)
 {
     Sint16 *stream = (Sint16*) _stream;
     Uint length = _length / 2;

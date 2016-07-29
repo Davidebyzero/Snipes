@@ -70,7 +70,7 @@ void outputText(BYTE color, WORD count, WORD row, WORD column, const char *src)
 void outputNumber(BYTE color, bool zeroPadding, WORD count, WORD row, WORD column, Uint number)
 {
 	char textbuf[strlength("4294967295")+1];
-	sprintf_s(textbuf, sizeof(textbuf), zeroPadding ? "%0*u" : "%*u", count, number);
+	sprintf(textbuf, zeroPadding ? "%0*u" : "%*u", count, number);
 	outputText(color, count, row, column, textbuf);
 }
 

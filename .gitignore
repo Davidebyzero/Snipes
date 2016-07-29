@@ -3,6 +3,8 @@
 ipch
 Release
 Debug
+SDL Release
+SDL Debug
 
 config.h
 

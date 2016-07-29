@@ -1,4 +1,5 @@
 ﻿#include <stdio.h>
+#include <string.h>
 #include <SDL2/SDL.h>
 #include <SDL2/SDL_ttf.h>
 #include "../config.h"
@@ -62,7 +63,7 @@ void outputText(BYTE color, WORD count, WORD row, WORD column, const char *src)
 void outputNumber(BYTE color, bool zeroPadding, WORD count, WORD row, WORD column, Uint number)
 {
 	char textbuf[strlength("4294967295")+1];
-	snprintf(textbuf, sizeof(textbuf), zeroPadding ? "%0*u" : "%*u", count, number);
+	sprintf(textbuf, zeroPadding ? "%0*u" : "%*u", count, number);
 	outputText(color, count, row, column, textbuf);
 }
 
@@ -210,7 +211,7 @@ static const SDL_Color ScreenColors[16] =
 
 static SDL_Texture* Glyphs[256][256] = {{}};
 
-static int ConsoleThreadFunc(void*)
+static int __cdecl ConsoleThreadFunc(void*)
 {
 	if (SDL_Init(SDL_INIT_VIDEO | SDL_INIT_AUDIO) != 0)
 	{
@@ -311,21 +312,21 @@ static int ConsoleThreadFunc(void*)
 				{
 					static const wchar_t Chars[257] =
 						L" ☺☻♥♦♣♠•◘○◙♂♀♪♫☼"
-						"►◄↕‼¶§▬↨↑↓→←∟↔▲▼"
-						" !\"#$%&'()*+,-./"
-						"0123456789:;<=>?"
-						"@ABCDEFGHIJKLMNO"
-						"PQRSTUVWXYZ[\\]^_"
-						"`abcdefghijklmno"
-						"pqrstuvwxyz{|}~⌂"
-						"ÇüéâäàåçêëèïîìÄÅ"
-						"ÉæÆôöòûùÿÖÜ¢£¥₧ƒ"
-						"áíóúñÑªº¿⌐¬½¼¡«»"
-						"░▒▓│┤╡╢╖╕╣║╗╝╜╛┐"
-						"└┴┬├─┼╞╟╚╔╩╦╠═╬╧"
-						"╨╤╥╙╘╒╓╫╪┘┌█▄▌▐▀"
-						"αßΓπΣσµτΦΘΩδ∞φε∩"
-						"≡±≥≤⌠⌡÷≈°∙·√ⁿ²■ ";
+						L"►◄↕‼¶§▬↨↑↓→←∟↔▲▼"
+						L" !\"#$%&'()*+,-./"
+						L"0123456789:;<=>?"
+						L"@ABCDEFGHIJKLMNO"
+						L"PQRSTUVWXYZ[\\]^_"
+						L"`abcdefghijklmno"
+						L"pqrstuvwxyz{|}~⌂"
+						L"ÇüéâäàåçêëèïîìÄÅ"
+						L"ÉæÆôöòûùÿÖÜ¢£¥₧ƒ"
+						L"áíóúñÑªº¿⌐¬½¼¡«»"
+						L"░▒▓│┤╡╢╖╕╣║╗╝╜╛┐"
+						L"└┴┬├─┼╞╟╚╔╩╦╠═╬╧"
+						L"╨╤╥╙╘╒╓╫╪┘┌█▄▌▐▀"
+						L"αßΓπΣσµτΦΘΩδ∞φε∩"
+						L"≡±≥≤⌠⌡÷≈°∙·√ⁿ²■ ";
 
 					wchar_t str[2];
 					str[0] = Chars[tile.chr];

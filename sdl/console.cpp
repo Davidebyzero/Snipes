@@ -5,7 +5,7 @@
 #include "../Snipes.h"
 #include "../macros.h"
 #include "../console.h"
-#include "../config.h"
+#include "../timer.h"
 #include "sdl.h"
 
 #define DEFAULT_TEXT_COLOR 0x7 // (FOREGROUND_BLUE | FOREGROUND_GREEN | FOREGROUND_RED)
@@ -74,7 +74,7 @@ void EraseBottomTwoLines()
 
 void CheckForBreak()
 {
-	// SDL_Delay(1); // allow ConsoleHandlerRoutine to be triggered
+	// SleepTimeslice(); // allow ConsoleHandlerRoutine to be triggered
 	// if (forfeit_match)
 	// 	WriteConsole(output, "\r\n", 2, &numwritten, 0);
 	got_ctrl_break = forfeit_match;
@@ -89,7 +89,7 @@ DWORD ReadTextFromConsole(char buffer[], DWORD bufsize)
 	while (!forfeit_match)
 	{
 		while (InputBufferReadIndex == InputBufferWriteIndex && !forfeit_match)
-			SDL_Delay(1);
+			SleepTimeslice();
 		CheckForBreak();
 		char c = InputBuffer[InputBufferReadIndex];
 		InputBufferReadIndex = (InputBufferReadIndex+1) % InputBufferSize;

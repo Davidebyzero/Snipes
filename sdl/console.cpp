@@ -110,6 +110,7 @@ void SetConsoleOutputTextColor(WORD wAttributes)
 void WriteTextToConsole(char const *text, size_t length)
 {
 	for (Uint n=0; n<length; n++)
+	{
 		switch (text[n])
 		{
 			case '\r':
@@ -124,6 +125,13 @@ void WriteTextToConsole(char const *text, size_t length)
 				// TODO: wrap?
 				break;
 		}
+
+		if (OutputCursorY == WINDOW_HEIGHT) // Scroll down
+		{
+			memmove(&Screen[0], &Screen[1], sizeof(Screen[0]) * (WINDOW_HEIGHT-1));
+			OutputCursorY--;
+		}
+	}
 }
 
 void OpenDirectConsole()

@@ -344,8 +344,15 @@ static int SDLCALL ConsoleThreadFunc(void*)
 
 				int w, h;
 				SDL_QueryTexture(t, NULL, NULL, &w, &h);
-				SDL_Rect r = { x * TILE_WIDTH + (TILE_WIDTH - w) / 2, y * TILE_HEIGHT + (TILE_HEIGHT - h) / 2, w, h };
-				SDL_RenderCopy(ren, t, NULL, &r);
+				SDL_Rect src = { 0, 0, w, h };
+				SDL_Rect dst = { x * TILE_WIDTH + (TILE_WIDTH - w) / 2, y * TILE_HEIGHT + (TILE_HEIGHT - h) / 2, w, h };
+				if (h > TILE_HEIGHT) // not sure if this will always happen, so make the fix conditional
+				{
+					src.y++;
+					src.h--;
+					dst.h--;
+				}
+				SDL_RenderCopy(ren, t, &src, &dst);
 			}
 
 		if (OutputCursorVisible && SDL_GetTicks() % 500 < 250)

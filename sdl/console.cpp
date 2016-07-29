@@ -99,8 +99,17 @@ DWORD ReadTextFromConsole(char buffer[], DWORD bufsize)
 			WriteTextToConsole("\r", 1);;
 			break;
 		}
-		if (numread < bufsize)
-			buffer[numread] = c;
+		else
+		if (c == '\b') // Backspace
+		{
+			if (numread)
+				numread--;
+		}
+		else
+		{
+			if (numread < bufsize)
+				buffer[numread] = c;
+		}
 		numread++;
 	}
 
@@ -124,6 +133,13 @@ void WriteTextToConsole(char const *text, size_t length)
 				break;
 			case '\n':
 				OutputCursorY++;
+				break;
+			case '\b':
+				if (OutputCursorX)
+				{
+					OutputCursorX--;
+					outputText(OutputTextColor, 1, OutputCursorY, OutputCursorX, " ");
+				}
 				break;
 			default:
 				outputText(OutputTextColor, 1, OutputCursorY, OutputCursorX, text+n);

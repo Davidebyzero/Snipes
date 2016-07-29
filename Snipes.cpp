@@ -176,6 +176,8 @@ struct Coord
 	Coord &operator=(WORD _xy) {xy = _xy; return *this;}
 };
 
+#pragma pack(4)
+
 struct Object
 {
 	BYTE next; // objects[] index of the next object in the linked list of this object's type

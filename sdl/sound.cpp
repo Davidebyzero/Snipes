@@ -3,7 +3,7 @@
 
 #include <math.h>
 #include <stdio.h>
-#include <SDL/SDL_audio.h>
+#include <SDL2/SDL_audio.h>
 
 #define TONE_SAMPLE_RATE 48000
 #define WAVE_BUFFER_LENGTH 512

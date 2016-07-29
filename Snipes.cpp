@@ -89,9 +89,9 @@ void ReadSkillLevel()
 	char skillLevel[0x80] = {};
 	DWORD skillLevelLength = ReadTextFromConsole(skillLevel, _countof(skillLevel));
 
-	if (skillLevel[skillLevelLength-1] == '\n')
+	if (skillLevelLength && skillLevel[skillLevelLength-1] == '\n')
 		skillLevelLength--;
-	if (skillLevel[skillLevelLength-1] == '\r')
+	if (skillLevelLength && skillLevel[skillLevelLength-1] == '\r')
 		skillLevelLength--;
 
 	for (Uint i=0; i<skillLevelLength; i++)

@@ -176,9 +176,11 @@ struct Coord
 	Coord &operator=(WORD _xy) {xy = _xy; return *this;}
 };
 
+typedef BYTE ObjectIndex;
+
 struct Object
 {
-	BYTE next; // objects[] index of the next object in the linked list of this object's type
+	ObjectIndex next; // objects[] index of the next object in the linked list of this object's type
 	BYTE generalPurpose1;
 	union
 	{
@@ -253,7 +255,9 @@ enum SoundEffect : BYTE
 BYTE playerFiringPeriod; // in pairs of frames
 WORD frame;
 static bool playerAnimEyesNotWide, isPlayerDying, isPlayerExploding;
-static BYTE lastHUD_numGhosts, lastHUD_numGeneratorsKilled, lastHUD_numSnipes, lastHUD_numPlayerDeaths, objectHead_free, objectHead_bullets, objectHead_explosions, objectHead_ghosts, objectHead_snipes, objectHead_generators, numGenerators, numGhosts, numBullets, numPlayerDeaths, numSnipes, playerEyeAnimFrame, orthoDistance;
+static BYTE lastHUD_numGhosts, lastHUD_numGeneratorsKilled, lastHUD_numSnipes, lastHUD_numPlayerDeaths;
+static BYTE numGenerators, numGhosts, numBullets, numPlayerDeaths, numSnipes, playerEyeAnimFrame, orthoDistance;
+static ObjectIndex objectHead_free, objectHead_bullets, objectHead_explosions, objectHead_ghosts, objectHead_snipes, objectHead_generators;
 static OrthogonalDirection bulletCollisionDirection;
 static SoundEffect currentSoundEffect = SoundEffect_None;
 static BYTE currentSoundEffectFrame;
@@ -473,7 +477,7 @@ void CreateMaze()
 
 BYTE CreateNewObject()
 {
-	BYTE object = objectHead_free;
+	ObjectIndex object = objectHead_free;
 	if (object)
 		objectHead_free = objects[object].next;
 	return object;
@@ -709,7 +713,7 @@ bool IsDiagonalDoubledPhase(BYTE n)
 static const BYTE mazeWallCharacters[] = {0xB9, 0xBA, 0xBB, 0xBC, 0xC8, 0xC9, 0xCA, 0xCB, 0xCC, 0xCD, 0xCE};
 static const BYTE    enemyCharacters[] = {0x01, 0x02, 0x18, 0x1A, 0x19, 0x1B};
 
-void FreeObject(BYTE object)
+void FreeObject(ObjectIndex object)
 {
 	objects[object].next = objectHead_free;
 	objectHead_free = object;
@@ -780,7 +784,7 @@ void CreateGeneratorsAndPlayer()
 	objectHead_generators = 0;
 	for (WORD data_B58 = 0; data_B58 < numGeneratorsAtStart; data_B58++)
 	{
-		BYTE newGenerator = CreateNewObject();
+		ObjectIndex newGenerator = CreateNewObject();
 		objects[newGenerator].next = objectHead_generators;
 		objectHead_generators = newGenerator;
 		currentObject = &objects[newGenerator];
@@ -876,7 +880,7 @@ bool UpdateHUD() // returns true if the match has been won
 	return true;
 }
 
-void ExplodeObject(BYTE arg)
+void ExplodeObject(ObjectIndex arg)
 {
 	if (arg == OBJECT_PLAYER) // explode the player (and don't overwrite the player object)
 	{
@@ -921,9 +925,9 @@ void ExplodeObject(BYTE arg)
 	PlotObjectToMaze();
 }
 
-void FreeObjectInList_worker(BYTE *objectHead, BYTE object)
+void FreeObjectInList_worker(ObjectIndex *objectHead, ObjectIndex object)
 {
-	BYTE data_CCA = *objectHead;
+	ObjectIndex data_CCA = *objectHead;
 	if (object == data_CCA)
 	{
 		*objectHead = objects[object].next;
@@ -931,7 +935,7 @@ void FreeObjectInList_worker(BYTE *objectHead, BYTE object)
 	}
 	for (;;)
 	{
-		BYTE data_CCB = objects[data_CCA].next;
+		ObjectIndex data_CCB = objects[data_CCA].next;
 		if (!data_CCB)
 			return;
 		if (object == data_CCB)
@@ -941,7 +945,7 @@ void FreeObjectInList_worker(BYTE *objectHead, BYTE object)
 	objects[data_CCA].next = objects[object].next;
 }
 
-void FreeObjectInList(BYTE *objectHead, BYTE object)
+void FreeObjectInList(ObjectIndex *objectHead, ObjectIndex object)
 {
 	if (object == OBJECT_PLAYER)
 	{
@@ -1001,15 +1005,15 @@ bool MoveBulletAndTestHit(OrthogonalDirection arg)
 
 void UpdateBullets()
 {
-	BYTE prevObject = 0;
-	for (BYTE object = objectHead_bullets; object;)
+	ObjectIndex prevObject = 0;
+	for (ObjectIndex object = objectHead_bullets; object;)
 	{
 		currentObject = &objects[object];
 		Bullet &bullet = *(Bullet*)currentObject;
 		bulletTestPos = &maze[bullet.y * MAZE_WIDTH + bullet.x];
 		if (bulletTestPos->chr == 0xB2)
 		{
-			BYTE nextObject = bullet.next;
+			ObjectIndex nextObject = bullet.next;
 			*bulletTestPos = MazeTile(0x9, ' ');
 			FreeObjectInList(&objectHead_bullets, object);
 			numBullets--;
@@ -1098,7 +1102,7 @@ void UpdateBullets()
 			objectHead_bullets = bullet.next;
 		else
 			objects[prevObject].next = bullet.next;
-		BYTE nextObject = bullet.next;
+		ObjectIndex nextObject = bullet.next;
 		FreeObject(object);
 		object = nextObject;
 	}
@@ -1348,7 +1352,7 @@ void FireBullet(BYTE bulletType)
 		maze[data_B5E] = MazeTile(0xF, 0xB2);
 		goto main_1899;
 	}
-	BYTE newBullet = CreateNewObject();
+	ObjectIndex newBullet = CreateNewObject();
 	if (!newBullet || numBullets > 50)
 		goto main_1899;
 	numBullets++;
@@ -1359,8 +1363,8 @@ void FireBullet(BYTE bulletType)
 		objectHead_bullets = newBullet;
 	else
 	{
-		BYTE objectTail_bullets = objectHead_bullets;
-		while (BYTE nextObject = objects[objectTail_bullets].next)
+		ObjectIndex objectTail_bullets = objectHead_bullets;
+		while (ObjectIndex nextObject = objects[objectTail_bullets].next)
 			objectTail_bullets = nextObject;
 		objects[objectTail_bullets].next = newBullet;
 	}
@@ -1396,7 +1400,7 @@ bool FireSnipeBullet()
 
 void UpdateSnipes()
 {
-	for (BYTE object = objectHead_snipes; object;)
+	for (ObjectIndex object = objectHead_snipes; object;)
 	{
 		Snipe &snipe = (Snipe&)objects[object];
 		MazeTile *snipeMazeRow = &maze[snipe.y * MAZE_WIDTH];
@@ -1545,7 +1549,7 @@ void UpdateSnipes()
 				objectInList = &objects[objectInList->next];
 				if (objectInList == &ghost)
 				{
-					BYTE nextObject = prevObject->next = ghost.next;
+					ObjectIndex nextObject = prevObject->next = ghost.next;
 					ghost.next = objectHead_ghosts;
 					objectHead_ghosts = object;
 					object = nextObject;
@@ -1558,7 +1562,7 @@ void UpdateSnipes()
 		}
 		else
 		{
-			BYTE nextObject = snipe.next;
+			ObjectIndex nextObject = snipe.next;
 			FreeObjectInList(&objectHead_snipes, object);
 			object = nextObject;
 		}
@@ -1569,7 +1573,7 @@ void UpdateSnipes()
 
 void UpdateGhosts()
 {
-	for (BYTE object = objectHead_ghosts; object;)
+	for (ObjectIndex object = objectHead_ghosts; object;)
 	{
 		Ghost &ghost = (Ghost&)objects[object];
 		MazeTile &ghostInMaze = maze[ghost.y * MAZE_WIDTH + ghost.x];
@@ -1584,7 +1588,7 @@ void UpdateGhosts()
 		else
 		{
 	kill_ghost:
-			BYTE nextObject = ghost.next;
+			ObjectIndex nextObject = ghost.next;
 			FreeObjectInList(&objectHead_ghosts, object);
 			object = nextObject;
 			numGhosts--;
@@ -1720,7 +1724,7 @@ void EraseObjectFromMaze()
 
 void UpdateGenerators()
 {
-	for (BYTE object = objectHead_generators; object;)
+	for (ObjectIndex object = objectHead_generators; object;)
 	{
 		currentObject = &objects[object];
 		Generator &generator = *(Generator*)currentObject;
@@ -1730,7 +1734,7 @@ void UpdateGenerators()
 		generator.sprite = PointerToFakePointer(currentSprite);
 		if (IsObjectTaggedToExplode())
 		{
-			BYTE nextObject = generator.next;
+			ObjectIndex nextObject = generator.next;
 			FreeObjectInList(&objectHead_generators, object);
 			object = nextObject;
 			numGenerators--;
@@ -1761,7 +1765,7 @@ void UpdateGenerators()
 			goto next_generator;
 		if (numSnipes + numGhosts < maxSnipes)
 		{
-			BYTE spawnedSnipeIndex = CreateNewObject();
+			ObjectIndex spawnedSnipeIndex = CreateNewObject();
 			if (!spawnedSnipeIndex)
 				goto next_generator;
 			numSnipes++;
@@ -2006,14 +2010,14 @@ explode_player:
 
 void UpdateExplosions()
 {
-	for (BYTE object = objectHead_explosions; object;)
+	for (ObjectIndex object = objectHead_explosions; object;)
 	{
 		currentObject = &objects[object];
 		Explosion &explosion = *(Explosion*)currentObject;
 		currentSprite = FakePointerToPointer(explosion.sprite);
 		EraseObjectFromMaze();
 		BYTE animFrame = (explosion.animFrame + 1) % 6;
-		BYTE nextObject = explosion.next;
+		ObjectIndex nextObject = explosion.next;
 		explosion.animFrame++;
 		if (explosion.animFrame > (object == OBJECT_PLAYEREXPLOSION ? 11 : 5))
 		{

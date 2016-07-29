@@ -75,7 +75,7 @@ void EraseBottomTwoLines()
 
 void CheckForBreak()
 {
-	// SleepTimeslice(1); // allow ConsoleHandlerRoutine to be triggered
+	// SleepTimeslice(); // allow ConsoleHandlerRoutine to be triggered
 	// if (forfeit_match)
 	// 	WriteConsole(output, "\r\n", 2, &numwritten, 0);
 	got_ctrl_break = forfeit_match;
@@ -90,7 +90,7 @@ DWORD ReadTextFromConsole(char buffer[], DWORD bufsize)
 	while (!forfeit_match)
 	{
 		while (InputBufferReadIndex == InputBufferWriteIndex && !forfeit_match)
-			SleepTimeslice(1);
+			SleepTimeslice();
 		CheckForBreak();
 		char c = InputBuffer[InputBufferReadIndex];
 		InputBufferReadIndex = (InputBufferReadIndex+1) % InputBufferSize;

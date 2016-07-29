@@ -224,7 +224,7 @@ static int ConsoleThreadFunc(void*)
 		return 1;
 	}
 
-	TTF_Font* font = TTF_OpenFont("SnipesConsole.ttf", FONT_SIZE);
+	TTF_Font* font = TTF_OpenFont(FONT_FILENAME, FONT_SIZE);
 	if (!font)
 	{
 		fprintf(stderr, "TTF_OpenFont: %s\n", SDL_GetError());

@@ -23,7 +23,7 @@ void CloseTimer()
 {
 }
 
-void SleepMilliseconds(DWORD dwMsecs)
+void SleepTimeslice()
 {
-	Sleep(dwMsecs);
+	Sleep(1);
 }

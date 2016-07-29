@@ -363,7 +363,7 @@ void CreateMaze_helper(SHORT &data_1E0, BYTE data_2AF)
 			data_1E0++;
 		break;
 	default:
-		__assume(0);
+		UNREACHABLE;
 	}
 }
 
@@ -998,7 +998,7 @@ bool MoveBulletAndTestHit(OrthogonalDirection arg)
 		}
 		break;
 	default:
-		__assume(0);
+		UNREACHABLE;
 	}
 	return bulletTestPos->chr != ' ';
 }
@@ -1069,7 +1069,7 @@ void UpdateBullets()
 			object = bullet.next;
 			continue;
 		default:
-			__assume(0);
+			UNREACHABLE;
 		}
 		BYTE find_this = bulletTestPos->chr;
 		if (!memchr(mazeWallCharacters, find_this, _countof(mazeWallCharacters)))
@@ -1241,7 +1241,7 @@ MoveObject_retval MoveObject(MovingObject &object)
 		ax = cx;
 		break;
 	default:
-		__assume(0);
+		UNREACHABLE;
 	}
 	const WORD *ptr = FakePointerToPointer(object.sprite);
 	dx.x += ((BYTE*)ptr)[1];
@@ -1315,7 +1315,7 @@ void FireBullet(BYTE bulletType)
 		data_C99--;
 		break;
 	default:
-		__assume(0);
+		UNREACHABLE;
 	}
 	if (data_C98 >= MAZE_WIDTH)
 	{
@@ -1850,7 +1850,7 @@ bool MovePlayer()
 		MovePlayer_helper(hitObstruction, OrthogonalDirection_Up);
 		break;
 	default:
-		__assume(0);
+		UNREACHABLE;
 	}
 	if (!hitObstruction)
 		PlotObjectToMaze();
@@ -2097,7 +2097,7 @@ void UpdateSound()
 		PlayTone(sound_ExplodePlayer[currentSoundEffectFrame]);
 		break;
 	default:
-		__assume(0);
+		UNREACHABLE;
 	}
 	currentSoundEffect = SoundEffect_None;
 }
@@ -2326,7 +2326,7 @@ int __cdecl main(int argc, char* argv[])
 			{
 				for (;;)
 				{
-					SleepMilliseconds(1);
+					SleepTimeslice();
 					WORD tick_count2 = GetTickCountWord();
 					if (tick_count2 != tick_count)
 					{

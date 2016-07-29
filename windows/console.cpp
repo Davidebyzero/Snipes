@@ -2,6 +2,7 @@
 #include <stdio.h>
 #include "../config.h"
 #include "../Snipes.h"
+#include "../timer.h"
 #include "../macros.h"
 
 #define DEFAULT_TEXT_COLOR 0x7 // (FOREGROUND_BLUE | FOREGROUND_GREEN | FOREGROUND_RED)
@@ -90,7 +91,7 @@ void EraseBottomTwoLines()
 void CheckForBreak()
 {
 	DWORD numwritten;
-	Sleep(1); // allow ConsoleHandlerRoutine to be triggered
+	SleepTimeslice(); // allow ConsoleHandlerRoutine to be triggered
 	if (forfeit_match)
 		WriteConsole(output, "\r\n", 2, &numwritten, 0);
 	got_ctrl_break = forfeit_match;

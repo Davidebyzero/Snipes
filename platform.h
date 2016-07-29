@@ -2,10 +2,12 @@
 
 #if defined(_MSC_VER)
 
+#define UNREACHABLE __assume(0)
+
 #elif defined(__GNUC__)
 
 #define __debugbreak abort
-#define __assume(cond) do { if (!(cond)) __builtin_unreachable(); } while (0)
+#define UNREACHABLE __builtin_unreachable()
 #define __cdecl
 
 #endif

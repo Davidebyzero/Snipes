@@ -7,4 +7,4 @@ WORD GetTickCountWord();
 int  OpenTimer();
 void CloseTimer();
 
-void SleepMilliseconds(DWORD dwMsecs);
+void SleepTimeslice();

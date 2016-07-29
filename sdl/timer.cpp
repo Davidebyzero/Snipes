@@ -17,7 +17,7 @@ void CloseTimer()
 {
 }
 
-void SleepMilliseconds(DWORD dwMsecs)
+void SleepTimeslice()
 {
-	SDL_Delay(dwMsecs);
+	SDL_Delay(1);
 }

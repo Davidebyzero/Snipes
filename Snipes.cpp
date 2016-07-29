@@ -2128,7 +2128,7 @@ void DrawViewport()
 	}
 }
 
-#ifdef _CONSOLE
+#if !(defined(_WIN32) || defined(_WIN64)) || defined(_CONSOLE)
 int __cdecl main(int argc, char* argv[])
 #else
 extern "C" int __cdecl SDL_main(int argc, char* argv[])

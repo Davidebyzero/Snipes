@@ -299,8 +299,7 @@ static int ConsoleThreadFunc(void*)
 
 				int w, h;
 				SDL_QueryTexture(t, NULL, NULL, &w, &h);
-				// TODO: Center-align
-				SDL_Rect r = { x * TILE_WIDTH, y * TILE_HEIGHT, w, h };
+				SDL_Rect r = { x * TILE_WIDTH + (TILE_WIDTH - w) / 2, y * TILE_HEIGHT + (TILE_HEIGHT - h) / 2, w, h };
 				SDL_RenderCopy(ren, t, NULL, &r);
 			}
 

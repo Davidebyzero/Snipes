@@ -14,7 +14,7 @@ DWORD ReadTextFromConsole(char buffer[], DWORD bufsize);
 void SetConsoleOutputTextColor(WORD wAttributes);
 
 void WriteTextToConsole(char const *text, size_t length);
-template <size_t LENGTH> void WriteTextToConsole(char const (&text)[LENGTH]) { WriteTextToConsole(text, LENGTH); }
+template <size_t LENGTH> void WriteTextToConsole(char const (&text)[LENGTH]) { WriteTextToConsole(text, strlength(text)); }
 
 void OpenDirectConsole();
 void CloseDirectConsole(Uint lineNum);

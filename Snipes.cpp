@@ -2371,9 +2371,11 @@ extern "C" int __cdecl SDL_main(int argc, char* argv[])
 		{
 			WriteTextToConsole("Play another game? (Y or N) ");
 			char playAgain;
-			ReadTextFromConsole(&playAgain, 1);
+			auto numread = ReadTextFromConsole(&playAgain, 1);
 			if (got_ctrl_break)
 				goto do_not_play_again;
+			if (!numread)
+				continue;
 			if (playAgain == 'Y' || playAgain == 'y')
 				goto do_play_again;
 			if (playAgain == 'N' || playAgain == 'n')

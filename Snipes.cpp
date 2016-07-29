@@ -1542,14 +1542,12 @@ void UpdateSnipes()
 			Ghost &ghost = (Ghost&)snipe;
 			ghost.x = ghostPart - snipeMazeRow;
 
-			// TODO: make the typecasting here less hacky; currently it only works because "next" is the first member of struct Object
-			for (Object *objectInList = (Object*)&objectHead_snipes;;)
+			// move this object out of the Snipe linked-list and into the Ghost linked-list
+			for (ObjectIndex *nextPtr = &objectHead_snipes;; nextPtr = &objects[*nextPtr].next)
 			{
-				Object *prevObject = objectInList;
-				objectInList = &objects[objectInList->next];
-				if (objectInList == &ghost)
+				if (*nextPtr == object)
 				{
-					ObjectIndex nextObject = prevObject->next = ghost.next;
+					ObjectIndex nextObject = *nextPtr = ghost.next;
 					ghost.next = objectHead_ghosts;
 					objectHead_ghosts = object;
 					object = nextObject;

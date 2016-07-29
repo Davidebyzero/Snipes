@@ -15,6 +15,6 @@
 //#define CHEAT
 
 // SDL options
-#define TILE_WIDTH  32
-#define TILE_HEIGHT TILE_WIDTH
-#define FONT_SIZE TILE_HEIGHT
+#define TILE_WIDTH  20
+#define TILE_HEIGHT 30
+#define FONT_SIZE 32

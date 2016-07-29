@@ -181,6 +181,8 @@ static SDL_Color ConvertColor(BYTE Color)
 	return c;
 }
 
+static SDL_Texture* Glyphs[256][256] = {{}};
+
 static int ConsoleThreadFunc(void*)
 {
 	if (SDL_Init(SDL_INIT_VIDEO | SDL_INIT_AUDIO) != 0)
@@ -226,6 +228,8 @@ static int ConsoleThreadFunc(void*)
 		return 1;
 	}
 
+	memset(Glyphs, 0, sizeof(Glyphs));
+
 	while (!Exiting)
 	{
 		SDL_Event e;
@@ -257,48 +261,56 @@ static int ConsoleThreadFunc(void*)
 		for (Uint y = 0; y < WINDOW_HEIGHT; y++)
 			for (Uint x = 0; x < WINDOW_WIDTH; x++)
 			{
-				SDL_Color fg = ConvertColor(Screen[y][x].color & 15);
-				SDL_Color bg = ConvertColor(Screen[y][x].color >> 4);
+				MazeTile tile = Screen[y][x];
+				SDL_Color fg = ConvertColor(tile.color & 15);
+				SDL_Color bg = ConvertColor(tile.color >> 4);
 				SDL_SetRenderDrawColor(ren, bg.r, bg.g, bg.b, bg.a);
 				SDL_Rect rect = { x * TILE_WIDTH, y * TILE_HEIGHT, TILE_WIDTH, TILE_HEIGHT };
 				SDL_RenderFillRect(ren, &rect);
 
-				static const wchar_t Chars[257] =
-					L" ☺☻♥♦♣♠•◘○◙♂♀♪♫☼"
-					"►◄↕‼¶§▬↨↑↓→←∟↔▲▼"
-					" !\"#$%&'()*+,-./"
-					"0123456789:;<=>?"
-					"@ABCDEFGHIJKLMNO"
-					"PQRSTUVWXYZ[\\]^_"
-					"`abcdefghijklmno"
-					"pqrstuvwxyz{|}~⌂"
-					"ÇüéâäàåçêëèïîìÄÅ"
-					"ÉæÆôöòûùÿÖÜ¢£¥₧ƒ"
-					"áíóúñÑªº¿⌐¬½¼¡«»"
-					"░▒▓│┤╡╢╖╕╣║╗╝╜╛┐"
-					"└┴┬├─┼╞╟╚╔╩╦╠═╬╧"
-					"╨╤╥╙╘╒╓╫╪┘┌█▄▌▐▀"
-					"αßΓπΣσµτΦΘΩδ∞φε∩"
-					"≡±≥≤⌠⌡÷≈°∙·√ⁿ²■ ";
-
-				wchar_t str[2];
-				str[0] = Chars[Screen[y][x].chr];
-				str[1] = 0;
-				// TODO: Cache
-				SDL_Surface *s = TTF_RenderUNICODE_Shaded(font, (Uint16*)str, fg, bg);
-				if (s)
+				SDL_Texture*& t = Glyphs[tile.color][tile.chr];
+				if (!t)
 				{
-					SDL_Texture *t = SDL_CreateTextureFromSurface(ren, s);
-					// TODO: Center-align
-					SDL_Rect r = { x * TILE_WIDTH, y * TILE_HEIGHT, s->w, s->h };
-					SDL_RenderCopy(ren, t, NULL, &r);
-					SDL_DestroyTexture(t);
+					static const wchar_t Chars[257] =
+						L" ☺☻♥♦♣♠•◘○◙♂♀♪♫☼"
+						"►◄↕‼¶§▬↨↑↓→←∟↔▲▼"
+						" !\"#$%&'()*+,-./"
+						"0123456789:;<=>?"
+						"@ABCDEFGHIJKLMNO"
+						"PQRSTUVWXYZ[\\]^_"
+						"`abcdefghijklmno"
+						"pqrstuvwxyz{|}~⌂"
+						"ÇüéâäàåçêëèïîìÄÅ"
+						"ÉæÆôöòûùÿÖÜ¢£¥₧ƒ"
+						"áíóúñÑªº¿⌐¬½¼¡«»"
+						"░▒▓│┤╡╢╖╕╣║╗╝╜╛┐"
+						"└┴┬├─┼╞╟╚╔╩╦╠═╬╧"
+						"╨╤╥╙╘╒╓╫╪┘┌█▄▌▐▀"
+						"αßΓπΣσµτΦΘΩδ∞φε∩"
+						"≡±≥≤⌠⌡÷≈°∙·√ⁿ²■ ";
+
+					wchar_t str[2];
+					str[0] = Chars[tile.chr];
+					str[1] = 0;
+					SDL_Surface *s = TTF_RenderUNICODE_Shaded(font, (Uint16*)str, fg, bg);
+					t = SDL_CreateTextureFromSurface(ren, s);
 					SDL_FreeSurface(s);
 				}
+
+				int w, h;
+				SDL_QueryTexture(t, NULL, NULL, &w, &h);
+				// TODO: Center-align
+				SDL_Rect r = { x * TILE_WIDTH, y * TILE_HEIGHT, w, h };
+				SDL_RenderCopy(ren, t, NULL, &r);
 			}
 
 		SDL_RenderPresent(ren);
 	}
+
+	for (Uint color=0; color<256; color++)
+		for (Uint chr=0; chr<256; chr++)
+			if (Glyphs[color][chr])
+				SDL_DestroyTexture(Glyphs[color][chr]);
 
 	SDL_DestroyRenderer(ren);
 	SDL_DestroyWindow(win);

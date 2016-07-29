@@ -176,8 +176,6 @@ struct Coord
 	Coord &operator=(WORD _xy) {xy = _xy; return *this;}
 };
 
-#pragma pack(4)
-
 struct Object
 {
 	BYTE next; // objects[] index of the next object in the linked list of this object's type
@@ -196,37 +194,37 @@ struct Object
 #endif
 };
 
-#define DEFINE_OBJECT_MEMBER(type,name,generalPurposeNum,fakeObjectOffset) \
+#define DEFINE_OBJECT_MEMBER(type,name,generalPurposeNum,parentClassName) \
 	struct __##name\
 	{\
-		operator         type &() const {return (type&)((Object*)(this-fakeObjectOffset)-1)->generalPurposeNum;}\
-		type &operator =(type n)        {return (type&)((Object*)(this-fakeObjectOffset)-1)->generalPurposeNum =       n;}\
-		type &operator =(int  n)        {return (type&)((Object*)(this-fakeObjectOffset)-1)->generalPurposeNum = (type)n;}\
+		operator         type &() const {return (type&)((Object*)((BYTE*)this-(size_t)&((parentClassName*)0)->name))->generalPurposeNum;}\
+		type &operator =(type n)        {return (type&)((Object*)((BYTE*)this-(size_t)&((parentClassName*)0)->name))->generalPurposeNum =       n;}\
+		type &operator =(int  n)        {return (type&)((Object*)((BYTE*)this-(size_t)&((parentClassName*)0)->name))->generalPurposeNum = (type)n;}\
 	} name
 #define DEFINE_OBJECT_AND_MEMBERS(className,type1,member1,type2,member2,type3,member3) \
 	struct className : public Object\
 	{\
-		DEFINE_OBJECT_MEMBER(type1,member1,generalPurpose1,0);\
-		DEFINE_OBJECT_MEMBER(type2,member2,generalPurpose2,1);\
-		DEFINE_OBJECT_MEMBER(type3,member3,generalPurpose3,2);\
+		DEFINE_OBJECT_MEMBER(type1,member1,generalPurpose1,className);\
+		DEFINE_OBJECT_MEMBER(type2,member2,generalPurpose2,className);\
+		DEFINE_OBJECT_MEMBER(type3,member3,generalPurpose3,className);\
 		className() {__debugbreak();}\
 	}
 DEFINE_OBJECT_AND_MEMBERS(Generator,    BYTE, unused,   BYTE,          spawnFrame,    BYTE, animFrame);
 DEFINE_OBJECT_AND_MEMBERS(Explosion,    BYTE, unused,   BYTE,          spriteSize,    BYTE, animFrame);
 DEFINE_OBJECT_AND_MEMBERS(MovingObject, BYTE, general1, MoveDirection, moveDirection, BYTE, general2 );
 
-#define DEFINE_MOVING_OBJECT_MEMBER(type,name,generalNum,fakeObjectOffset) \
+#define DEFINE_MOVING_OBJECT_MEMBER(type,name,generalNum,parentClassName) \
 	struct __##name \
 	{\
-		operator         type &() const {return (type&)((MovingObject*)(this-fakeObjectOffset)-1)->generalNum;}\
-		type &operator =(type n)        {return (type&)((MovingObject*)(this-fakeObjectOffset)-1)->generalNum = n;}\
-		type &operator =(int  n)        {return (type&)((MovingObject*)(this-fakeObjectOffset)-1)->generalNum = n;}\
+		operator         type &() const {return (type&)((MovingObject*)((BYTE*)this-(size_t)&((parentClassName*)0)->name))->generalNum;}\
+		type &operator =(type n)        {return (type&)((MovingObject*)((BYTE*)this-(size_t)&((parentClassName*)0)->name))->generalNum = n;}\
+		type &operator =(int  n)        {return (type&)((MovingObject*)((BYTE*)this-(size_t)&((parentClassName*)0)->name))->generalNum = n;}\
 	} name
 #define DEFINE_MOVING_OBJECT_AND_MEMBERS(className,type1,member1,type2,member2) \
 	struct className : public MovingObject\
 	{\
-		DEFINE_MOVING_OBJECT_MEMBER(type1,member1,general1,0);\
-		DEFINE_MOVING_OBJECT_MEMBER(type2,member2,general2,1);\
+		DEFINE_MOVING_OBJECT_MEMBER(type1,member1,general1,className);\
+		DEFINE_MOVING_OBJECT_MEMBER(type2,member2,general2,className);\
 		className() {__debugbreak();}\
 	}
 DEFINE_MOVING_OBJECT_AND_MEMBERS(Player, BYTE, firingFrame,   BYTE, inputFrame);

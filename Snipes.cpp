@@ -508,7 +508,7 @@ static const WORD *data_10A2[] = {data_1002, data_100C, data_1016, data_1020, da
 // player
 static const WORD data_10E2[] = {SPRITE_SIZE(2,2), 0xF93, 0xF93, 0xF11, 0xF10};
 static const WORD data_10EC[] = {SPRITE_SIZE(2,2), 0xF4F, 0xF4F, 0xF11, 0xF10};
-static const WORD *data_10F6[] = {data_10E2, data_10EC};
+//static const WORD *data_10F6[] = {data_10E2, data_10EC};
 // ghost
 static const WORD data_10FE[] = {SPRITE_SIZE(1,1), 0x202};
 // snipe
@@ -1024,11 +1024,11 @@ void UpdateBullets()
 		switch (bullet.moveDirection)
 		{
 		case MoveDirection_UpRight:
-			if (MoveBulletAndTestHit(OrthogonalDirection_Right) || IsDiagonalDoubledPhase(bullet.y) && MoveBulletAndTestHit(OrthogonalDirection_Right))
+			if (MoveBulletAndTestHit(OrthogonalDirection_Right) || (IsDiagonalDoubledPhase(bullet.y) && MoveBulletAndTestHit(OrthogonalDirection_Right)))
 				break;
 			goto case_MoveDirection_Up;
 		case MoveDirection_DownRight:
-			if (MoveBulletAndTestHit(OrthogonalDirection_Down) || IsDiagonalDoubledPhase(bullet.y) && MoveBulletAndTestHit(OrthogonalDirection_Right))
+			if (MoveBulletAndTestHit(OrthogonalDirection_Down) || (IsDiagonalDoubledPhase(bullet.y) && MoveBulletAndTestHit(OrthogonalDirection_Right)))
 				break;
 			// fall through
 		case MoveDirection_Right:
@@ -1040,7 +1040,7 @@ void UpdateBullets()
 				break;
 			goto main_139A;
 		case MoveDirection_DownLeft:
-			if (MoveBulletAndTestHit(OrthogonalDirection_Down) || IsDiagonalDoubledPhase(bullet.y) && MoveBulletAndTestHit(OrthogonalDirection_Left))
+			if (MoveBulletAndTestHit(OrthogonalDirection_Down) || (IsDiagonalDoubledPhase(bullet.y) && MoveBulletAndTestHit(OrthogonalDirection_Left)))
 				break;
 			// fall through
 		case MoveDirection_Left:
@@ -1048,7 +1048,7 @@ void UpdateBullets()
 				break;
 			goto main_139A;
 		case MoveDirection_UpLeft:
-			if (MoveBulletAndTestHit(OrthogonalDirection_Left) || IsDiagonalDoubledPhase(bullet.y) && MoveBulletAndTestHit(OrthogonalDirection_Left))
+			if (MoveBulletAndTestHit(OrthogonalDirection_Left) || (IsDiagonalDoubledPhase(bullet.y) && MoveBulletAndTestHit(OrthogonalDirection_Left)))
 				break;
 			// fall through
 		case MoveDirection_Up:
@@ -1943,7 +1943,7 @@ bool UpdatePlayer(bool playbackMode, BYTE &replayIO) // returns true if the matc
 		}
 	}
 	else
-	if (keyboardMove = keyboard_state & (KEYSTATE_MOVE_RIGHT | KEYSTATE_MOVE_LEFT | KEYSTATE_MOVE_DOWN | KEYSTATE_MOVE_UP))
+	if ((keyboardMove = keyboard_state & (KEYSTATE_MOVE_RIGHT | KEYSTATE_MOVE_LEFT | KEYSTATE_MOVE_DOWN | KEYSTATE_MOVE_UP)))
 	{
 		moveDirection = arrowKeyMaskToDirectionTable[keyboardMove];
 playback_move:

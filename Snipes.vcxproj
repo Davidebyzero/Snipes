@@ -96,6 +96,7 @@
     <ClInclude Include="console.h" />
     <ClInclude Include="keyboard.h" />
     <ClInclude Include="macros.h" />
+    <ClInclude Include="platform.h" />
     <ClInclude Include="Snipes.h" />
     <ClInclude Include="sound.h" />
     <ClInclude Include="timer.h" />

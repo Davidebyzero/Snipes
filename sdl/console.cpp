@@ -217,7 +217,7 @@ static const SDL_Color ScreenColors[16] =
 
 static SDL_Texture* Glyphs[256][256] = {{}};
 
-static int __cdecl ConsoleThreadFunc(void*)
+static int SDLCALL ConsoleThreadFunc(void*)
 {
 	if (SDL_Init(SDL_INIT_VIDEO | SDL_INIT_AUDIO) != 0)
 	{

@@ -86,9 +86,9 @@ DWORD ReadTextFromConsole(char buffer[], DWORD bufsize)
 	SDL_StartTextInput();
 
 	DWORD numread = 0;
-	while (true)
+	while (!forfeit_match)
 	{
-		while (InputBufferReadIndex == InputBufferWriteIndex)
+		while (InputBufferReadIndex == InputBufferWriteIndex && !forfeit_match)
 			SDL_Delay(1);
 		CheckForBreak();
 		char c = InputBuffer[InputBufferReadIndex];

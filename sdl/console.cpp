@@ -27,18 +27,6 @@ static bool Exiting = false;
 void WriteTextMem(Uint count, WORD row, WORD column, MazeTile *src)
 {
 	MazeTile* dst = &Screen[row][column];
-	// COORD size;
-	// size.X = count;
-	// size.Y = 1;
-	// COORD srcPos;
-	// srcPos.X = 0;
-	// srcPos.Y = 0;
-	// SMALL_RECT rect;
-	// rect.Left   = column;
-	// rect.Top    = row;
-	// rect.Right  = column + count;
-	// rect.Bottom = row + 1;
-	// static CHAR_INFO buf[WINDOW_WIDTH];
 	for (Uint i=0; i<count; i++)
 	{
 		if ((size_t)(dst - &Screen[0][0]) >= WINDOW_WIDTH*WINDOW_HEIGHT)

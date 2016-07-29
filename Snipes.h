@@ -34,7 +34,7 @@ extern int step_backwards;
 
 #ifdef CHEAT_OMNISCIENCE
  #define WINDOW_WIDTH  MAZE_WIDTH
- #define WINDOW_HEIGHT MAZE_HEIGHT + VIEWPORT_ROW
+ #define WINDOW_HEIGHT (MAZE_HEIGHT + VIEWPORT_ROW)
 #else
  #define WINDOW_WIDTH  40
  #define WINDOW_HEIGHT 25

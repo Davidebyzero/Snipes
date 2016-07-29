@@ -18,6 +18,7 @@ static BYTE OutputTextColor = DEFAULT_TEXT_COLOR;
 static Uint OutputCursorX = 0;
 static Uint OutputCursorY = 0;
 static bool OutputCursorVisible = true;
+bool Paused = false;
 
 char InputBuffer[InputBufferSize];
 Uint InputBufferReadIndex = 0, InputBufferWriteIndex = 0;
@@ -276,6 +277,17 @@ static int ConsoleThreadFunc(void*)
 					{
 						InputBuffer[InputBufferWriteIndex] = *s;
 						InputBufferWriteIndex = (InputBufferWriteIndex+1) % InputBufferSize;
+					}
+					break;
+				case SDL_WINDOWEVENT:
+					switch (e.window.event)
+					{
+						case SDL_WINDOWEVENT_FOCUS_LOST:
+							Paused = true;
+							break;
+						case SDL_WINDOWEVENT_FOCUS_GAINED:
+							Paused = false;
+							break;
 					}
 					break;
 			}

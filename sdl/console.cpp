@@ -291,6 +291,14 @@ static int ConsoleThreadFunc(void*)
 				SDL_RenderCopy(ren, t, NULL, &r);
 			}
 
+		if (OutputCursorVisible && SDL_GetTicks() % 500 < 250)
+		{
+			SDL_Color c = ConvertColor(OutputTextColor);
+			SDL_SetRenderDrawColor(ren, c.r, c.g, c.b, c.a);
+			SDL_Rect rect = { OutputCursorX * TILE_WIDTH, OutputCursorY * TILE_HEIGHT, TILE_WIDTH, TILE_HEIGHT };
+			SDL_RenderFillRect(ren, &rect);
+		}
+
 		SDL_RenderPresent(ren);
 	}
 

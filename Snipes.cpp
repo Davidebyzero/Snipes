@@ -1282,109 +1282,110 @@ void FireBullet(BYTE bulletType)
 {
 	MovingObject &shooter = *(MovingObject*)currentObject;
 	MoveDirection fireDirection = shooter.moveDirection;
-	BYTE data_C98 = shooter.x;
-	BYTE data_C99 = shooter.y;
+	BYTE x = shooter.x;
+	BYTE y = shooter.y;
 	switch (fireDirection)
 	{
 	case MoveDirection_UpRight:
-		data_C98 += ((BYTE*)currentSprite)[1];
+		x += ((BYTE*)currentSprite)[1];
 		goto case_MoveDirection_Up;
 	case MoveDirection_Right:
-		data_C98 += ((BYTE*)currentSprite)[1];
+		x += ((BYTE*)currentSprite)[1];
 		break;
 	case MoveDirection_DownRight:
-		data_C98 += ((BYTE*)currentSprite)[1];
+		x += ((BYTE*)currentSprite)[1];
 		goto main_168F;
 	case MoveDirection_Down:
-		data_C99 += ((BYTE*)currentSprite)[0];
-		data_C98 += ((BYTE*)currentSprite)[1] - 1;
+		y += ((BYTE*)currentSprite)[0];
+		x += ((BYTE*)currentSprite)[1] - 1;
 		break;
 	case MoveDirection_DownLeft:
-		data_C98--;
+		x--;
 	main_168F:
-		data_C99 += ((BYTE*)currentSprite)[0];
+		y += ((BYTE*)currentSprite)[0];
 		break;
 	case MoveDirection_Left:
-		data_C98--;
+		x--;
 		break;
 	case MoveDirection_UpLeft:
-		data_C98--;
+		x--;
 		// fall through
 	case MoveDirection_Up:
 	case_MoveDirection_Up:
-		data_C99--;
+		y--;
 		break;
 	default:
 		UNREACHABLE;
 	}
-	if (data_C98 >= MAZE_WIDTH)
+	if (x >= MAZE_WIDTH)
 	{
-		if (data_C98 > 240)
-			data_C98 += MAZE_WIDTH;
+		if (x > 240)
+			x += MAZE_WIDTH;
 		else
-			data_C98 -= MAZE_WIDTH;
+			x -= MAZE_WIDTH;
 	}
-	if (data_C99 >= MAZE_HEIGHT)
+	if (y >= MAZE_HEIGHT)
 	{
-		if (data_C99 > 240)
-			data_C99 += MAZE_HEIGHT;
+		if (y > 240)
+			y += MAZE_HEIGHT;
 		else
-			data_C99 -= MAZE_HEIGHT;
+			y -= MAZE_HEIGHT;
 	}
 	const WORD *currentSprite_backup = currentSprite;
 	currentSprite = data_1150;
-	if (IsObjectLocationOccupied(data_C99, data_C98))
+	if (IsObjectLocationOccupied(y, x))
 	{
-		WORD data_B5E = data_C99 * MAZE_WIDTH + data_C98;
-		if (memchr(mazeWallCharacters, maze[data_B5E].chr, _countof(mazeWallCharacters)))
-			goto main_1899;
-		if (bulletType==BulletType_Player)
+		MazeTile &bulletHitPos = maze[y * MAZE_WIDTH + x];
+		if (!memchr(mazeWallCharacters, bulletHitPos.chr, _countof(mazeWallCharacters)))
 		{
-			if (memchr(enemyCharacters, maze[data_B5E].chr, _countof(enemyCharacters)))
-				score += 1;
+			if (bulletType==BulletType_Player)
+			{
+				if (memchr(enemyCharacters, bulletHitPos.chr, _countof(enemyCharacters)))
+					score += 1;
+				else
+				if (IsGenerator(bulletHitPos))
+					score += 50;
+				bulletHitPos = MazeTile(0xF, 0xB2);
+			}
 			else
-			if (IsGenerator(maze[data_B5E]))
-				score += 50;
+			if (!(generatorsResistSnipeBullets && IsGenerator(bulletHitPos)))
+				bulletHitPos = MazeTile(0xF, 0xB2);
 		}
-		else
-		if (generatorsResistSnipeBullets && IsGenerator(maze[data_B5E]))
-			goto main_1899;
-		maze[data_B5E] = MazeTile(0xF, 0xB2);
-		goto main_1899;
 	}
+	else
 	{
 		ObjectIndex newBullet = CreateNewObject();
-		if (!newBullet || numBullets > 50)
-			goto main_1899;
-		numBullets++;
-		Object *currentObject_backup = currentObject;
-		currentObject = &objects[newBullet];
-		Bullet &bullet = *(Bullet*)currentObject;
-		if (!objectHead_bullets)
-			objectHead_bullets = newBullet;
-		else
+		if (newBullet && numBullets <= 50)
 		{
-			ObjectIndex objectTail_bullets = objectHead_bullets;
-			while (ObjectIndex nextObject = objects[objectTail_bullets].next)
-				objectTail_bullets = nextObject;
-			objects[objectTail_bullets].next = newBullet;
+			numBullets++;
+			Object *currentObject_backup = currentObject;
+			currentObject = &objects[newBullet];
+			Bullet &bullet = *(Bullet*)currentObject;
+			if (!objectHead_bullets)
+				objectHead_bullets = newBullet;
+			else
+			{
+				ObjectIndex objectTail_bullets = objectHead_bullets;
+				while (ObjectIndex nextObject = objects[objectTail_bullets].next)
+					objectTail_bullets = nextObject;
+				objects[objectTail_bullets].next = newBullet;
+			}
+			bullet.next = 0;
+			if (bulletType==BulletType_Player)
+				bullet.sprite = FAKE_POINTER(1150);
+			else
+				bullet.sprite = PointerToFakePointer(data_11B4[fireDirection]);
+			bullet.x = x;
+			bullet.y = y;
+			bullet.moveDirection = fireDirection;
+			bullet.animFrame = 0;
+			bullet.bulletType = bulletType;
+			bulletLifetime[newBullet] = (BYTE)GetRandomMasked(7) + 1;
+			currentSprite = FakePointerToPointer(bullet.sprite);
+			PlotObjectToMaze();
+			currentObject = currentObject_backup;
 		}
-		bullet.next = 0;
-		if (bulletType==BulletType_Player)
-			bullet.sprite = FAKE_POINTER(1150);
-		else
-			bullet.sprite = PointerToFakePointer(data_11B4[fireDirection]);
-		bullet.x = data_C98;
-		bullet.y = data_C99;
-		bullet.moveDirection = fireDirection;
-		bullet.animFrame = 0;
-		bullet.bulletType = bulletType;
-		bulletLifetime[newBullet] = (BYTE)GetRandomMasked(7) + 1;
-		currentSprite = FakePointerToPointer(bullet.sprite);
-		PlotObjectToMaze();
-		currentObject = currentObject_backup;
 	}
-main_1899:
 	currentSprite = currentSprite_backup;
 }
 
@@ -1742,50 +1743,51 @@ void UpdateGenerators()
 		}
 		EraseObjectFromMaze();
 		PlotObjectToMaze();
-		if (--generator.spawnFrame)
-			goto next_generator;
-		GetOrthoDistanceAndDirection(*currentObject);
-		if (frame >= 0xF00)
-			generator.spawnFrame = 5;
-		else
-			generator.spawnFrame = 5 + (orthoDistance >> (frame/0x100 + 1));
-		if (GetRandomMasked(0xF >> (numGeneratorsAtStart - numGenerators)))
-			goto next_generator;
-		currentSprite = data_1112;
+		if (--generator.spawnFrame == 0)
 		{
-			BYTE x = generator.x + 2;
-#ifdef EMULATE_LATENT_BUGS
-			if (x  > MAZE_WIDTH - 1)
-				x -= MAZE_WIDTH - 1;
-#else
-			if (x >= MAZE_WIDTH)
-				x -= MAZE_WIDTH;
-#endif
-			BYTE y = generator.y;
-			if (IsObjectLocationOccupied(y, x))
-				goto next_generator;
-			if (numSnipes + numGhosts < maxSnipes)
+			GetOrthoDistanceAndDirection(*currentObject);
+			if (frame >= 0xF00)
+				generator.spawnFrame = 5;
+			else
+				generator.spawnFrame = 5 + (orthoDistance >> (frame/0x100 + 1));
+			if (GetRandomMasked(0xF >> (numGeneratorsAtStart - numGenerators)) == 0)
 			{
-				ObjectIndex spawnedSnipeIndex = CreateNewObject();
-				if (!spawnedSnipeIndex)
-					goto next_generator;
-				numSnipes++;
-				object = generator.next;
-				currentObject = &objects[spawnedSnipeIndex];
-				Snipe &spawnedSnipe = *(Snipe*)currentObject;
-				spawnedSnipe.next = objectHead_snipes;
-				objectHead_snipes = spawnedSnipeIndex;
-				spawnedSnipe.x = x;
-				spawnedSnipe.y = y;
-				spawnedSnipe.moveDirection = MoveDirection_Right;
-				spawnedSnipe.sprite = FAKE_POINTER(1112);
-				PlotObjectToMaze();
-				spawnedSnipe.movementFlags = (BYTE)GetRandomMasked(1); // randomly set or clear EnemyMovementFlag_TurnDirection
-				spawnedSnipe.moveFrame = 4;
-				continue;
+				currentSprite = data_1112;
+				BYTE x = generator.x + 2;
+#ifdef EMULATE_LATENT_BUGS
+				if (x  > MAZE_WIDTH - 1)
+					x -= MAZE_WIDTH - 1;
+#else
+				if (x >= MAZE_WIDTH)
+					x -= MAZE_WIDTH;
+#endif
+				BYTE y = generator.y;
+				if (!IsObjectLocationOccupied(y, x))
+				{
+					if (numSnipes + numGhosts < maxSnipes)
+					{
+						ObjectIndex spawnedSnipeIndex = CreateNewObject();
+						if (spawnedSnipeIndex)
+						{
+							numSnipes++;
+							object = generator.next;
+							currentObject = &objects[spawnedSnipeIndex];
+							Snipe &spawnedSnipe = *(Snipe*)currentObject;
+							spawnedSnipe.next = objectHead_snipes;
+							objectHead_snipes = spawnedSnipeIndex;
+							spawnedSnipe.x = x;
+							spawnedSnipe.y = y;
+							spawnedSnipe.moveDirection = MoveDirection_Right;
+							spawnedSnipe.sprite = FAKE_POINTER(1112);
+							PlotObjectToMaze();
+							spawnedSnipe.movementFlags = (BYTE)GetRandomMasked(1); // randomly set or clear EnemyMovementFlag_TurnDirection
+							spawnedSnipe.moveFrame = 4;
+							continue;
+						}
+					}
+				}
 			}
 		}
-	next_generator:
 		object = generator.next;
 	}
 }

@@ -11,8 +11,10 @@
 
 #endif
 
-#if defined(_WIN64) || defined(__x86_64__) || defined(__ppc64__)
-#define __cdecl
-#elif defined(__GNUC__)
-#define __cdecl __attribute__((__cdecl__))
+#ifndef __cdecl
+	#if defined(_WIN64) || defined(__x86_64__) || defined(__ppc64__)
+	#define __cdecl
+	#elif defined(__GNUC__)
+	#define __cdecl __attribute__((__cdecl__))
+	#endif
 #endif

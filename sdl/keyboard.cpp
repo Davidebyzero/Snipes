@@ -9,6 +9,7 @@ std::map<Uint, BYTE> keyState;
 #ifdef USE_SCANCODES_FOR_LETTER_KEYS
 BYTE keyscanState[SDL_NUM_SCANCODES];
 #endif
+Uint16 modifierState;
 static bool anyKeyPressed = false;
 
 void ClearKeyboard()
@@ -17,6 +18,7 @@ void ClearKeyboard()
 #ifdef USE_SCANCODES_FOR_LETTER_KEYS
 	memset(keyscanState, 0, sizeof(keyscanState));
 #endif
+	modifierState = 0;
 	InputBufferReadIndex = InputBufferWriteIndex = 0;
 }
 
@@ -31,9 +33,15 @@ Uint PollKeyboard()
 	if (keyState[SDLK_RIGHT]) state |= KEYSTATE_MOVE_RIGHT;
 	if (keyState[SDLK_LEFT ]) state |= KEYSTATE_MOVE_LEFT;
 	if (keyState[SDLK_DOWN ]) state |= KEYSTATE_MOVE_DOWN;
-	if (keyState[SDLK_CLEAR]) state |= KEYSTATE_MOVE_DOWN; // center key on numeric keypad with NumLock off
-//	if (keyState[0xFF              ]) state |= KEYSTATE_MOVE_DOWN; // center key on cursor pad, on non-inverted-T keyboards
 	if (keyState[SDLK_UP   ]) state |= KEYSTATE_MOVE_UP;
+	if (!(modifierState & KMOD_NUM))
+	{
+		if (keyState[SDLK_KP_6 ]) state |= KEYSTATE_MOVE_RIGHT;
+		if (keyState[SDLK_KP_4 ]) state |= KEYSTATE_MOVE_LEFT;
+		if (keyState[SDLK_KP_5 ]) state |= KEYSTATE_MOVE_DOWN; // unfortunately, SDL does not differentiate between NumPad5, and the middle key on a non-inverted-T cursor pad, so this could be either one
+		if (keyState[SDLK_KP_2 ]) state |= KEYSTATE_MOVE_DOWN;
+		if (keyState[SDLK_KP_8 ]) state |= KEYSTATE_MOVE_UP;
+	}
 #ifndef USE_SCANCODES_FOR_LETTER_KEYS
 	if (keyState[SDLK_d    ]) state |= KEYSTATE_FIRE_RIGHT;
 	if (keyState[SDLK_a    ]) state |= KEYSTATE_FIRE_LEFT;
@@ -67,6 +75,7 @@ void WaitForKeyPress()
 
 void HandleKey(SDL_KeyboardEvent* e)
 {
+	modifierState = e->keysym.mod;
 	if (e->type == SDL_KEYDOWN)
 	{
 		if (!keyState[e->keysym.sym])

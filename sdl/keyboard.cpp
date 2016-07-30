@@ -25,7 +25,7 @@ extern bool Paused;
 Uint PollKeyboard()
 {
 	while (Paused)
-		SDL_Delay(1);
+		SleepTimeslice();
 
 	Uint state = 0;
 	if (keyState[SDLK_RIGHT]) state |= KEYSTATE_MOVE_RIGHT;

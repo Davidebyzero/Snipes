@@ -6,7 +6,7 @@ QWORD perf_freq;
 
 WORD GetTickCountWord()
 {
-	return SDL_GetTicks() * 13125LL / (11*65535);
+	return (WORD)(SDL_GetTicks() * 13125uLL / (11*65535));
 }
 
 int OpenTimer()

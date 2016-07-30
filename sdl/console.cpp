@@ -310,7 +310,7 @@ static int SDLCALL ConsoleThreadFunc(void*)
 				SDL_Color fg = ScreenColors[tile.color & 15];
 				SDL_Color bg = ScreenColors[tile.color >> 4];
 				SDL_SetRenderDrawColor(ren, bg.r, bg.g, bg.b, bg.a);
-				SDL_Rect rect = { x * TILE_WIDTH, y * TILE_HEIGHT, TILE_WIDTH, TILE_HEIGHT };
+				SDL_Rect rect = { (int)x * TILE_WIDTH, (int)y * TILE_HEIGHT, TILE_WIDTH, TILE_HEIGHT };
 				SDL_RenderFillRect(ren, &rect);
 
 				SDL_Texture*& t = Glyphs[tile.color][tile.chr];
@@ -345,7 +345,7 @@ static int SDLCALL ConsoleThreadFunc(void*)
 				int w, h;
 				SDL_QueryTexture(t, NULL, NULL, &w, &h);
 				SDL_Rect src = { 0, 0, w, h };
-				SDL_Rect dst = { x * TILE_WIDTH + (TILE_WIDTH - w) / 2, y * TILE_HEIGHT + (TILE_HEIGHT - h) / 2, w, h };
+				SDL_Rect dst = { (int)x * TILE_WIDTH + (TILE_WIDTH - w) / 2, (int)y * TILE_HEIGHT + (TILE_HEIGHT - h) / 2, w, h };
 				if (h > TILE_HEIGHT) // not sure if this will always happen, so make the fix conditional
 				{
 					src.y++;
@@ -359,7 +359,7 @@ static int SDLCALL ConsoleThreadFunc(void*)
 		{
 			SDL_Color c = ScreenColors[OutputTextColor];
 			SDL_SetRenderDrawColor(ren, c.r, c.g, c.b, c.a);
-			SDL_Rect rect = { OutputCursorX * TILE_WIDTH, OutputCursorY * TILE_HEIGHT, TILE_WIDTH, TILE_HEIGHT };
+			SDL_Rect rect = { (int)OutputCursorX * TILE_WIDTH, (int)OutputCursorY * TILE_HEIGHT, TILE_WIDTH, TILE_HEIGHT };
 			SDL_RenderFillRect(ren, &rect);
 		}
 

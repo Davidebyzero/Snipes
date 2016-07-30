@@ -15,6 +15,7 @@
 // TODO: Handle Ctrl+C / Ctrl+Break
 
 static MazeTile Screen[WINDOW_HEIGHT][WINDOW_WIDTH];
+static bool ScreenChanged = true;
 
 static BYTE OutputTextColor = DEFAULT_TEXT_COLOR;
 static Uint OutputCursorX = 0;
@@ -48,6 +49,7 @@ void WriteTextMem(Uint count, WORD row, WORD column, MazeTile *src)
 #endif
 		*dst++ = tile;
 	}
+	ScreenChanged = true;
 }
 
 void outputText(BYTE color, WORD count, WORD row, WORD column, const char *src)
@@ -59,6 +61,7 @@ void outputText(BYTE color, WORD count, WORD row, WORD column, const char *src)
 			break; // Out of bounds
 		*dst++ = MazeTile(color, src[i]);
 	}
+	ScreenChanged = true;
 }
 
 void outputNumber(BYTE color, bool zeroPadding, WORD count, WORD row, WORD column, Uint number)
@@ -73,6 +76,7 @@ void EraseBottomTwoLines()
 	for (Uint y = WINDOW_HEIGHT-2; y < WINDOW_HEIGHT; y++)
 		for (Uint x = 0; x < WINDOW_WIDTH; x++)
 			Screen[y][x] = MazeTile(7, ' ');
+	ScreenChanged = true;
 }
 
 void CheckForBreak()
@@ -167,6 +171,7 @@ void WriteTextToConsole(char const *text, size_t length)
 			OutputCursorY--;
 		}
 	}
+	ScreenChanged = true;
 }
 
 void OpenDirectConsole()
@@ -191,6 +196,7 @@ void ClearConsole()
 	for (Uint y = 0; y < WINDOW_HEIGHT; y++)
 		for (Uint x = 0; x < WINDOW_WIDTH; x++)
 			Screen[y][x].color = DEFAULT_TEXT_COLOR;
+	ScreenChanged = true;
 }
 
 void HandleKey(SDL_KeyboardEvent* e);
@@ -216,6 +222,59 @@ static const SDL_Color ScreenColors[16] =
 };
 
 static SDL_Texture* Glyphs[256][256] = {{}};
+
+static char OutputCursorPreviouslyVisible = -1;
+
+static void RenderCharacterAt(SDL_Renderer *ren, TTF_Font* font, Uint x, Uint y)
+{
+	MazeTile tile = Screen[y][x];
+	SDL_Color fg = ScreenColors[tile.color & 15];
+	SDL_Color bg = ScreenColors[tile.color >> 4];
+	SDL_SetRenderDrawColor(ren, bg.r, bg.g, bg.b, bg.a);
+	SDL_Rect rect = { (int)x * TILE_WIDTH, (int)y * TILE_HEIGHT, TILE_WIDTH, TILE_HEIGHT };
+	SDL_RenderFillRect(ren, &rect);
+
+	SDL_Texture*& t = Glyphs[tile.color][tile.chr];
+	if (!t)
+	{
+		static const wchar_t Chars[257] =
+			L" ☺☻♥♦♣♠•◘○◙♂♀♪♫☼"
+			L"►◄↕‼¶§▬↨↑↓→←∟↔▲▼"
+			L" !\"#$%&'()*+,-./"
+			L"0123456789:;<=>?"
+			L"@ABCDEFGHIJKLMNO"
+			L"PQRSTUVWXYZ[\\]^_"
+			L"`abcdefghijklmno"
+			L"pqrstuvwxyz{|}~⌂"
+			L"ÇüéâäàåçêëèïîìÄÅ"
+			L"ÉæÆôöòûùÿÖÜ¢£¥₧ƒ"
+			L"áíóúñÑªº¿⌐¬½¼¡«»"
+			L"░▒▓│┤╡╢╖╕╣║╗╝╜╛┐"
+			L"└┴┬├─┼╞╟╚╔╩╦╠═╬╧"
+			L"╨╤╥╙╘╒╓╫╪┘┌█▄▌▐▀"
+			L"αßΓπΣσµτΦΘΩδ∞φε∩"
+			L"≡±≥≤⌠⌡÷≈°∙·√ⁿ²■ ";
+
+		wchar_t str[2];
+		str[0] = Chars[tile.chr];
+		str[1] = 0;
+		SDL_Surface *s = TTF_RenderUNICODE_Shaded(font, (Uint16*)str, fg, bg);
+		t = SDL_CreateTextureFromSurface(ren, s);
+		SDL_FreeSurface(s);
+	}
+
+	int w, h;
+	SDL_QueryTexture(t, NULL, NULL, &w, &h);
+	SDL_Rect src = { 0, 0, w, h };
+	SDL_Rect dst = { (int)x * TILE_WIDTH + (TILE_WIDTH - w) / 2, (int)y * TILE_HEIGHT + (TILE_HEIGHT - h) / 2, w, h };
+	if (h > TILE_HEIGHT) // not sure if this will always happen, so make the fix conditional
+	{
+		src.y++;
+		src.h--;
+		dst.h--;
+	}
+	SDL_RenderCopy(ren, t, &src, &dst);
+}
 
 static int SDLCALL ConsoleThreadFunc(void*)
 {
@@ -301,69 +360,36 @@ static int SDLCALL ConsoleThreadFunc(void*)
 		}
 
 		SDL_SetRenderDrawColor(ren, 0, 0, 0, 255);
-		SDL_RenderClear(ren);
 
-		for (Uint y = 0; y < WINDOW_HEIGHT; y++)
-			for (Uint x = 0; x < WINDOW_WIDTH; x++)
-			{
-				MazeTile tile = Screen[y][x];
-				SDL_Color fg = ScreenColors[tile.color & 15];
-				SDL_Color bg = ScreenColors[tile.color >> 4];
-				SDL_SetRenderDrawColor(ren, bg.r, bg.g, bg.b, bg.a);
-				SDL_Rect rect = { (int)x * TILE_WIDTH, (int)y * TILE_HEIGHT, TILE_WIDTH, TILE_HEIGHT };
-				SDL_RenderFillRect(ren, &rect);
+		char outputCursorNowVisible = OutputCursorVisible && SDL_GetTicks() % 500 < 250;
+		if (!ScreenChanged)
+		{
+			if (!outputCursorNowVisible)
+				RenderCharacterAt(ren, font, OutputCursorX, OutputCursorY);
+		}
+		else
+		{
+			ScreenChanged = false;
 
-				SDL_Texture*& t = Glyphs[tile.color][tile.chr];
-				if (!t)
-				{
-					static const wchar_t Chars[257] =
-						L" ☺☻♥♦♣♠•◘○◙♂♀♪♫☼"
-						L"►◄↕‼¶§▬↨↑↓→←∟↔▲▼"
-						L" !\"#$%&'()*+,-./"
-						L"0123456789:;<=>?"
-						L"@ABCDEFGHIJKLMNO"
-						L"PQRSTUVWXYZ[\\]^_"
-						L"`abcdefghijklmno"
-						L"pqrstuvwxyz{|}~⌂"
-						L"ÇüéâäàåçêëèïîìÄÅ"
-						L"ÉæÆôöòûùÿÖÜ¢£¥₧ƒ"
-						L"áíóúñÑªº¿⌐¬½¼¡«»"
-						L"░▒▓│┤╡╢╖╕╣║╗╝╜╛┐"
-						L"└┴┬├─┼╞╟╚╔╩╦╠═╬╧"
-						L"╨╤╥╙╘╒╓╫╪┘┌█▄▌▐▀"
-						L"αßΓπΣσµτΦΘΩδ∞φε∩"
-						L"≡±≥≤⌠⌡÷≈°∙·√ⁿ²■ ";
+			SDL_RenderClear(ren);
 
-					wchar_t str[2];
-					str[0] = Chars[tile.chr];
-					str[1] = 0;
-					SDL_Surface *s = TTF_RenderUNICODE_Shaded(font, (Uint16*)str, fg, bg);
-					t = SDL_CreateTextureFromSurface(ren, s);
-					SDL_FreeSurface(s);
-				}
+			for (Uint y = 0; y < WINDOW_HEIGHT; y++)
+				for (Uint x = 0; x < WINDOW_WIDTH; x++)
+					RenderCharacterAt(ren, font, x, y);
+		}
 
-				int w, h;
-				SDL_QueryTexture(t, NULL, NULL, &w, &h);
-				SDL_Rect src = { 0, 0, w, h };
-				SDL_Rect dst = { (int)x * TILE_WIDTH + (TILE_WIDTH - w) / 2, (int)y * TILE_HEIGHT + (TILE_HEIGHT - h) / 2, w, h };
-				if (h > TILE_HEIGHT) // not sure if this will always happen, so make the fix conditional
-				{
-					src.y++;
-					src.h--;
-					dst.h--;
-				}
-				SDL_RenderCopy(ren, t, &src, &dst);
-			}
-
-		if (OutputCursorVisible && SDL_GetTicks() % 500 < 250)
+		if (outputCursorNowVisible && (ScreenChanged || !OutputCursorPreviouslyVisible))
 		{
 			SDL_Color c = ScreenColors[OutputTextColor];
 			SDL_SetRenderDrawColor(ren, c.r, c.g, c.b, c.a);
 			SDL_Rect rect = { (int)OutputCursorX * TILE_WIDTH, (int)OutputCursorY * TILE_HEIGHT, TILE_WIDTH, TILE_HEIGHT };
 			SDL_RenderFillRect(ren, &rect);
 		}
+		OutputCursorPreviouslyVisible = outputCursorNowVisible;
 
 		SDL_RenderPresent(ren);
+
+		SleepTimeslice();
 	}
 
 	for (Uint color=0; color<256; color++)

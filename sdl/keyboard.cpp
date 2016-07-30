@@ -7,7 +7,7 @@
 
 std::map<Uint, BYTE> keyState;
 #ifdef USE_SCANCODES_FOR_LETTER_KEYS
-std::map<Uint, BYTE> keyscanState;
+BYTE keyscanState[SDL_NUM_SCANCODES];
 #endif
 static bool anyKeyPressed = false;
 
@@ -15,7 +15,7 @@ void ClearKeyboard()
 {
 	keyState.clear();
 #ifdef USE_SCANCODES_FOR_LETTER_KEYS
-	keyscanState.clear();
+	memset(keyscanState, 0, sizeof(keyscanState));
 #endif
 	InputBufferReadIndex = InputBufferWriteIndex = 0;
 }

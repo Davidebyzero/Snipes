@@ -269,7 +269,7 @@ static void RenderCharacterAt(SDL_Renderer *ren, TTF_Font* font, Uint x, Uint y)
 	SDL_Rect dst = { (int)x * TILE_WIDTH + (TILE_WIDTH - w) / 2, (int)y * TILE_HEIGHT + (TILE_HEIGHT - h) / 2, w, h };
 	if (h > TILE_HEIGHT) // not sure if this will always happen, so make the fix conditional
 	{
-		src.y++;
+		src.y += TILE_HEIGHT % 19 * 8 / 19 % 2;
 		src.h--;
 		dst.h--;
 	}

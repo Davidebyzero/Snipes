@@ -1,11 +1,15 @@
 #include <map>
 #include <SDL2/SDL.h>
 #include "../keyboard.h"
+#include "../timer.h"
 #include "../Snipes.h"
 #include "sdl.h"
 
 std::map<Uint, BYTE> keyState;
+#ifdef USE_SCANCODES_FOR_LETTER_KEYS
 std::map<Uint, BYTE> keyscanState;
+#endif
+static bool anyKeyPressed = false;
 
 void ClearKeyboard()
 {
@@ -54,10 +58,20 @@ Uint PollKeyboard()
 	return state;
 }
 
+void WaitForKeyPress()
+{
+	anyKeyPressed = false;
+	while (!anyKeyPressed)
+		SleepTimeslice();
+}
+
 void HandleKey(SDL_KeyboardEvent* e)
 {
 	if (e->type == SDL_KEYDOWN)
 	{
+		if (!keyState[e->keysym.sym])
+			anyKeyPressed = true;
+
 		keyState[e->keysym.sym] |= 1;
 #ifdef USE_SCANCODES_FOR_LETTER_KEYS
 		keyscanState[e->keysym.scancode] |= 1;

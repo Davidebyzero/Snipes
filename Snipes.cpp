@@ -2374,7 +2374,14 @@ extern "C" int __cdecl SDL_main(int argc, char* argv[])
 
 		CloseDirectConsole(WINDOW_HEIGHT-1 - (playbackMode ? 1 : 0));
 		if (playbackMode)
+		{
+#ifndef _CONSOLE
+			// TODO: do this in the console build too, if it's possible to detect when Windows won't itself prompt the user to press any key
+			WriteTextToConsole("\r\nPress any key to continue...");
+			WaitForKeyPress();
+#endif
 			break;
+		}
 		for (;;)
 		{
 			WriteTextToConsole("Play another game? (Y or N) ");

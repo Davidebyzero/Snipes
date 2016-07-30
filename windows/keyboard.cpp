@@ -101,6 +101,11 @@ Uint PollKeyboard()
 	return state;
 }
 
+void WaitForKeyPress()
+{
+	// TODO: implement this
+}
+
 int OpenKeyboard()
 {
 	ClearKeyboard();

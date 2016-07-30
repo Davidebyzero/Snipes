@@ -4,6 +4,7 @@
 
 void ClearKeyboard();
 Uint PollKeyboard();
+void WaitForKeyPress();
 
 int  OpenKeyboard();
 void CloseKeyboard();

@@ -145,24 +145,24 @@ void WriteTextToConsole(char const *text, size_t length)
 	{
 		switch (text[n])
 		{
-			case '\r':
-				OutputCursorX = 0;
-				break;
-			case '\n':
-				OutputCursorY++;
-				break;
-			case '\b':
-				if (OutputCursorX)
-				{
-					OutputCursorX--;
-					outputText(OutputTextColor, 1, OutputCursorY, OutputCursorX, " ");
-				}
-				break;
-			default:
-				outputText(OutputTextColor, 1, OutputCursorY, OutputCursorX, text+n);
-				OutputCursorX++;
-				// TODO: wrap?
-				break;
+		case '\r':
+			OutputCursorX = 0;
+			break;
+		case '\n':
+			OutputCursorY++;
+			break;
+		case '\b':
+			if (OutputCursorX)
+			{
+				OutputCursorX--;
+				outputText(OutputTextColor, 1, OutputCursorY, OutputCursorX, " ");
+			}
+			break;
+		default:
+			outputText(OutputTextColor, 1, OutputCursorY, OutputCursorX, text+n);
+			OutputCursorX++;
+			// TODO: wrap?
+			break;
 		}
 
 		if (OutputCursorY == WINDOW_HEIGHT) // Scroll down
@@ -330,32 +330,32 @@ static int SDLCALL ConsoleThreadFunc(void*)
 		{
 			switch (e.type)
 			{
-				case SDL_QUIT:
-					instant_quit = forfeit_match = got_ctrl_break = true;
+			case SDL_QUIT:
+				instant_quit = forfeit_match = got_ctrl_break = true;
+				break;
+			case SDL_KEYDOWN:
+			case SDL_KEYUP:
+				HandleKey((SDL_KeyboardEvent*)&e);
+				break;
+			case SDL_TEXTINPUT:
+				/* Add new text onto the end of our text */
+				for (const char* s = e.text.text; *s; s++)
+				{
+					InputBuffer[InputBufferWriteIndex] = *s;
+					InputBufferWriteIndex = (InputBufferWriteIndex+1) % InputBufferSize;
+				}
+				break;
+			case SDL_WINDOWEVENT:
+				switch (e.window.event)
+				{
+				case SDL_WINDOWEVENT_FOCUS_LOST:
+					Paused = true;
 					break;
-				case SDL_KEYDOWN:
-				case SDL_KEYUP:
-					HandleKey((SDL_KeyboardEvent*)&e);
+				case SDL_WINDOWEVENT_FOCUS_GAINED:
+					Paused = false;
 					break;
-				case SDL_TEXTINPUT:
-					/* Add new text onto the end of our text */
-					for (const char* s = e.text.text; *s; s++)
-					{
-						InputBuffer[InputBufferWriteIndex] = *s;
-						InputBufferWriteIndex = (InputBufferWriteIndex+1) % InputBufferSize;
-					}
-					break;
-				case SDL_WINDOWEVENT:
-					switch (e.window.event)
-					{
-						case SDL_WINDOWEVENT_FOCUS_LOST:
-							Paused = true;
-							break;
-						case SDL_WINDOWEVENT_FOCUS_GAINED:
-							Paused = false;
-							break;
-					}
-					break;
+				}
+				break;
 			}
 		}
 

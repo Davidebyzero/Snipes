@@ -2285,8 +2285,8 @@ extern "C" int __cdecl SDL_main(int argc, char* argv[])
 			{
 				skip_to_frame = 0;
 				playbackMode = false;
-				long fileSize = ftell(replayFile);
-				_chsize(_fileno(replayFile), fileSize);
+				auto fileSize = ftell(replayFile);
+				changesize(_fileno(replayFile), fileSize);
 				BYTE dummy;
 				size_t blah = fread(&dummy, 1, 1, replayFile);
 				fseek(replayFile, fileSize, SEEK_SET);

@@ -300,7 +300,7 @@ static int SDLCALL ConsoleThreadFunc(void*)
 		return 1;
 	}
 	
-	SDL_Window *win = SDL_CreateWindow("Snipes", 100, 100, WINDOW_WIDTH * TILE_WIDTH, WINDOW_HEIGHT * TILE_HEIGHT , SDL_WINDOW_SHOWN);
+	SDL_Window *win = SDL_CreateWindow("Snipes", SDL_WINDOWPOS_CENTERED, SDL_WINDOWPOS_CENTERED, WINDOW_WIDTH * TILE_WIDTH, WINDOW_HEIGHT * TILE_HEIGHT , SDL_WINDOW_SHOWN);
 	if (!win)
 	{
 		fprintf(stderr, "SDL_CreateWindow: %s\n", SDL_GetError());

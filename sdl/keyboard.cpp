@@ -94,6 +94,12 @@ void HandleKey(SDL_KeyboardEvent* e)
 		else
 		if (e->keysym.sym == SDLK_ESCAPE)
 			forfeit_match = true;
+		else
+		if (e->keysym.sym == SDLK_c || e->keysym.sym == SDLK_SCROLLLOCK) // SDL does not differentiate between Ctrl+ScrollLock and Ctrl+Pause
+		{
+			if ((e->keysym.mod & (KMOD_LCTRL | KMOD_RCTRL)) && !(e->keysym.mod & (KMOD_LALT | KMOD_RALT)))
+				forfeit_match = true;
+		}
 #ifdef CHEAT
 		else
 		if (e->keysym.sym == SDLK_PERIOD)
@@ -114,7 +120,6 @@ void HandleKey(SDL_KeyboardEvent* e)
 			InputBuffer[InputBufferWriteIndex] = '\b';
 			InputBufferWriteIndex = (InputBufferWriteIndex+1) % InputBufferSize;
 		}
-
 	}
 	else
 	{

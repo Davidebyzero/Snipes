@@ -5,6 +5,7 @@
 
 extern bool got_ctrl_break;
 extern bool forfeit_match;
+extern bool instant_quit;
 extern bool sound_enabled;
 extern bool shooting_sound_enabled;
 extern BYTE spacebar_state;

@@ -16,6 +16,7 @@
 
 bool got_ctrl_break = false;
 bool forfeit_match = false;
+bool instant_quit = false;
 bool sound_enabled = true;
 bool shooting_sound_enabled = false;
 BYTE fast_forward = false;
@@ -2378,6 +2379,8 @@ extern "C" int __cdecl SDL_main(int argc, char* argv[])
 			fclose(replayFile);
 
 		CloseDirectConsole(WINDOW_HEIGHT-1 - (playbackMode ? 1 : 0));
+		if (instant_quit)
+			break;
 		if (playbackMode)
 		{
 #ifndef _CONSOLE

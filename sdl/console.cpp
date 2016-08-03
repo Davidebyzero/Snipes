@@ -331,7 +331,7 @@ static int SDLCALL ConsoleThreadFunc(void*)
 			switch (e.type)
 			{
 				case SDL_QUIT:
-					forfeit_match = got_ctrl_break = true;
+					instant_quit = forfeit_match = got_ctrl_break = true;
 					break;
 				case SDL_KEYDOWN:
 				case SDL_KEYUP:

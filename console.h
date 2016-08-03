@@ -3,10 +3,6 @@
 #include "types.h"
 #include "macros.h"
 
-#ifndef TILE_WIDTH
-#define TILE_WIDTH ((TILE_HEIGHT*3+2)/4)
-#endif
-
 void WriteTextMem(Uint count, WORD row, WORD column, MazeTile *src);
 
 void outputText(BYTE color, WORD count, WORD row, WORD column, const char *src);

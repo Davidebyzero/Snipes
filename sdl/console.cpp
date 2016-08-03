@@ -17,6 +17,8 @@
 static MazeTile Screen[WINDOW_HEIGHT][WINDOW_WIDTH];
 static bool ScreenChanged = true;
 
+int FontSize, TileWidth, TileHeight;
+
 static BYTE OutputTextColor = DEFAULT_TEXT_COLOR;
 static Uint OutputCursorX = 0;
 static Uint OutputCursorY = 0;
@@ -231,7 +233,7 @@ static void RenderCharacterAt(SDL_Renderer *ren, TTF_Font* font, Uint x, Uint y)
 	SDL_Color fg = ScreenColors[tile.color & 15];
 	SDL_Color bg = ScreenColors[tile.color >> 4];
 	SDL_SetRenderDrawColor(ren, bg.r, bg.g, bg.b, bg.a);
-	SDL_Rect rect = { (int)x * TILE_WIDTH, (int)y * TILE_HEIGHT, TILE_WIDTH, TILE_HEIGHT };
+	SDL_Rect rect = { (int)x * TileWidth, (int)y * TileHeight, TileWidth, TileHeight };
 	SDL_RenderFillRect(ren, &rect);
 
 	SDL_Texture*& t = Glyphs[tile.color][tile.chr];
@@ -266,14 +268,26 @@ static void RenderCharacterAt(SDL_Renderer *ren, TTF_Font* font, Uint x, Uint y)
 	int w, h;
 	SDL_QueryTexture(t, NULL, NULL, &w, &h);
 	SDL_Rect src = { 0, 0, w, h };
-	SDL_Rect dst = { (int)x * TILE_WIDTH + (TILE_WIDTH - w) / 2, (int)y * TILE_HEIGHT + (TILE_HEIGHT - h) / 2, w, h };
-	if (h > TILE_HEIGHT) // not sure if this will always happen, so make the fix conditional
+	SDL_Rect dst = { (int)x * TileWidth + (TileWidth - w) / 2, (int)y * TileHeight + (TileHeight - h) / 2, w, h };
+	if (h > (int)TileHeight) // not sure if this will always happen, so make the fix conditional
 	{
-		src.y += TILE_HEIGHT % 19 * 8 / 19 % 2;
+		src.y += TileHeight % 19 * 8 / 19 % 2;
 		src.h--;
 		dst.h--;
 	}
 	SDL_RenderCopy(ren, t, &src, &dst);
+}
+
+static void ClearGlyphs()
+{
+	memset(Glyphs, 0, sizeof(Glyphs));
+}
+static void DestroyGlyphs()
+{
+	for (Uint color=0; color<256; color++)
+		for (Uint chr=0; chr<256; chr++)
+			if (Glyphs[color][chr])
+				SDL_DestroyTexture(Glyphs[color][chr]);
 }
 
 static int SDLCALL ConsoleThreadFunc(void*)
@@ -291,7 +305,7 @@ static int SDLCALL ConsoleThreadFunc(void*)
 		return 1;
 	}
 
-	TTF_Font* font = TTF_OpenFont(FONT_FILENAME, FONT_SIZE);
+	TTF_Font* font = TTF_OpenFont(FONT_FILENAME, FontSize);
 	if (!font)
 	{
 		fprintf(stderr, "TTF_OpenFont: %s\n", SDL_GetError());
@@ -300,7 +314,7 @@ static int SDLCALL ConsoleThreadFunc(void*)
 		return 1;
 	}
 	
-	SDL_Window *win = SDL_CreateWindow("Snipes", SDL_WINDOWPOS_CENTERED, SDL_WINDOWPOS_CENTERED, WINDOW_WIDTH * TILE_WIDTH, WINDOW_HEIGHT * TILE_HEIGHT , SDL_WINDOW_SHOWN);
+	SDL_Window *win = SDL_CreateWindow("Snipes", SDL_WINDOWPOS_CENTERED, SDL_WINDOWPOS_CENTERED, WINDOW_WIDTH * TileWidth, WINDOW_HEIGHT * TileHeight, SDL_WINDOW_SHOWN | SDL_WINDOW_RESIZABLE);
 	if (!win)
 	{
 		fprintf(stderr, "SDL_CreateWindow: %s\n", SDL_GetError());
@@ -321,7 +335,7 @@ static int SDLCALL ConsoleThreadFunc(void*)
 		return 1;
 	}
 
-	memset(Glyphs, 0, sizeof(Glyphs));
+	ClearGlyphs();
 
 	while (!Exiting)
 	{
@@ -354,6 +368,48 @@ static int SDLCALL ConsoleThreadFunc(void*)
 				case SDL_WINDOWEVENT_FOCUS_GAINED:
 					Paused = false;
 					break;
+				case SDL_WINDOWEVENT_RESIZED:
+					{
+						int newWidth  = e.window.data1;
+						int newHeight = e.window.data2;
+						{
+							double  widthRatio = (double)newWidth  / (WINDOW_WIDTH  * TileWidth);
+							double heightRatio = (double)newHeight / (WINDOW_HEIGHT * TileHeight);
+							if ( widthRatio < 1)  widthRatio = 1. /  widthRatio;
+							if (heightRatio < 1) heightRatio = 1. / heightRatio;
+							
+							if (heightRatio > widthRatio)
+							{
+								TileHeight = (newHeight + WINDOW_HEIGHT/2) / WINDOW_HEIGHT;
+								TileWidth = ((TileHeight*3+2)/4);
+							}
+							else
+							{
+								TileWidth = (newWidth + WINDOW_WIDTH/2) / WINDOW_WIDTH;
+								TileHeight = ((TileWidth*8+3)/6);
+							}
+						}
+
+						FontSize = TileHeight;
+						DestroyGlyphs();
+						ClearGlyphs();
+
+						TTF_Font* newFont = TTF_OpenFont(FONT_FILENAME, FontSize);
+						if (!newFont)
+						{
+							fprintf(stderr, "TTF_OpenFont: %s\n", SDL_GetError());
+							instant_quit = forfeit_match = got_ctrl_break = true;
+						}
+						else
+						{
+							TTF_CloseFont(font);
+							font = newFont;
+						}
+
+						SDL_SetWindowSize(win, WINDOW_WIDTH * TileWidth, WINDOW_HEIGHT * TileHeight);
+						ScreenChanged = true;
+					}
+					break;
 				}
 				break;
 			}
@@ -382,7 +438,7 @@ static int SDLCALL ConsoleThreadFunc(void*)
 		{
 			SDL_Color c = ScreenColors[OutputTextColor];
 			SDL_SetRenderDrawColor(ren, c.r, c.g, c.b, c.a);
-			SDL_Rect rect = { (int)OutputCursorX * TILE_WIDTH, (int)OutputCursorY * TILE_HEIGHT, TILE_WIDTH, TILE_HEIGHT };
+			SDL_Rect rect = { (int)OutputCursorX * TileWidth, (int)OutputCursorY * TileHeight, TileWidth, TileHeight };
 			SDL_RenderFillRect(ren, &rect);
 		}
 		OutputCursorPreviouslyVisible = outputCursorNowVisible;
@@ -392,10 +448,7 @@ static int SDLCALL ConsoleThreadFunc(void*)
 		SleepTimeslice();
 	}
 
-	for (Uint color=0; color<256; color++)
-		for (Uint chr=0; chr<256; chr++)
-			if (Glyphs[color][chr])
-				SDL_DestroyTexture(Glyphs[color][chr]);
+	DestroyGlyphs();
 
 	SDL_DestroyRenderer(ren);
 	SDL_DestroyWindow(win);
@@ -411,6 +464,18 @@ static SDL_Thread *ConsoleThread;
 int OpenConsole()
 {
 	Exiting = false;
+
+#ifndef TILE_WIDTH
+	TileWidth = ((TILE_HEIGHT*3+2)/4);
+#else
+	TileWidth = TILE_WIDTH;
+#endif
+	TileHeight = TILE_HEIGHT;
+#ifndef FONT_SIZE
+	FontSize = TILE_HEIGHT;
+#else
+	FontSize = FONT_SIZE;
+#endif
 
 	ConsoleThread = SDL_CreateThread(ConsoleThreadFunc, "ConsoleThread", NULL);
 	if (!ConsoleThread)

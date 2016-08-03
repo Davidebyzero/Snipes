@@ -2075,10 +2075,10 @@ void UpdateSound()
 	}
 	if (currentSoundEffect == SoundEffect_None)
 	{
-#ifdef PLAY_SOUND_DURING_SILENCE
-		PlayTone(0);
-#else
+#ifdef STOP_WAVE_OUT_DURING_SILENCE
 		PlayTone(-1);
+#else
+		PlayTone(0);
 #endif
 		return;
 	}

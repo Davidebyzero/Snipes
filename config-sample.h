@@ -1,6 +1,6 @@
 #pragma once
 
-//#define PLAY_SOUND_DURING_SILENCE
+//#define STOP_WAVE_OUT_DURING_SILENCE  // Currently only supported by Windows console build. Enabling this will cause issues with some sound drivers.
 
 //#define USE_SCANCODES_FOR_LETTER_KEYS  // useful if you use a non-QWERTY keyboard layout
 

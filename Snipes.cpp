@@ -2392,15 +2392,14 @@ extern "C" int __cdecl SDL_main(int argc, char* argv[])
 			if (!numread)
 				continue;
 			if (playAgain == 'Y' || playAgain == 'y')
-				goto do_play_again;
+				break;
 			if (playAgain == 'N' || playAgain == 'n')
 				goto do_not_play_again;
 		}
-	do_play_again:
 		WriteTextToConsole("Enter new skill level (A-Z)(1-9): ");
 		ReadSkillLevel();
 		if (got_ctrl_break)
-			goto do_not_play_again;
+			break;
 	}
 do_not_play_again:
 

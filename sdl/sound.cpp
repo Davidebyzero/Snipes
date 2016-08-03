@@ -1,3 +1,4 @@
+#include "../config.h"
 #include "../sound.h"
 #include "../platform.h"
 
@@ -7,20 +8,19 @@
 
 #define TONE_SAMPLE_RATE 48000
 #define WAVE_BUFFER_LENGTH 512
-// #define WAVE_BUFFER_COUNT 11
 
 double toneFreq;
 int currentFreqnum = 0;
 Uint tonePhase;
 
-//void CALLBACK WaveOutProc(HWAVEOUT hwo, UINT uMsg, DWORD_PTR dwInstance, DWORD_PTR dwParam1, DWORD_PTR dwParam2)
+#ifdef STOP_WAVE_OUT_DURING_SILENCE
+#error STOP_WAVE_OUT_DURING_SILENCE not supported in SDL build
+#endif
+
 void SDLCALL SoundCallback(void *, Uint8 *_stream, int _length)
 {
     Sint16 *stream = (Sint16*) _stream;
     Uint length = _length / 2;
-
-	// if (currentFreqnum == -1)
-	// 	return;
 
 	if (currentFreqnum == 0)
 		for (Uint i=0; i<length; i++)
@@ -45,11 +45,7 @@ void PlayTone(Uint freqnum)
 		return;
 	}
 	tonePhase = 0;
-	// currentFreqnum = -1;
-	// waveOutReset(waveOutput);
 	currentFreqnum = freqnum;
-	// for (Uint i=0; i<WAVE_BUFFER_COUNT; i++)
-	// 	WaveOutProc(waveOutput, WOM_DONE, 0, (DWORD_PTR)&waveHeader[i], 0);
 }
 void ClearSound()
 {
@@ -74,7 +70,7 @@ int OpenSound()
 		return 1;
     }
 
-    // start play audio
+    // start playing audio
     SDL_PauseAudio(0);
 
     return 0;

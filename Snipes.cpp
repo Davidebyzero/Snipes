@@ -2299,6 +2299,8 @@ extern "C" int __cdecl SDL_main(int argc, char* argv[])
 				while (single_step == 0 && !step_backwards)
 				{
 					PollKeyboard();
+					if (forfeit_match)
+						goto match_ended;
 					if (frame == 0)
 						step_backwards = 0;
 				}
@@ -2365,6 +2367,9 @@ extern "C" int __cdecl SDL_main(int argc, char* argv[])
 			UpdateExplosions();
 			UpdateSound();
 		}
+#ifdef CHEAT
+	match_ended:
+#endif
 
 		ClearSound();
 		forfeit_match = false;

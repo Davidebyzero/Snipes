@@ -9,7 +9,7 @@
 #elif defined(__GNUC__)
 
 #include <unistd.h>
-#define __debugbreak abort
+#define __debugbreak __builtin_trap
 #define UNREACHABLE __builtin_unreachable()
 #define changesize(fd,size) ftruncate(fd,size)
 

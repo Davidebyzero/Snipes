@@ -2364,7 +2364,8 @@ extern "C" int __cdecl SDL_main(int argc, char* argv[])
 		{
 #ifndef _CONSOLE
 			// TODO: do this in the console build too, if it's possible to detect when Windows won't itself prompt the user to press any key
-			WriteTextToConsole("\r\nPress any key to continue...");
+			SetConsoleOutputTextColor(0x8);
+			WriteTextToConsole("\r\n""Press any key to continue...");
 			WaitForKeyPress();
 #endif
 			break;

@@ -87,7 +87,4 @@
       <Filter>Header Files\SDL</Filter>
     </ClInclude>
   </ItemGroup>
-  <ItemGroup>
-    <None Include="autoexp.dat" />
-  </ItemGroup>
 </Project>

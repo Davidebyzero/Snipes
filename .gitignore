@@ -1,12 +1,16 @@
-*.vcxproj.user
-*.suo
-ipch
-Release
-Debug
-SDL Release
-SDL Debug
-
-config.h
+/config.h
 
 *.SnipesGame
+
+# Visual C++
+/*.vcxproj.user
+/*.suo
+/ipch
+/Release
+/Debug
+/SDL Release
+/SDL Debug
+
+# GNUmakefile
 /snipes
+/snipes.exe

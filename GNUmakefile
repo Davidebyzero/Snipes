@@ -5,3 +5,6 @@ CXX=g++ # CXX="clang++"
 
 snipes : $(SOURCES) config.h GNUmakefile
 	$(CXX) -o $@ $(CFLAGS) $(SOURCES) $(LDFLAGS)
+
+clean :
+	rm -f snipes

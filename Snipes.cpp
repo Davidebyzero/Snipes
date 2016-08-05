@@ -263,8 +263,16 @@ enum
 	BulletType_Snipe  = 6,
 };
 
-Player    &player          = (Player   &)objects[OBJECT_PLAYER         ];
-Explosion &playerExplosion = (Explosion&)objects[OBJECT_PLAYEREXPLOSION];
+template <typename OBJECT_TYPE>
+OBJECT_TYPE &SetCurrentObject(ObjectIndex i)
+{
+	OBJECT_TYPE &object = ((OBJECT_TYPE*)objects)[i]; // cast the array before dereferencing, to avoid a bug that would otherwise happen with GCC's "-fstrict-aliasing" optimization
+	currentObject = (Object*)&object;
+	return object;
+}
+
+Player    &player          = ((Player   *)objects)[OBJECT_PLAYER         ];
+Explosion &playerExplosion = ((Explosion*)objects)[OBJECT_PLAYEREXPLOSION];
 
 static MazeTile maze[MAZE_WIDTH * MAZE_HEIGHT];
 
@@ -767,8 +775,7 @@ void CreateGeneratorsAndPlayer()
 		ObjectIndex newGenerator = CreateNewObject();
 		objects[newGenerator].next = objectHead_generators;
 		objectHead_generators = newGenerator;
-		currentObject = &objects[newGenerator];
-		Generator &generator = *(Generator*)currentObject;
+		Generator &generator = SetCurrentObject<Generator>(newGenerator);
 		generator.sprite = FAKE_POINTER(1002);
 		currentSprite = data_1002;
 		PlaceObjectInRandomUnoccupiedMazeCell();
@@ -871,13 +878,12 @@ void ExplodeObject(ObjectIndex arg)
 		playerExplosion.sprite = FAKE_POINTER(12C2);
 		isPlayerExploding = true;
 	}
-	currentObject = &objects[arg];
-	currentObject->next = objectHead_explosions;
+	Explosion &explosion = SetCurrentObject<Explosion>(arg);
+	explosion.next = objectHead_explosions;
 	objectHead_explosions = arg;
-	const WORD *data_CC4 = FakePointerToPointer(currentObject->sprite);
+	const WORD *data_CC4 = FakePointerToPointer(explosion.sprite);
 	BYTE data_CC8 = ((BYTE*)data_CC4)[0];
 	BYTE data_CC9 = ((BYTE*)data_CC4)[1];
-	Explosion &explosion = *(Explosion*)currentObject;
 	if (data_CC8 == 2 && data_CC9 == 2)
 	{
 		explosion.sprite = FAKE_POINTER(12C2);
@@ -988,8 +994,7 @@ void UpdateBullets()
 	ObjectIndex prevObject = 0;
 	for (ObjectIndex object = objectHead_bullets; object;)
 	{
-		currentObject = &objects[object];
-		Bullet &bullet = *(Bullet*)currentObject;
+		Bullet &bullet = SetCurrentObject<Bullet>(object);
 		bulletTestPos = &maze[bullet.y * MAZE_WIDTH + bullet.x];
 		if (bulletTestPos->chr == 0xB2)
 		{
@@ -1339,8 +1344,7 @@ void FireBullet(BYTE bulletType)
 		{
 			numBullets++;
 			Object *currentObject_backup = currentObject;
-			currentObject = &objects[newBullet];
-			Bullet &bullet = *(Bullet*)currentObject;
+			Bullet &bullet = SetCurrentObject<Bullet>(newBullet);
 			if (!objectHead_bullets)
 				objectHead_bullets = newBullet;
 			else
@@ -1385,7 +1389,7 @@ void UpdateSnipes()
 {
 	for (ObjectIndex object = objectHead_snipes; object;)
 	{
-		Snipe &snipe = (Snipe&)objects[object];
+		Snipe &snipe = ((Snipe*)objects)[object];
 		MazeTile *snipeMazeRow = &maze[snipe.y * MAZE_WIDTH];
 		MazeTile * leftPart = &snipeMazeRow[snipe.x];
 		MazeTile *rightPart = snipe.x >= MAZE_WIDTH-1 ? &snipeMazeRow[0] : leftPart + 1;
@@ -1556,7 +1560,7 @@ void UpdateGhosts()
 {
 	for (ObjectIndex object = objectHead_ghosts; object;)
 	{
-		Ghost &ghost = (Ghost&)objects[object];
+		Ghost &ghost = ((Ghost*)objects)[object];
 		MazeTile &ghostInMaze = maze[ghost.y * MAZE_WIDTH + ghost.x];
 		if (ghostInMaze.chr != 0xB2)
 		{
@@ -1709,9 +1713,8 @@ void UpdateGenerators()
 {
 	for (ObjectIndex object = objectHead_generators; object;)
 	{
-		currentObject = &objects[object];
-		Generator &generator = *(Generator*)currentObject;
-		if (++generator.animFrame > 15)
+		Generator &generator = SetCurrentObject<Generator>(object);
+		if (++generator.animFrame >= _countof(data_10A2))
 			generator.animFrame = 0;
 		currentSprite = data_10A2[generator.animFrame];
 		generator.sprite = PointerToFakePointer(currentSprite);
@@ -1753,8 +1756,7 @@ void UpdateGenerators()
 						{
 							numSnipes++;
 							object = generator.next;
-							currentObject = &objects[spawnedSnipeIndex];
-							Snipe &spawnedSnipe = *(Snipe*)currentObject;
+							Snipe &spawnedSnipe = SetCurrentObject<Snipe>(spawnedSnipeIndex);
 							spawnedSnipe.next = objectHead_snipes;
 							objectHead_snipes = spawnedSnipeIndex;
 							spawnedSnipe.x = x;
@@ -1998,8 +2000,7 @@ void UpdateExplosions()
 {
 	for (ObjectIndex object = objectHead_explosions; object;)
 	{
-		currentObject = &objects[object];
-		Explosion &explosion = *(Explosion*)currentObject;
+		Explosion &explosion = SetCurrentObject<Explosion>(object);
 		currentSprite = FakePointerToPointer(explosion.sprite);
 		EraseObjectFromMaze();
 		BYTE animFrame = (explosion.animFrame + 1) % 6;

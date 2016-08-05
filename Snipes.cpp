@@ -1703,6 +1703,8 @@ void EraseObjectFromMaze()
 	}
 }
 
+//template <typename TYPE> TYPE &IncWrap(TYPE &n, 
+
 void UpdateGenerators()
 {
 	for (ObjectIndex object = objectHead_generators; object;)

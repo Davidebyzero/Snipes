@@ -2197,10 +2197,24 @@ extern "C" int __cdecl SDL_main(int argc, char* argv[])
 				fprintf(stderr, "Error opening replay file \"%s\" for playback\n", argv[1]);
 				return -1;
 			}
-			fread(&random_seed_lo, sizeof(random_seed_lo), 1, replayFile);
-			fread(&random_seed_hi, sizeof(random_seed_hi), 1, replayFile);
-			fread(&skillLevelLetter, 1, 1, replayFile);
-			fread(&skillLevelNumber, 1, 1, replayFile);
+
+			#define fread_all(ptr, size, count, stream) \
+				do \
+				{ \
+					size_t _recordsRead = fread(ptr, size, count, stream); \
+					if (_recordsRead != count) \
+					{ \
+						fprintf(stderr, "Error reading from replay file \"%s\" for playback\n", argv[1]); \
+						return -1; \
+					} \
+				} while (0)
+
+			fread_all(&random_seed_lo, sizeof(random_seed_lo), 1, replayFile);
+			fread_all(&random_seed_hi, sizeof(random_seed_hi), 1, replayFile);
+			fread_all(&skillLevelLetter, 1, 1, replayFile);
+			fread_all(&skillLevelNumber, 1, 1, replayFile);
+
+			#undef fread_all
 		}
 		else
 		{

@@ -9,5 +9,9 @@ CXX=g++
 snipes : $(SOURCES) config.h GNUmakefile
 	$(CXX) -o $@ $(CFLAGS) $(CFLAGS2) $(SOURCES) $(LDFLAGS)
 
+config.h :
+	@echo "Automatically creating config.h with default settings - edit this file to customize your build"
+	cp config-sample.h config.h
+
 clean :
 	rm -f snipes

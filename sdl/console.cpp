@@ -15,7 +15,6 @@
 // TODO: Handle Ctrl+C / Ctrl+Break
 
 static MazeTile Screen[WINDOW_HEIGHT][WINDOW_WIDTH];
-static bool ScreenChanged = true;
 
 int FontSize, TileWidth, TileHeight;
 
@@ -51,7 +50,6 @@ void WriteTextMem(Uint count, WORD row, WORD column, MazeTile *src)
 #endif
 		*dst++ = tile;
 	}
-	ScreenChanged = true;
 }
 
 void outputText(BYTE color, WORD count, WORD row, WORD column, const char *src)
@@ -63,7 +61,6 @@ void outputText(BYTE color, WORD count, WORD row, WORD column, const char *src)
 			break; // Out of bounds
 		*dst++ = MazeTile(color, src[i]);
 	}
-	ScreenChanged = true;
 }
 
 void outputNumber(BYTE color, bool zeroPadding, WORD count, WORD row, WORD column, Uint number)
@@ -78,7 +75,6 @@ void EraseBottomTwoLines()
 	for (Uint y = WINDOW_HEIGHT-2; y < WINDOW_HEIGHT; y++)
 		for (Uint x = 0; x < WINDOW_WIDTH; x++)
 			Screen[y][x] = MazeTile(7, ' ');
-	ScreenChanged = true;
 }
 
 void CheckForBreak()
@@ -173,7 +169,6 @@ void WriteTextToConsole(char const *text, size_t length)
 			OutputCursorY--;
 		}
 	}
-	ScreenChanged = true;
 }
 
 void OpenDirectConsole()
@@ -198,7 +193,6 @@ void ClearConsole()
 	for (Uint y = 0; y < WINDOW_HEIGHT; y++)
 		for (Uint x = 0; x < WINDOW_WIDTH; x++)
 			Screen[y][x].color = DEFAULT_TEXT_COLOR;
-	ScreenChanged = true;
 }
 
 void HandleKey(SDL_KeyboardEvent* e);
@@ -224,8 +218,6 @@ static const SDL_Color ScreenColors[16] =
 };
 
 static SDL_Texture* Glyphs[256][256] = {{}};
-
-static char OutputCursorPreviouslyVisible = -1;
 
 static void RenderCharacterAt(SDL_Renderer *ren, TTF_Font* font, Uint x, Uint y)
 {
@@ -407,7 +399,6 @@ static int SDLCALL ConsoleThreadFunc(void*)
 						}
 
 						SDL_SetWindowSize(win, WINDOW_WIDTH * TileWidth, WINDOW_HEIGHT * TileHeight);
-						ScreenChanged = true;
 					}
 					break;
 				}
@@ -417,31 +408,19 @@ static int SDLCALL ConsoleThreadFunc(void*)
 
 		SDL_SetRenderDrawColor(ren, 0, 0, 0, 255);
 
-		char outputCursorNowVisible = OutputCursorVisible && SDL_GetTicks() % 500 < 250;
-		if (!ScreenChanged)
-		{
-			if (!outputCursorNowVisible)
-				RenderCharacterAt(ren, font, OutputCursorX, OutputCursorY);
-		}
-		else
-		{
-			ScreenChanged = false;
+		SDL_RenderClear(ren);
 
-			SDL_RenderClear(ren);
+		for (Uint y = 0; y < WINDOW_HEIGHT; y++)
+			for (Uint x = 0; x < WINDOW_WIDTH; x++)
+				RenderCharacterAt(ren, font, x, y);
 
-			for (Uint y = 0; y < WINDOW_HEIGHT; y++)
-				for (Uint x = 0; x < WINDOW_WIDTH; x++)
-					RenderCharacterAt(ren, font, x, y);
-		}
-
-		if (outputCursorNowVisible && (ScreenChanged || !OutputCursorPreviouslyVisible))
+		if (OutputCursorVisible && SDL_GetTicks() % 500 < 250)
 		{
 			SDL_Color c = ScreenColors[OutputTextColor];
 			SDL_SetRenderDrawColor(ren, c.r, c.g, c.b, c.a);
 			SDL_Rect rect = { (int)OutputCursorX * TileWidth, (int)OutputCursorY * TileHeight, TileWidth, TileHeight };
 			SDL_RenderFillRect(ren, &rect);
 		}
-		OutputCursorPreviouslyVisible = outputCursorNowVisible;
 
 		SDL_RenderPresent(ren);
 

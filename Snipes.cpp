@@ -1,3 +1,4 @@
+#include <algorithm>
 #include <time.h>
 #include <stdio.h>
 #include <wchar.h>
@@ -551,7 +552,9 @@ bool IsGenerator(MazeTile tile)
 #ifdef FIX_BUGS
 	return tile.chr == 0xDA || tile.chr == 0xBF || tile.chr == 0xC0 || tile.chr == 0xD9 || tile.chr == 0xFF;
 #else
-	return wmemchr((wchar_t*)&data_1002[1], (wchar_t&)tile, _countof(data_1002)-1) || tile.chr == 0xFF;
+	auto beg = (WORD*)&data_1002 + 1;
+	auto end = (WORD*)&data_1002 + _countof(data_1002);
+	return std::find(beg, end, (WORD&)tile) != end || tile.chr == 0xFF;
 #endif
 }
 

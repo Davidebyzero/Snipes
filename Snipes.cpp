@@ -1,6 +1,5 @@
 #include <time.h>
 #include <stdio.h>
-#include <wchar.h>
 #include <string.h>
 #include <stdlib.h>
 #include <math.h>
@@ -551,7 +550,10 @@ bool IsGenerator(MazeTile tile)
 #ifdef FIX_BUGS
 	return tile.chr == 0xDA || tile.chr == 0xBF || tile.chr == 0xC0 || tile.chr == 0xD9 || tile.chr == 0xFF;
 #else
-	return wmemchr((wchar_t*)&data_1002[1], (wchar_t&)tile, _countof(data_1002)-1) || tile.chr == 0xFF;
+	for (Uint i=1; i<_countof(data_1002); i++)
+		if ((WORD&)tile == data_1002[i])
+			return true;
+	return tile.chr == 0xFF;
 #endif
 }
 

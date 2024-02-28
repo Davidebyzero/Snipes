@@ -107,6 +107,18 @@ void HandleKey(SDL_KeyboardEvent* e)
 		else
 		if (e->keysym.sym == SDLK_COMMA)
 			step_backwards++;
+		else
+		if (e->keysym.sym == SDLK_KP_PLUS)
+		{
+			if (frame == 0)
+				increment_initial_seed++;
+		}
+		else
+		if (e->keysym.sym == SDLK_KP_MINUS)
+		{
+			if (frame == 0)
+				increment_initial_seed--;
+		}
 #endif
 		else
 		if (e->keysym.sym == SDLK_RETURN)

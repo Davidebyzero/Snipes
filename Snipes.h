@@ -13,6 +13,8 @@ extern BYTE fast_forward;
 #ifdef CHEAT
 extern int single_step;
 extern int step_backwards;
+extern int increment_initial_seed;
+extern WORD frame;
 #endif
 
 #define KEYSTATE_MOVE_RIGHT (1<<0)

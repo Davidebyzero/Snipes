@@ -57,6 +57,18 @@ Uint PollKeyboard()
 				else
 				if (record.Event.KeyEvent.wVirtualKeyCode == VK_OEM_COMMA)
 					step_backwards++;
+				else
+				if (record.Event.KeyEvent.wVirtualKeyCode == 0x6B)
+				{
+					if (frame == 0)
+						increment_initial_seed++;
+				}
+				else
+				if (record.Event.KeyEvent.wVirtualKeyCode == 0x6D)
+				{
+					if (frame == 0)
+						increment_initial_seed--;
+				}
 #endif
 			}
 			else

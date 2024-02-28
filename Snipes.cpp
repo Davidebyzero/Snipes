@@ -24,6 +24,7 @@ static BYTE keyboard_state = 0;
 #ifdef CHEAT
 int single_step = 0;
 int step_backwards = 0;
+int increment_initial_seed = 0;
 WORD skip_to_frame = 0;
 #endif
 
@@ -2295,7 +2296,7 @@ extern "C" int __cdecl SDL_main(int argc, char* argv[])
 				DrawViewport();
 				if (single_step > 0)
 					single_step--;
-				while (single_step == 0 && !step_backwards)
+				while (single_step == 0 && !step_backwards && !increment_initial_seed)
 				{
 					PollKeyboard();
 					if (forfeit_match)
@@ -2316,6 +2317,27 @@ extern "C" int __cdecl SDL_main(int argc, char* argv[])
 					random_seed_hi = init_random_seed_hi;
 					currentSoundEffect = SoundEffect_None;
 
+					goto restart;
+				}
+				if (frame==0 && step_backwards==0 && increment_initial_seed)
+				{
+					init_random_seed_lo += increment_initial_seed;
+					increment_initial_seed = 0;
+					if (char tmp = init_random_seed_lo >> 8)
+					{
+						init_random_seed_hi += tmp;
+						init_random_seed_lo &= 0xFF;
+						init_random_seed_hi &= 0xFF;
+					}
+					random_seed_lo = init_random_seed_lo;
+					random_seed_hi = init_random_seed_hi;
+
+					fflush(replayFile);
+					fseek(replayFile, 0, SEEK_SET);
+					fwrite(&random_seed_lo, sizeof(random_seed_lo), 1, replayFile);
+					fwrite(&random_seed_hi, sizeof(random_seed_hi), 1, replayFile);
+					fwrite(&skillLevelLetter, 1, 1, replayFile);
+					fwrite(&skillLevelNumber, 1, 1, replayFile);
 					goto restart;
 				}
 			}

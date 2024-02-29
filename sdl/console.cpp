@@ -44,8 +44,8 @@ void WriteTextMem(Uint count, WORD row, WORD column, MazeTile *src)
 #if defined(CHEAT_OMNISCIENCE) && defined(CHEAT_OMNISCIENCE_SHOW_NORMAL_VIEWPORT)
 		if (!(inrangex(column+i, WINDOW_WIDTH/2 - 40/2,
 		                         WINDOW_WIDTH/2 + 40/2) &&
-		      inrangex(row, VIEWPORT_ROW + VIEWPORT_HEIGHT/2 - (25 - VIEWPORT_ROW)/2 + 1,
-		                    VIEWPORT_ROW + VIEWPORT_HEIGHT/2 + (25 - VIEWPORT_ROW)/2 + 1)) && row >= VIEWPORT_ROW)
+		      inrangex(row, VIEWPORT_ROW + VIEWPORT_HEIGHT/2 - (25 - VIEWPORT_ROW)/2,
+		                    VIEWPORT_ROW + VIEWPORT_HEIGHT/2 + (25 - VIEWPORT_ROW)/2)) && row >= VIEWPORT_ROW)
 			tile.color += 0x40;
 #endif
 		*dst++ = tile;

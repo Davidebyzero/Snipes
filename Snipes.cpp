@@ -2309,7 +2309,8 @@ extern "C" int __cdecl SDL_main(int argc, char* argv[])
 					skip_to_frame = frame - step_backwards;
 					step_backwards = 0;
 					single_step = 0;
-					playbackMode = true;
+					if (skip_to_frame)
+						playbackMode = true;
 					fflush(replayFile);
 					fseek(replayFile, 6, SEEK_SET);
 

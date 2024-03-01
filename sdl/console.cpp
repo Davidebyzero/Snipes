@@ -15,6 +15,7 @@
 // TODO: Handle Ctrl+C / Ctrl+Break
 
 static MazeTile Screen[WINDOW_HEIGHT][WINDOW_WIDTH];
+SDL_mutex *ScreenMutex;
 
 int FontSize, TileWidth, TileHeight;
 
@@ -31,6 +32,7 @@ static bool Exiting = false;
 
 void WriteTextMem(Uint count, WORD row, WORD column, MazeTile *src)
 {
+	SDL_LockMutex(ScreenMutex);
 	MazeTile* dst = &Screen[row][column];
 	for (Uint i=0; i<count; i++)
 	{
@@ -50,10 +52,12 @@ void WriteTextMem(Uint count, WORD row, WORD column, MazeTile *src)
 #endif
 		*dst++ = tile;
 	}
+	SDL_UnlockMutex(ScreenMutex);
 }
 
 void outputText(BYTE color, WORD count, WORD row, WORD column, const char *src)
 {
+	SDL_LockMutex(ScreenMutex);
 	MazeTile* dst = &Screen[row][column];
 	for (Uint i=0; i<count; i++)
 	{
@@ -61,20 +65,25 @@ void outputText(BYTE color, WORD count, WORD row, WORD column, const char *src)
 			break; // Out of bounds
 		*dst++ = MazeTile(color, src[i]);
 	}
+	SDL_UnlockMutex(ScreenMutex);
 }
 
 void outputNumber(BYTE color, bool zeroPadding, WORD count, WORD row, WORD column, Uint number)
 {
+	SDL_LockMutex(ScreenMutex);
 	char textbuf[strlength("4294967295")+1];
 	sprintf(textbuf, zeroPadding ? "%0*u" : "%*u", count, number);
 	outputText(color, count, row, column, textbuf);
+	SDL_UnlockMutex(ScreenMutex);
 }
 
 void EraseBottomTwoLines()
 {
+	SDL_LockMutex(ScreenMutex);
 	for (Uint y = WINDOW_HEIGHT-2; y < WINDOW_HEIGHT; y++)
 		for (Uint x = 0; x < WINDOW_WIDTH; x++)
 			Screen[y][x] = MazeTile(7, ' ');
+	SDL_UnlockMutex(ScreenMutex);
 }
 
 void CheckForBreak()
@@ -139,6 +148,7 @@ void SetConsoleOutputTextColor(WORD wAttributes)
 
 void WriteTextToConsole(char const *text, size_t length)
 {
+	SDL_LockMutex(ScreenMutex);
 	for (Uint n=0; n<length; n++)
 	{
 		switch (text[n])
@@ -169,6 +179,7 @@ void WriteTextToConsole(char const *text, size_t length)
 			OutputCursorY--;
 		}
 	}
+	SDL_UnlockMutex(ScreenMutex);
 }
 
 void OpenDirectConsole()
@@ -189,10 +200,12 @@ void ClearConsole()
 	OutputCursorX = 0;
 	OutputCursorY = 0;
 	OutputTextColor = DEFAULT_TEXT_COLOR;
-	
+
+	SDL_LockMutex(ScreenMutex);
 	for (Uint y = 0; y < WINDOW_HEIGHT; y++)
 		for (Uint x = 0; x < WINDOW_WIDTH; x++)
 			Screen[y][x].color = DEFAULT_TEXT_COLOR;
+	SDL_UnlockMutex(ScreenMutex);
 }
 
 void HandleKey(SDL_KeyboardEvent* e);
@@ -224,7 +237,6 @@ static void RenderCharacterAt(SDL_Renderer *ren, TTF_Font* font, Uint x, Uint y)
 	MazeTile tile = Screen[y][x];
 	SDL_Color fg = ScreenColors[tile.color & 15];
 	SDL_Color bg = ScreenColors[tile.color >> 4];
-	SDL_SetRenderDrawColor(ren, bg.r, bg.g, bg.b, bg.a);
 	SDL_Rect rect = { (int)x * TileWidth, (int)y * TileHeight, TileWidth, TileHeight };
 	SDL_RenderFillRect(ren, &rect);
 
@@ -410,9 +422,11 @@ static int SDLCALL ConsoleThreadFunc(void*)
 
 		SDL_RenderClear(ren);
 
+		SDL_LockMutex(ScreenMutex);
 		for (Uint y = 0; y < WINDOW_HEIGHT; y++)
 			for (Uint x = 0; x < WINDOW_WIDTH; x++)
 				RenderCharacterAt(ren, font, x, y);
+		SDL_UnlockMutex(ScreenMutex);
 #if defined(CHEAT_OMNISCIENCE) && defined(CHEAT_OMNISCIENCE_SHOW_NORMAL_VIEWPORT)
 		{
 			SDL_Rect rect;
@@ -493,6 +507,8 @@ int OpenConsole()
 		return 1;
 	}
 
+	ScreenMutex = SDL_CreateMutex();
+
 	return 0;
 }
 
@@ -500,4 +516,5 @@ void CloseConsole()
 {
 	Exiting = true;
 	SDL_WaitThread(ConsoleThread, NULL);
+	SDL_DestroyMutex(ScreenMutex);
 }

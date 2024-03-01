@@ -41,7 +41,7 @@ void WriteTextMem(Uint count, WORD row, WORD column, MazeTile *src)
 		if (single_step>=0 && tile.chr==0xFF)
 			tile.chr = 0xF0;
 #endif
-#if defined(CHEAT_OMNISCIENCE) && defined(CHEAT_OMNISCIENCE_SHOW_NORMAL_VIEWPORT)
+#if 0 // defined(CHEAT_OMNISCIENCE) && defined(CHEAT_OMNISCIENCE_SHOW_NORMAL_VIEWPORT)
 		if (!(inrangex(column+i, WINDOW_WIDTH/2 - 40/2,
 		                         WINDOW_WIDTH/2 + 40/2) &&
 		      inrangex(row, VIEWPORT_ROW + VIEWPORT_HEIGHT/2 - (25 - VIEWPORT_ROW)/2,
@@ -413,6 +413,14 @@ static int SDLCALL ConsoleThreadFunc(void*)
 		for (Uint y = 0; y < WINDOW_HEIGHT; y++)
 			for (Uint x = 0; x < WINDOW_WIDTH; x++)
 				RenderCharacterAt(ren, font, x, y);
+#if defined(CHEAT_OMNISCIENCE) && defined(CHEAT_OMNISCIENCE_SHOW_NORMAL_VIEWPORT)
+		{
+			SDL_Rect rect = {(WINDOW_WIDTH/2 - 40/2) * TileWidth - 1, (VIEWPORT_ROW + VIEWPORT_HEIGHT/2 - (25 - VIEWPORT_ROW)/2  ) * TileHeight - 1,
+			                 (                 80/2) * TileWidth + 2, (                                   (25 - VIEWPORT_ROW)/2*2) * TileHeight + 2};
+			SDL_SetRenderDrawColor(ren, 0xC0, 0xC0, 0xC0, 0xFF);
+			SDL_RenderDrawRect(ren, &rect);
+		}
+#endif
 
 		if (OutputCursorVisible && SDL_GetTicks() % 500 < 250)
 		{

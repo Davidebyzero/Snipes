@@ -415,9 +415,30 @@ static int SDLCALL ConsoleThreadFunc(void*)
 				RenderCharacterAt(ren, font, x, y);
 #if defined(CHEAT_OMNISCIENCE) && defined(CHEAT_OMNISCIENCE_SHOW_NORMAL_VIEWPORT)
 		{
-			SDL_Rect rect = {(WINDOW_WIDTH/2 - 40/2) * TileWidth - 1, (VIEWPORT_ROW + VIEWPORT_HEIGHT/2 - (25 - VIEWPORT_ROW)/2  ) * TileHeight - 1,
-			                 (                 80/2) * TileWidth + 2, (                                   (25 - VIEWPORT_ROW)/2*2) * TileHeight + 2};
+			SDL_Rect rect;
+
+			// darken outside area
+
+			SDL_SetRenderDrawColor(ren, 0x00, 0x00, 0x00, 0x50);
+			SDL_SetRenderDrawBlendMode(ren, SDL_BLENDMODE_BLEND);
+
+			rect.w = WINDOW_WIDTH * TileWidth;  rect.x = 0; rect.y = 0; rect.h = (VIEWPORT_ROW + VIEWPORT_HEIGHT/2 - (25 - VIEWPORT_ROW)/2  ) * TileHeight;
+			SDL_RenderFillRect(ren, &rect);
+
+			rect.y = (VIEWPORT_ROW + VIEWPORT_HEIGHT/2 + (25 - VIEWPORT_ROW)/2) * TileHeight;
+			SDL_RenderFillRect(ren, &rect);
+
+			rect.x = 0; rect.y = (VIEWPORT_ROW + VIEWPORT_HEIGHT/2 - (25 - VIEWPORT_ROW)/2) * TileHeight; rect.w = (WINDOW_WIDTH/2 - 40/2) * TileWidth; rect.h = ((25 - VIEWPORT_ROW)/2*2) * TileHeight;
+			SDL_RenderFillRect(ren, &rect);
+
+			rect.x = (WINDOW_WIDTH/2 + 40/2) * TileWidth;
+			SDL_RenderFillRect(ren, &rect);
+
+			// draw gray rectangle around inside area
+			rect.x = (WINDOW_WIDTH/2 - 40/2) * TileWidth - 1; rect.y = (VIEWPORT_ROW + VIEWPORT_HEIGHT/2 - (25 - VIEWPORT_ROW)/2  ) * TileHeight - 1;
+			rect.w = (                 80/2) * TileWidth + 2; rect.h = (                                   (25 - VIEWPORT_ROW)/2*2) * TileHeight + 2;
 			SDL_SetRenderDrawColor(ren, 0xC0, 0xC0, 0xC0, 0xFF);
+			SDL_SetRenderDrawBlendMode(ren, SDL_BLENDMODE_NONE);
 			SDL_RenderDrawRect(ren, &rect);
 		}
 #endif

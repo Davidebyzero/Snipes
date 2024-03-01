@@ -1,5 +1,6 @@
 #include <Windows.h>
 #include "../types.h"
+#include "../config.h"
 
 QWORD perf_freq; // ticks per 11*65535 seconds
 
@@ -12,7 +13,9 @@ WORD GetTickCountWord()
 
 int OpenTimer()
 {
-	//timeBeginPeriod(1);
+#ifdef WINDOWS_PRECISE_TIMER
+	timeBeginPeriod(1);
+#endif
 
 	QueryPerformanceFrequency((LARGE_INTEGER*)&perf_freq);
 	perf_freq *= 11 * 65535;
@@ -21,6 +24,9 @@ int OpenTimer()
 }
 void CloseTimer()
 {
+#ifdef WINDOWS_PRECISE_TIMER
+	timeEndPeriod(1);
+#endif
 }
 
 void SleepTimeslice()

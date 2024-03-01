@@ -2198,7 +2198,7 @@ extern "C" int __cdecl SDL_main(int argc, char* argv[])
 			if (!replayFile)
 			{
 				fprintf(stderr, "Error opening replay file \"%s\" for playback\n", argv[1]);
-				return -1;
+				goto do_not_play_again;
 			}
 
 			#define fread_all(ptr, size, count, stream) \
@@ -2208,7 +2208,7 @@ extern "C" int __cdecl SDL_main(int argc, char* argv[])
 					if (_recordsRead != count) \
 					{ \
 						fprintf(stderr, "Error reading from replay file \"%s\" for playback\n", argv[1]); \
-						return -1; \
+						goto do_not_play_again; \
 					} \
 				} while (0)
 
@@ -2434,9 +2434,8 @@ extern "C" int __cdecl SDL_main(int argc, char* argv[])
 do_not_play_again:
 
 	CloseSound();
+	CloseTimer();
 	CloseConsole();
-
-	//timeEndPeriod(1);
 
 	return 0;
 }

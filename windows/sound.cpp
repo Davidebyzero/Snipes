@@ -70,7 +70,6 @@ int OpenSound()
 	if (result != MMSYSERR_NOERROR)
 	{
 		fprintf(stderr, "Error opening wave output\n");
-		//timeEndPeriod(1);
 		return -1;
 	}
 	for (Uint i=0; i<WAVE_BUFFER_COUNT; i++)

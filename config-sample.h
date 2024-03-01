@@ -14,6 +14,9 @@
 #define CHEAT_OMNISCIENCE_SHOW_NORMAL_VIEWPORT  // only has an effect if CHEAT_OMNISCIENCE is also enabled
 //#define CHEAT
 
+// For playback: Wait for a keypress at start, and behave like a live game at end. Meant for screen recording of a played back replay.
+//#define PLAYBACK_FOR_SCREEN_RECORDING
+
 // Windows options
 #define WINDOWS_PRECISE_TIMER
 

@@ -28,6 +28,12 @@ int increment_initial_seed = 0;
 WORD skip_to_frame = 0;
 #endif
 
+#ifdef PLAYBACK_FOR_SCREEN_RECORDING
+	#define _PLAYBACK_FOR_SCREEN_RECORDING 1
+#else
+	#define _PLAYBACK_FOR_SCREEN_RECORDING 0
+#endif
+
 static WORD random_seed_lo = 33, random_seed_hi = 467;
 WORD GetRandomMasked(WORD mask)
 {
@@ -820,9 +826,11 @@ void SetSoundEffectState(BYTE frame, SoundEffect index)
 	currentSoundEffect      = index;
 }
 
-bool UpdateHUD() // returns true if the match has been won
+void DrawViewport();
+
+bool UpdateHUD(bool incrementFrame = true) // returns true if the match has been won
 {
-	frame++;
+	frame += incrementFrame;
 	if (lastHUD_numSnipesKilled != numSnipesKilled)
 		outputNumber(0x13, 0, 4, 0, 11, lastHUD_numSnipesKilled = numSnipesKilled);
 	if (lastHUD_numGhostsKilled != numGhostsKilled)
@@ -2120,6 +2128,20 @@ void DrawViewport()
 	}
 }
 
+void WaitForNextTick(WORD &tick_count)
+{
+	for (;;)
+	{
+		SleepTimeslice();
+		WORD tick_count2 = GetTickCountWord();
+		if (tick_count2 != tick_count)
+		{
+			tick_count = tick_count2;
+			break;
+		}
+	}
+}
+
 #if !(defined(_WIN32) || defined(_WIN64)) || defined(_CONSOLE)
 int __cdecl main(int argc, char* argv[])
 #else
@@ -2278,6 +2300,13 @@ extern "C" int __cdecl SDL_main(int argc, char* argv[])
 		CreateGeneratorsAndPlayer();
 		SetSoundEffectState(0, SoundEffect_None);
 
+		if (playbackMode && _PLAYBACK_FOR_SCREEN_RECORDING)
+		{
+			UpdateHUD(false);
+			WaitForKeyPress();
+			WaitForNextTick(tick_count = GetTickCountWord());
+		}
+
 		for (;;)
 		{
 #ifdef CHEAT
@@ -2359,18 +2388,7 @@ extern "C" int __cdecl SDL_main(int argc, char* argv[])
 #else
 			if (!playbackMode || !fast_forward)
 #endif
-			{
-				for (;;)
-				{
-					SleepTimeslice();
-					WORD tick_count2 = GetTickCountWord();
-					if (tick_count2 != tick_count)
-					{
-						tick_count = tick_count2;
-						break;
-					}
-				}
-			}
+				WaitForNextTick(tick_count);
 
 			UpdateBullets();
 			UpdateGhosts();
@@ -2393,16 +2411,18 @@ extern "C" int __cdecl SDL_main(int argc, char* argv[])
 	match_ended:
 #endif
 
+		if (playbackMode && _PLAYBACK_FOR_SCREEN_RECORDING)
+			WaitForNextTick(tick_count);
 		ClearSound();
 		forfeit_match = false;
 
 		if (replayFile)
 			fclose(replayFile);
 
-		CloseDirectConsole(WINDOW_HEIGHT-1 - (playbackMode ? 1 : 0));
+		CloseDirectConsole(WINDOW_HEIGHT-1 - (playbackMode && !_PLAYBACK_FOR_SCREEN_RECORDING ? 1 : 0));
 		if (instant_quit)
 			break;
-		if (playbackMode)
+		if (playbackMode && !_PLAYBACK_FOR_SCREEN_RECORDING)
 		{
 #ifndef _CONSOLE
 			// TODO: do this in the console build too, if it's possible to detect when Windows won't itself prompt the user to press any key
@@ -2415,6 +2435,11 @@ extern "C" int __cdecl SDL_main(int argc, char* argv[])
 		for (;;)
 		{
 			WriteTextToConsole("Play another game? (Y or N) ");
+			if (playbackMode)
+			{
+				WaitForKeyPress();
+				goto do_not_play_again;
+			}
 			char playAgain;
 			auto numread = ReadTextFromConsole(&playAgain, 1);
 			if (got_ctrl_break)

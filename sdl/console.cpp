@@ -465,6 +465,18 @@ static int SDLCALL ConsoleThreadFunc(void*)
 			SDL_RenderFillRect(ren, &rect);
 		}
 
+#if 0
+		if (screenshot_filename)
+		{
+			SDL_Surface *infoSurface = SDL_GetWindowSurface(win);
+			unsigned char *pixels = new BYTE [infoSurface->w * infoSurface->h * infoSurface->format->BytesPerPixel];
+			SDL_RenderReadPixels(ren, &infoSurface->clip_rect, infoSurface->format->format, pixels, infoSurface->w * infoSurface->format->BytesPerPixel);
+			SDL_Surface *saveSurface = SDL_CreateRGBSurfaceFrom(pixels, infoSurface->w, infoSurface->h, infoSurface->format->BitsPerPixel, infoSurface->w * infoSurface->format->BytesPerPixel, infoSurface->format->Rmask, infoSurface->format->Gmask, infoSurface->format->Bmask, infoSurface->format->Amask);
+			SDL_SaveBMP(saveSurface, screenshot_filename);
+			SDL_FreeSurface(saveSurface);
+			screenshot_filename = NULL;
+		}
+#endif
 		SDL_RenderPresent(ren);
 
 		SleepTimeslice();

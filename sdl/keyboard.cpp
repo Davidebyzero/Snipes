@@ -110,13 +110,13 @@ void HandleKey(SDL_KeyboardEvent* e)
 		else
 		if (e->keysym.sym == SDLK_KP_PLUS)
 		{
-			if (frame == 0)
+			if (frame == 1)
 				increment_initial_seed++;
 		}
 		else
 		if (e->keysym.sym == SDLK_KP_MINUS)
 		{
-			if (frame == 0)
+			if (frame == 1)
 				increment_initial_seed--;
 		}
 #endif

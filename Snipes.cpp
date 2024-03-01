@@ -28,7 +28,7 @@ int increment_initial_seed = 0;
 WORD skip_to_frame = 0;
 #endif
 
-#ifdef PLAYBACK_FOR_SCREEN_RECORDING
+#if defined(PLAYBACK_FOR_SCREEN_RECORDING) && !defined(CHEAT)
 	#define _PLAYBACK_FOR_SCREEN_RECORDING 1
 #else
 	#define _PLAYBACK_FOR_SCREEN_RECORDING 0
@@ -872,6 +872,7 @@ bool UpdateHUD(bool incrementFrame = true) // returns true if the match has been
 	if (numSnipes || numGenerators || numGhosts)
 		return false;
 
+	DrawViewport();
 	EraseBottomTwoLines();
 	CloseDirectConsole(WINDOW_HEIGHT-2);
 	WriteTextToConsole("Congratulations --- YOU ACTUALLY WON!!!\r\n");
@@ -1878,6 +1879,7 @@ bool UpdatePlayer(bool playbackMode, BYTE &replayIO) // returns true if the matc
 		keyboard_state = PollKeyboard();
 		if (numPlayerDeaths >= numLives)
 		{
+			DrawViewport();
 			EraseBottomTwoLines();
 			CloseDirectConsole(WINDOW_HEIGHT-2);
 			WriteTextToConsole("The SNIPES have triumphed!!!\r\n");
@@ -2310,7 +2312,7 @@ extern "C" int __cdecl SDL_main(int argc, char* argv[])
 		for (;;)
 		{
 #ifdef CHEAT
-			if (skip_to_frame && frame == skip_to_frame)
+			if (skip_to_frame && frame == skip_to_frame-1)
 			{
 				skip_to_frame = 0;
 				playbackMode = false;
@@ -2320,6 +2322,8 @@ extern "C" int __cdecl SDL_main(int argc, char* argv[])
 				size_t blah = fread(&dummy, 1, 1, replayFile);
 				fseek(replayFile, fileSize, SEEK_SET);
 			}
+			if (UpdateHUD())
+				break;
 			if (!skip_to_frame)
 			{
 				DrawViewport();
@@ -2349,7 +2353,7 @@ extern "C" int __cdecl SDL_main(int argc, char* argv[])
 
 					goto restart;
 				}
-				if (frame==0 && step_backwards==0 && increment_initial_seed)
+				if (frame==1 && step_backwards==0 && increment_initial_seed)
 				{
 					init_random_seed_lo += increment_initial_seed;
 					increment_initial_seed = 0;
@@ -2372,6 +2376,8 @@ extern "C" int __cdecl SDL_main(int argc, char* argv[])
 				}
 			}
 #else
+			if (UpdateHUD())
+				break;
 			DrawViewport();
 #endif
 
@@ -2380,8 +2386,6 @@ extern "C" int __cdecl SDL_main(int argc, char* argv[])
 				EraseBottomTwoLines();
 				break;
 			}
-			if (UpdateHUD())
-				break;
 
 #ifdef CHEAT
 			if (!fast_forward && single_step<0 && !skip_to_frame)

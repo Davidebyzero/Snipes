@@ -79,7 +79,23 @@ void HandleKey(SDL_KeyboardEvent* e)
 	if (e->type == SDL_KEYDOWN)
 	{
 		if (!keyState[e->keysym.sym])
-			anyKeyPressed = true;
+		{
+			switch (e->keysym.sym)
+			{
+			case SDLK_LCTRL:
+			case SDLK_LSHIFT:
+			case SDLK_LALT:
+			case SDLK_LGUI:
+			case SDLK_RCTRL:
+			case SDLK_RSHIFT:
+			case SDLK_RALT:
+			case SDLK_RGUI:
+				break;
+			default:
+				anyKeyPressed = true;
+				break;
+			}
+		}
 
 		keyState[e->keysym.sym] |= 1;
 #ifdef USE_SCANCODES_FOR_LETTER_KEYS

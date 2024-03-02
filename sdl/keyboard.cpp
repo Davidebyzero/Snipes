@@ -102,6 +102,9 @@ void HandleKey(SDL_KeyboardEvent* e)
 		}
 #ifdef CHEAT
 		else
+		if (e->keysym.sym == SDLK_t && (e->keysym.mod & (KMOD_LCTRL | KMOD_RCTRL)))
+			rerecordingMode = true;
+		else
 		if (e->keysym.sym == SDLK_PERIOD)
 			single_step++;
 		else
@@ -110,13 +113,13 @@ void HandleKey(SDL_KeyboardEvent* e)
 		else
 		if (e->keysym.sym == SDLK_KP_PLUS)
 		{
-			if (frame == 1)
+			if (frame == 1 && rerecordingMode)
 				increment_initial_seed++;
 		}
 		else
 		if (e->keysym.sym == SDLK_KP_MINUS)
 		{
-			if (frame == 1)
+			if (frame == 1 && rerecordingMode)
 				increment_initial_seed--;
 		}
 #endif

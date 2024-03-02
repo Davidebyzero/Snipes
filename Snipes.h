@@ -11,6 +11,7 @@ extern bool shooting_sound_enabled;
 extern BYTE spacebar_state;
 extern BYTE fast_forward;
 #ifdef CHEAT
+extern bool rerecordingMode;
 extern int single_step;
 extern int step_backwards;
 extern int increment_initial_seed;

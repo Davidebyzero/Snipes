@@ -52,6 +52,9 @@ Uint PollKeyboard()
 					forfeit_match = true;
 #ifdef CHEAT
 				else
+				if (record.Event.KeyEvent.wVirtualKeyCode == 'T' && (record.Event.KeyEvent.dwControlKeyState & (LEFT_CTRL_PRESSED | RIGHT_CTRL_PRESSED)))
+					rerecordingMode = true;
+				else
 				if (record.Event.KeyEvent.wVirtualKeyCode == VK_OEM_PERIOD)
 					single_step++;
 				else
@@ -60,13 +63,13 @@ Uint PollKeyboard()
 				else
 				if (record.Event.KeyEvent.wVirtualKeyCode == 0x6B)
 				{
-					if (frame == 1)
+					if (frame == 1 && rerecordingMode)
 						increment_initial_seed++;
 				}
 				else
 				if (record.Event.KeyEvent.wVirtualKeyCode == 0x6D)
 				{
-					if (frame == 1)
+					if (frame == 1 && rerecordingMode)
 						increment_initial_seed--;
 				}
 #endif

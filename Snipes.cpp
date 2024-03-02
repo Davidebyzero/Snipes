@@ -22,6 +22,7 @@ BYTE fast_forward = false;
 BYTE spacebar_state = false;
 static BYTE keyboard_state = 0;
 #ifdef CHEAT
+bool rerecordingMode;
 int single_step = 0;
 int step_backwards = 0;
 int increment_initial_seed = 0;
@@ -2155,7 +2156,10 @@ extern "C" int __cdecl SDL_main(int argc, char* argv[])
 		fprintf(stderr, "Usage: %s [filename of replay to play back]\n", argv[0]);
 		return -1;
 	}
-	bool playbackMode = argc == 2;
+	bool playbackMode;
+	const char *replayPlaybackFilename = NULL;
+	if (playbackMode = (argc == 2))
+		replayPlaybackFilename = argv[1];
 
 	if (int result = OpenConsole())
 		return result;
@@ -2213,15 +2217,20 @@ extern "C" int __cdecl SDL_main(int argc, char* argv[])
 	if (!random_seed_hi)
 		random_seed_hi = 555;
 
+#ifdef CHEAT
+	rerecordingMode = !playbackMode;
+	bool replayFileWriting = false;
+#endif
+
 	for (;;)
 	{
 		FILE *replayFile = NULL;
 		if (playbackMode)
 		{
-			replayFile = fopen(argv[1], "rb");
+			replayFile = fopen(replayPlaybackFilename, "rb");
 			if (!replayFile)
 			{
-				fprintf(stderr, "Error opening replay file \"%s\" for playback\n", argv[1]);
+				fprintf(stderr, "Error opening replay file \"%s\" for playback\n", replayPlaybackFilename);
 				goto do_not_play_again;
 			}
 
@@ -2231,7 +2240,7 @@ extern "C" int __cdecl SDL_main(int argc, char* argv[])
 					size_t _recordsRead = fread(ptr, size, count, stream); \
 					if (_recordsRead != count) \
 					{ \
-						fprintf(stderr, "Error reading from replay file \"%s\" for playback\n", argv[1]); \
+						fprintf(stderr, "Error reading from replay file \"%s\" for playback\n", replayPlaybackFilename); \
 						goto do_not_play_again; \
 					} \
 				} while (0)
@@ -2315,9 +2324,10 @@ extern "C" int __cdecl SDL_main(int argc, char* argv[])
 			if (skip_to_frame && frame == skip_to_frame-1)
 			{
 				skip_to_frame = 0;
-				playbackMode = false;
+				playbackMode = !rerecordingMode;
 				auto fileSize = ftell(replayFile);
-				changesize(_fileno(replayFile), fileSize);
+				if (replayFileWriting)
+					changesize(_fileno(replayFile), fileSize);
 				BYTE dummy;
 				size_t blah = fread(&dummy, 1, 1, replayFile);
 				fseek(replayFile, fileSize, SEEK_SET);
@@ -2329,13 +2339,37 @@ extern "C" int __cdecl SDL_main(int argc, char* argv[])
 				DrawViewport();
 				if (single_step > 0)
 					single_step--;
-				while (single_step == 0 && !step_backwards && !increment_initial_seed)
+				while (single_step == 0 && !step_backwards && !(increment_initial_seed && replayFileWriting))
 				{
 					PollKeyboard();
 					if (forfeit_match)
 						goto match_ended;
 					if (frame == 0)
 						step_backwards = 0;
+					if (rerecordingMode && !replayFileWriting && replayPlaybackFilename)
+					{
+						auto fileSize = ftell(replayFile);
+						fclose(replayFile);
+						replayFile = fopen(replayPlaybackFilename, "r+b");
+						if (replayFile)
+						{
+							replayFileWriting = true;
+							playbackMode = false;
+						}
+						else
+						{
+							replayFile = fopen(replayPlaybackFilename, "rb");
+							if (!replayFile)
+							{
+								fprintf(stderr, "Error opening replay file \"%s\" for playback\n", replayPlaybackFilename);
+								goto do_not_play_again;
+							}
+							rerecordingMode = false;
+							increment_initial_seed = 0;
+						}
+						fseek(replayFile, fileSize, SEEK_SET);
+						changesize(_fileno(replayFile), fileSize);
+					}
 				}
 				if (step_backwards)
 				{
@@ -2353,7 +2387,7 @@ extern "C" int __cdecl SDL_main(int argc, char* argv[])
 
 					goto restart;
 				}
-				if (frame==1 && step_backwards==0 && increment_initial_seed)
+				if (frame==1 && step_backwards==0 && increment_initial_seed && replayFileWriting)
 				{
 					init_random_seed_lo += increment_initial_seed;
 					increment_initial_seed = 0;

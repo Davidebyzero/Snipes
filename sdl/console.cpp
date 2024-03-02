@@ -433,10 +433,10 @@ static int SDLCALL ConsoleThreadFunc(void*)
 
 			// darken outside area
 
-			SDL_SetRenderDrawColor(ren, 0x00, 0x00, 0x00, 0x50);
+			SDL_SetRenderDrawColor(ren, 0x00, 0x00, 0x00, 0x60);
 			SDL_SetRenderDrawBlendMode(ren, SDL_BLENDMODE_BLEND);
 
-			rect.w = WINDOW_WIDTH * TileWidth;  rect.x = 0; rect.y = 0; rect.h = (VIEWPORT_ROW + VIEWPORT_HEIGHT/2 - (25 - VIEWPORT_ROW)/2  ) * TileHeight;
+			rect.w = WINDOW_WIDTH * TileWidth;  rect.x = 0; rect.y = VIEWPORT_ROW * TileHeight; rect.h = (VIEWPORT_HEIGHT/2 - (25 - VIEWPORT_ROW)/2) * TileHeight;
 			SDL_RenderFillRect(ren, &rect);
 
 			rect.y = (VIEWPORT_ROW + VIEWPORT_HEIGHT/2 + (25 - VIEWPORT_ROW)/2) * TileHeight;

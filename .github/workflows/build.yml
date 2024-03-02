@@ -3,8 +3,8 @@ on: [ push, pull_request ]
 
 jobs:
   test:
-    runs-on: ubuntu-20.04
+    runs-on: ubuntu-23.10
     steps:
-      - uses: actions/checkout@v2
+      - uses: actions/checkout@v4
       - run: sudo apt-get install -y libsdl2-dev libsdl2-ttf-dev
       - run: make MAINT=1

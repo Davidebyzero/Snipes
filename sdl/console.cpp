@@ -265,6 +265,52 @@ static void RenderCharacterAt(SDL_Renderer *ren, TTF_Font* font, Uint x, Uint y)
 		str[0] = Chars[tile.chr];
 		str[1] = 0;
 		SDL_Surface *s = TTF_RenderUNICODE_Shaded(font, (Uint16*)str, fg, bg);
+#ifdef FONT_FIXUP
+		if (wcschr(L"│┤╡╢╖╕╣║╗┐┬├┼╞╟╔╦╠╬╤╥╒╓╫╪┌", str[0]) != NULL)
+		{
+			// Extract the bottommost-penultimate 1-pixel tall horizontal strip
+			SDL_Rect srcRect = {0, TileHeight - 2, s->w, 1};
+			SDL_Surface *stripSurface = SDL_CreateRGBSurface(0, s->w, 1, 32, 0, 0, 0, 0);
+			SDL_BlitSurface(s, &srcRect, stripSurface, NULL);
+			// Clone the strip onto the bottommost 1-pixel tall horizontal strip
+			SDL_Rect destRect = {0, TileHeight - 1};
+			SDL_BlitSurface(stripSurface, NULL, s, &destRect);
+			SDL_FreeSurface(stripSurface);
+		}
+		if (wcschr(L"│┤╡╢╣║╝╜╛└┴├┼╞╟╚╩╠╬╧╨╙╘╫╪┘", str[0]) != NULL)
+		{
+			// Extract the topmost-penultimate 1-pixel tall horizontal strip
+			SDL_Rect srcRect = {0, 1, s->w, 1};
+			SDL_Surface *stripSurface = SDL_CreateRGBSurface(0, s->w, 1, 32, 0, 0, 0, 0);
+			SDL_BlitSurface(s, &srcRect, stripSurface, NULL);
+			// Clone the strip onto the topmost 1-pixel tall horizontal strip
+			SDL_Rect destRect = {0, 0};
+			SDL_BlitSurface(stripSurface, NULL, s, &destRect);
+			SDL_FreeSurface(stripSurface);
+		}
+		if (wcschr(L"└┴┬├─┼╞╟╚╔╩╦╠═╬╧╨╤╥╙╘╒╓╫╪┌", str[0]) != NULL)
+		{
+			// Extract the rightmost-penultimate 1-pixel wide vertical strip
+			SDL_Rect srcRect = {TileWidth - 2, 0, 1, s->h};
+			SDL_Surface *stripSurface = SDL_CreateRGBSurface(0, 1, s->h, 32, 0, 0, 0, 0);
+			SDL_BlitSurface(s, &srcRect, stripSurface, NULL);
+			// Clone the strip onto the rightmost 1-pixel wide vertical strip
+			SDL_Rect destRect = {TileWidth - 1, 0};
+			SDL_BlitSurface(stripSurface, NULL, s, &destRect);
+			SDL_FreeSurface(stripSurface);
+		}
+		if (wcschr(L"└┴┬├─┼╞╟╚╔╩╦╠═╬╧╨╤╥╙╘╒╓╫╪┌", str[0]) != NULL)
+		{
+			// Extract the leftmost-penultimate 1-pixel wide vertical strip
+			SDL_Rect srcRect = {1, 0, 1, s->h};
+			SDL_Surface *stripSurface = SDL_CreateRGBSurface(0, 1, s->h, 32, 0, 0, 0, 0);
+			SDL_BlitSurface(s, &srcRect, stripSurface, NULL);
+			// Clone the strip onto the leftmost 1-pixel wide vertical strip
+			SDL_Rect destRect = {0, 0};
+			SDL_BlitSurface(stripSurface, NULL, s, &destRect);
+			SDL_FreeSurface(stripSurface);
+		}
+#endif
 		t = SDL_CreateTextureFromSurface(ren, s);
 		SDL_FreeSurface(s);
 	}

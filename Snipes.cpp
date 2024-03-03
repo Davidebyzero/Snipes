@@ -110,16 +110,16 @@ void ReadSkillLevel()
 		}
 }
 
-static const BYTE snipeShootingAccuracyTable['Z'-'A'+1] = {2, 3, 4, 3, 4, 4, 3, 4, 3, 4, 4, 5, 3, 4, 3, 4, 3, 4, 3, 4, 4, 5, 4, 4, 5, 5};
-static const bool enableGhostSnipesTable    ['Z'-'A'+1] = {0, 0, 0, 1, 1, 1, 0, 0, 1, 1, 1, 1, 0, 0, 1, 1, 0, 0, 1, 1, 1, 1, 1, 1, 1, 1};
-static const bool rubberBulletTable         ['Z'-'A'+1] = {0, 0, 0, 0, 0, 0, 1, 1, 1, 1, 1, 1, 0, 0, 0, 0, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1};
-static const BYTE ghostBitingAccuracyTable  ['Z'-'A'+1] = {0x7F, 0x7F, 0x7F, 0x3F, 0x3F, 0x1F, 0x7F, 0x7F, 0x3F, 0x3F, 0x1F, 0x1F, 0x7F, 0x7F, 0x3F, 0x3F, 0x7F, 0x7F, 0x3F, 0x3F, 0x1F, 0x1F, 0x3F, 0x1F, 0x1F, 0x0F};
-static const BYTE maxSnipesTable            ['9'-'1'+1] = { 10,  20,  30,  40,  60,  80, 100, 120, 150};
-static const BYTE numGeneratorsTable        ['9'-'1'+1] = {  3,   3,   4,   4,   5,   5,   6,   8,  10};
-static const BYTE numLivesTable             ['9'-'1'+1] = {  5,   5,   5,   5,   5,   4,   4,   3,   2};
+static const BYTE snipeShootingAccuracyTable    ['Z'-'A'+1] = {2, 3, 4, 3, 4, 4, 3, 4, 3, 4, 4, 5, 3, 4, 3, 4, 3, 4, 3, 4, 4, 5, 4, 4, 5, 5}; // higher number = higher accuracy
+static const bool enableSmallSnipesTable        ['Z'-'A'+1] = {0, 0, 0, 1, 1, 1, 0, 0, 1, 1, 1, 1, 0, 0, 1, 1, 0, 0, 1, 1, 1, 1, 1, 1, 1, 1};
+static const bool bouncingBulletTable           ['Z'-'A'+1] = {0, 0, 0, 0, 0, 0, 1, 1, 1, 1, 1, 1, 0, 0, 0, 0, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1};
+static const BYTE smallSnipeExplosionChanceTable['Z'-'A'+1] = {0x7F, 0x7F, 0x7F, 0x3F, 0x3F, 0x1F, 0x7F, 0x7F, 0x3F, 0x3F, 0x1F, 0x1F, 0x7F, 0x7F, 0x3F, 0x3F, 0x7F, 0x7F, 0x3F, 0x3F, 0x1F, 0x1F, 0x3F, 0x1F, 0x1F, 0x0F}; // lower number = higher chance
+static const BYTE maxSnipesTable                ['9'-'1'+1] = { 10,  20,  30,  40,  60,  80, 100, 120, 150};
+static const BYTE numSnipePortalsTable          ['9'-'1'+1] = {  3,   3,   4,   4,   5,   5,   6,   8,  10};
+static const BYTE numLivesTable                 ['9'-'1'+1] = {  5,   5,   5,   5,   5,   4,   4,   3,   2};
 
-bool enableElectricWalls, enableGhostSnipes, generatorsResistSnipeBullets, enableRubberBullets;
-BYTE snipeShootingAccuracy, ghostBitingAccuracy, maxSnipes, numGeneratorsAtStart, numLives;
+bool enableElectricWalls, enableSmallSnipes, snipePortalsResistSnipeSpears, enableBouncingBullets;
+BYTE snipeShootingAccuracy, smallSnipeExplosionChance, maxSnipes, numSnipePortalsAtStart, numLives;
 
 enum MoveDirection : BYTE  // progresses from 0 to 7 in the clockwise direction
 {
@@ -209,54 +209,54 @@ struct className\
 	memberFunctions\
 };
 
-DEFINE_OBJECT_AND_MEMBERS(Object,    BYTE unused1, BYTE unused2,    BYTE unused3,);
-DEFINE_OBJECT_AND_MEMBERS(Generator, BYTE unused,  BYTE spawnFrame, BYTE animFrame, DEFINE_ANCESTOR(Object));
-DEFINE_OBJECT_AND_MEMBERS(Explosion, BYTE unused,  BYTE spriteSize, BYTE animFrame, DEFINE_ANCESTOR(Object));
+DEFINE_OBJECT_AND_MEMBERS(Object,      BYTE unused1, BYTE unused2,    BYTE unused3,);
+DEFINE_OBJECT_AND_MEMBERS(SnipePortal, BYTE unused,  BYTE spawnFrame, BYTE animFrame, DEFINE_ANCESTOR(Object));
+DEFINE_OBJECT_AND_MEMBERS(Explosion,   BYTE unused,  BYTE spriteSize, BYTE animFrame, DEFINE_ANCESTOR(Object));
 
 #define DEFINE_MOVING_OBJECT_AND_MEMBERS(className,member1,member2,memberFunctions) DEFINE_OBJECT_AND_MEMBERS(className, member1, MoveDirection moveDirection, member2, memberFunctions)
 
 DEFINE_MOVING_OBJECT_AND_MEMBERS(MovingObject, BYTE unused1,       BYTE unused2,    DEFINE_ANCESTOR(Object));
 DEFINE_MOVING_OBJECT_AND_MEMBERS(Player,       BYTE firingFrame,   BYTE inputFrame, DEFINE_ANCESTOR(Object) DEFINE_ANCESTOR(MovingObject));
 DEFINE_MOVING_OBJECT_AND_MEMBERS(Enemy,        BYTE movementFlags, BYTE moveFrame,  DEFINE_ANCESTOR(Object) DEFINE_ANCESTOR(MovingObject));
-DEFINE_MOVING_OBJECT_AND_MEMBERS(Bullet,       BYTE bulletType,    BYTE animFrame,  DEFINE_ANCESTOR(Object) DEFINE_ANCESTOR(MovingObject));
+DEFINE_MOVING_OBJECT_AND_MEMBERS(Weapon,       BYTE weaponType,    BYTE animFrame,  DEFINE_ANCESTOR(Object) DEFINE_ANCESTOR(MovingObject));
 
-struct Snipe : public Enemy { DEFINE_ANCESTOR(Object) DEFINE_ANCESTOR(MovingObject) };
-struct Ghost : public Enemy { DEFINE_ANCESTOR(Object) DEFINE_ANCESTOR(MovingObject) };
+struct LargeSnipe : public Enemy { DEFINE_ANCESTOR(Object) DEFINE_ANCESTOR(MovingObject) };
+struct SmallSnipe : public Enemy { DEFINE_ANCESTOR(Object) DEFINE_ANCESTOR(MovingObject) };
 
 enum EnemyMovementFlag : BYTE
 {
-	EnemyMovementFlag_TurnDirection     = 1 << 0, // clear = clockwise, set = counterclockwise; set in stone when a snipe comes out of a generator
-	EnemyMovementFlag_GhostMoveStraight = 1 << 1, // for ghosts only; clear = move based on direction of player, set = keep moving in current direction until an obstacle is hit
+	EnemyMovementFlag_TurnDirection          = 1 << 0, // clear = clockwise, set = counterclockwise; set in stone when a snipe comes out of a snipe portal
+	EnemyMovementFlag_SmallSnipeMoveStraight = 1 << 1, // for small snipes only; clear = move based on direction of player, set = keep moving in current direction until an obstacle is hit
 };
 
 enum SoundEffect : BYTE
 {
-	SoundEffect_PlayerBullet  = 0,
-	SoundEffect_SnipeBullet   = 1,
-	SoundEffect_ExplodeGhost  = 2,
-	SoundEffect_ExplodeSnipe  = 3,
-	SoundEffect_ExplodePlayer = 4,
+	SoundEffect_Bullet            = 0,
+	SoundEffect_Spear             = 1,
+	SoundEffect_ExplodeSmallSnipe = 2,
+	SoundEffect_ExplodeLargeSnipe = 3,
+	SoundEffect_ExplodePlayer     = 4,
 	SoundEffect_None = 0xFF
 };
 
 BYTE playerFiringPeriod; // in pairs of frames
 WORD frame;
 static bool playerAnimEyesNotWide, isPlayerDying, isPlayerExploding;
-static BYTE lastHUD_numGhosts, lastHUD_numGeneratorsKilled, lastHUD_numSnipes, lastHUD_numPlayerDeaths;
-static BYTE numGenerators, numGhosts, numBullets, numPlayerDeaths, numSnipes, playerEyeAnimFrame, orthoDistance;
-static ObjectIndex objectHead_free, objectHead_bullets, objectHead_explosions, objectHead_ghosts, objectHead_snipes, objectHead_generators;
-static OrthogonalDirection bulletCollisionDirection;
+static BYTE lastHUD_numSmallSnipes, lastHUD_numSnipePortalsDestroyed, lastHUD_numLargeSnipes, lastHUD_numPlayerDeaths;
+static BYTE numSnipePortals, numSmallSnipes, numWeapons, numPlayerDeaths, numLargeSnipes, playerEyeAnimFrame, orthoDistance;
+static ObjectIndex objectHead_free, objectHead_weapons, objectHead_explosions, objectHead_smallSnipes, objectHead_largeSnipes, objectHead_snipePortals;
+static OrthogonalDirection weaponCollisionDirection;
 static SoundEffect currentSoundEffect = SoundEffect_None;
 static BYTE currentSoundEffectFrame;
-static WORD lastHUD_numGhostsKilled, lastHUD_numSnipesKilled, numGhostsKilled, numSnipesKilled, viewportFocusX, viewportFocusY;
-static MazeTile *bulletTestPos;
+static WORD lastHUD_numSmallSnipesDestroyed, lastHUD_numLargeSnipesDestroyed, numSmallSnipesDestroyed, numLargeSnipesDestroyed, viewportFocusX, viewportFocusY;
+static MazeTile *weaponTestPos;
 static SHORT lastHUD_score, score;
 Object *currentObject;
 const WORD *currentSprite;
 
 #define MAX_OBJECTS 0x100
 
-static BYTE bulletLifetime[MAX_OBJECTS];
+static BYTE weaponLifetime[MAX_OBJECTS];
 
 static Object objects[MAX_OBJECTS];
 
@@ -266,8 +266,8 @@ static Object objects[MAX_OBJECTS];
 
 enum
 {
-	BulletType_Player = 0,
-	BulletType_Snipe  = 6,
+	WeaponType_Bullet = 0, // fired by the player
+	WeaponType_Spear  = 6, // fired by a snipe
 };
 
 template <typename OBJECT_TYPE>
@@ -325,11 +325,11 @@ void InitializeHUD()
 		scratchBuffer[6] = 'a';
 	outputText  (0x17, 40, 2,  0, scratchBuffer);
 
-	lastHUD_numGhosts = 0xFF;
-	lastHUD_numGeneratorsKilled = 0xFF;
-	lastHUD_numSnipes = 0xFF;
-	lastHUD_numGhostsKilled = 0xFFFF;
-	lastHUD_numSnipesKilled = 0xFFFF;
+	lastHUD_numSmallSnipes = 0xFF;
+	lastHUD_numSnipePortalsDestroyed = 0xFF;
+	lastHUD_numLargeSnipes = 0xFF;
+	lastHUD_numSmallSnipesDestroyed = 0xFFFF;
+	lastHUD_numLargeSnipesDestroyed = 0xFFFF;
 	lastHUD_numPlayerDeaths = 0xFF;
 	lastHUD_score = -1;
 }
@@ -487,7 +487,7 @@ BYTE CreateNewObject()
 
 #define SPRITE_SIZE(x,y) (((x)<<8)+(y))
 
-// generator
+// snipe portal
 static const WORD data_1002[] = {SPRITE_SIZE(2,2), 0xFDA, 0xEBF, 0xDC0, 0xCD9};
 static const WORD data_100C[] = {SPRITE_SIZE(2,2), 0xEFF, 0xEFF, 0xEFF, 0xEFF};
 static const WORD data_1016[] = {SPRITE_SIZE(2,2), 0xEDA, 0xEBF, 0xEC0, 0xED9};
@@ -509,19 +509,19 @@ static const WORD *data_10A2[] = {data_1002, data_100C, data_1016, data_1020, da
 static const WORD data_10E2[] = {SPRITE_SIZE(2,2), 0xF93, 0xF93, 0xF11, 0xF10};
 static const WORD data_10EC[] = {SPRITE_SIZE(2,2), 0xF4F, 0xF4F, 0xF11, 0xF10};
 //static const WORD *data_10F6[] = {data_10E2, data_10EC};
-// ghost
+// small snipe
 static const WORD data_10FE[] = {SPRITE_SIZE(1,1), 0x202};
-// snipe
+// large snipe
 static const WORD data_1108[] = {SPRITE_SIZE(2,1), 0x201, 0x218};
 static const WORD data_1112[] = {SPRITE_SIZE(2,1), 0x201, 0x21A};
 static const WORD data_111C[] = {SPRITE_SIZE(2,1), 0x201, 0x219};
 static const WORD data_1126[] = {SPRITE_SIZE(2,1), 0x21B, 0x201};
 static const WORD *data_1130[] = {data_1108, data_1112, data_1112, data_1112, data_111C, data_1126, data_1126, data_1126};
-// player bullet
+// bullet
 static const WORD data_1150[] = {SPRITE_SIZE(1,1), 0xE09};
 static const WORD data_115A[] = {SPRITE_SIZE(1,1), 0xB0F};
 static const WORD *data_11D4[] = {data_1150, data_115A, data_1150, data_115A};
-// snipe bullet
+// spear
 static const WORD data_1164[] = {SPRITE_SIZE(1,1), 0xA18};
 static const WORD data_116E[] = {SPRITE_SIZE(1,1), 0xA2F};
 static const WORD data_1178[] = {SPRITE_SIZE(1,1), 0xA1A};
@@ -531,7 +531,7 @@ static const WORD data_1196[] = {SPRITE_SIZE(1,1), 0xA2F};
 static const WORD data_11A0[] = {SPRITE_SIZE(1,1), 0xA1B};
 static const WORD data_11AA[] = {SPRITE_SIZE(1,1), 0xA5C};
 static const WORD *data_11B4[] = {data_1164, data_116E, data_1178, data_1182, data_118C, data_1196, data_11A0, data_11AA};
-// player or generator explosion
+// player or snipe portal explosion
 static const WORD data_12C2[] = {SPRITE_SIZE(2,2), 0xFB0, 0xFB2, 0xFB2, 0xFB0};
 static const WORD data_12CC[] = {SPRITE_SIZE(2,2), 0xBB2, 0xBB0, 0xBB0, 0xBB2};
 static const WORD data_12D6[] = {SPRITE_SIZE(2,2), 0xCB0, 0xCB2, 0xCB2, 0xCB0};
@@ -539,7 +539,7 @@ static const WORD data_12E0[] = {SPRITE_SIZE(2,2), 0x4B2, 0x4B0, 0x4B0, 0x4B2};
 static const WORD data_12EA[] = {SPRITE_SIZE(2,2), 0x62A, 0x60F, 0x62A, 0x60F};
 static const WORD data_12F4[] = {SPRITE_SIZE(2,2), 0x807, 0x820, 0x807, 0x820};
 static const WORD *data_12FE[] = {data_12C2, data_12CC, data_12D6, data_12E0, data_12EA, data_12F4};
-// snipe explosion
+// large snipe explosion
 static const WORD data_1316[] = {SPRITE_SIZE(2,1), 0xFB0, 0xFB2};
 static const WORD data_1320[] = {SPRITE_SIZE(2,1), 0xBB2, 0xBB0};
 static const WORD data_132A[] = {SPRITE_SIZE(2,1), 0xCB0, 0xCB2};
@@ -547,7 +547,7 @@ static const WORD data_1334[] = {SPRITE_SIZE(2,1), 0x4B2, 0x4B0};
 static const WORD data_133E[] = {SPRITE_SIZE(2,1), 0x62A, 0x60F};
 static const WORD data_1348[] = {SPRITE_SIZE(2,1), 0x807, 0x820};
 static const WORD *data_1352[] = {data_1316, data_1320, data_132A, data_1334, data_133E, data_1348};
-// ghost explosion
+// small snipe explosion
 static const WORD data_136A[] = {SPRITE_SIZE(1,1), 0xFB2};
 static const WORD data_1374[] = {SPRITE_SIZE(1,1), 0xB0F};
 static const WORD data_137E[] = {SPRITE_SIZE(1,1), 0xC09};
@@ -558,7 +558,7 @@ bool IsPlayer(BYTE chr)
 {
 	return chr == 0x93 || chr == 0x4F || chr == 0x11 || chr == 0x10;
 }
-bool IsGenerator(MazeTile tile)
+bool IsSnipePortal(MazeTile tile)
 {
 #ifdef FIX_BUGS
 	return tile.chr == 0xDA || tile.chr == 0xBF || tile.chr == 0xC0 || tile.chr == 0xD9 || tile.chr == 0xFF;
@@ -774,38 +774,38 @@ void PlaceObjectInRandomUnoccupiedMazeCell()
 	while (IsObjectLocationOccupied(currentObject->y, currentObject->x));
 }
 
-void CreateGeneratorsAndPlayer()
+void CreateSnipePortalsAndPlayer()
 {
 	for (WORD data_B58 = 1; data_B58 <= OBJECT_LASTFREE; data_B58++)
 		objects[data_B58].next = data_B58 + 1;
 	objects[OBJECT_LASTFREE].next = 0;
 	objectHead_free = 1;
-	objectHead_bullets = 0;
+	objectHead_weapons = 0;
 	objectHead_explosions = 0;
-	objectHead_ghosts = 0;
-	objectHead_snipes = 0;
-	objectHead_generators = 0;
-	for (WORD data_B58 = 0; data_B58 < numGeneratorsAtStart; data_B58++)
+	objectHead_smallSnipes = 0;
+	objectHead_largeSnipes = 0;
+	objectHead_snipePortals = 0;
+	for (WORD data_B58 = 0; data_B58 < numSnipePortalsAtStart; data_B58++)
 	{
-		ObjectIndex newGenerator = CreateNewObject();
-		objects[newGenerator].next = objectHead_generators;
-		objectHead_generators = newGenerator;
-		Generator &generator = SetCurrentObject<Generator>(newGenerator);
-		generator.sprite = FAKE_POINTER(1002);
+		ObjectIndex newSnipePortal = CreateNewObject();
+		objects[newSnipePortal].next = objectHead_snipePortals;
+		objectHead_snipePortals = newSnipePortal;
+		SnipePortal &snipePortal = SetCurrentObject<SnipePortal>(newSnipePortal);
+		snipePortal.sprite = FAKE_POINTER(1002);
 		currentSprite = data_1002;
 		PlaceObjectInRandomUnoccupiedMazeCell();
-		generator.unused = 0;
-		generator.animFrame = (BYTE)GetRandomMasked(0xF);
-		generator.spawnFrame = 1;
+		snipePortal.unused = 0;
+		snipePortal.animFrame = (BYTE)GetRandomMasked(0xF);
+		snipePortal.spawnFrame = 1;
 		PlotObjectToMaze();
 	}
-	numGenerators = numGeneratorsAtStart;
-	numGhostsKilled = 0;
-	numGhosts = 0;
-	numBullets = 0;
-	numSnipesKilled = 0;
+	numSnipePortals = numSnipePortalsAtStart;
+	numSmallSnipesDestroyed = 0;
+	numSmallSnipes = 0;
+	numWeapons = 0;
+	numLargeSnipesDestroyed = 0;
 	numPlayerDeaths = 0;
-	numSnipes = 0;
+	numLargeSnipes = 0;
 	score = 0;
 	playerAnimEyesNotWide = false;
 	playerEyeAnimFrame = 0;
@@ -837,19 +837,19 @@ void DrawViewport();
 bool UpdateHUD(bool incrementFrame = true) // returns true if the match has been won
 {
 	frame += incrementFrame;
-	if (lastHUD_numSnipesKilled != numSnipesKilled)
-		outputNumber(0x13, 0, 4, 0, 11, lastHUD_numSnipesKilled = numSnipesKilled);
-	if (lastHUD_numGhostsKilled != numGhostsKilled)
-		outputNumber(0x13, 0, 4, 0, 20, lastHUD_numGhostsKilled = numGhostsKilled);
-	if (lastHUD_numGeneratorsKilled != numGenerators)
+	if (lastHUD_numLargeSnipesDestroyed != numLargeSnipesDestroyed)
+		outputNumber(0x13, 0, 4, 0, 11, lastHUD_numLargeSnipesDestroyed = numLargeSnipesDestroyed);
+	if (lastHUD_numSmallSnipesDestroyed != numSmallSnipesDestroyed)
+		outputNumber(0x13, 0, 4, 0, 20, lastHUD_numSmallSnipesDestroyed = numSmallSnipesDestroyed);
+	if (lastHUD_numSnipePortalsDestroyed != numSnipePortals)
 	{
-		outputNumber(0x17, 0, 2, 1,  3, lastHUD_numGeneratorsKilled = numGenerators);
-		outputNumber(0x13, 0, 2, 0,  3, numGeneratorsAtStart - numGenerators);
+		outputNumber(0x17, 0, 2, 1,  3, lastHUD_numSnipePortalsDestroyed = numSnipePortals);
+		outputNumber(0x13, 0, 2, 0,  3, numSnipePortalsAtStart - numSnipePortals);
 	}
-	if (lastHUD_numSnipes != numSnipes)
-		outputNumber(0x17, 0, 3, 1, 12, lastHUD_numSnipes = numSnipes);
-	if (lastHUD_numGhosts != numGhosts)
-		outputNumber(0x17, 0, 3, 1, 21, lastHUD_numGhosts = numGhosts);
+	if (lastHUD_numLargeSnipes != numLargeSnipes)
+		outputNumber(0x17, 0, 3, 1, 12, lastHUD_numLargeSnipes = numLargeSnipes);
+	if (lastHUD_numSmallSnipes != numSmallSnipes)
+		outputNumber(0x17, 0, 3, 1, 21, lastHUD_numSmallSnipes = numSmallSnipes);
 	if (lastHUD_score != score)
 	{
 		lastHUD_score = score;
@@ -882,7 +882,7 @@ bool UpdateHUD(bool incrementFrame = true) // returns true if the match has been
 	}
 	outputNumber(0x17, 0, 5, 1, 34, frame); // Time
 
-	if (numSnipes || numGenerators || numGhosts)
+	if (numLargeSnipes || numSnipePortals || numSmallSnipes)
 		return false;
 
 	DrawViewport();
@@ -923,7 +923,7 @@ void ExplodeObject(ObjectIndex arg)
 		currentSprite = data_1316;
 		explosion.spriteSize = EXPLOSION_SIZE(2,1);
 		explosion.animFrame = 0;
-		SetSoundEffectState(0, SoundEffect_ExplodeSnipe);
+		SetSoundEffectState(0, SoundEffect_ExplodeLargeSnipe);
 	}
 	if (data_CC8 == 1 && data_CC9 == 1)
 	{
@@ -931,7 +931,7 @@ void ExplodeObject(ObjectIndex arg)
 		currentSprite = data_136A;
 		explosion.spriteSize = EXPLOSION_SIZE(1,1);
 		explosion.animFrame = 2;
-		SetSoundEffectState(2, SoundEffect_ExplodeGhost);
+		SetSoundEffectState(2, SoundEffect_ExplodeSmallSnipe);
 	}
 	PlotObjectToMaze();
 }
@@ -964,7 +964,7 @@ void FreeObjectInList(ObjectIndex *objectHead, ObjectIndex object)
 		return;
 	}
 	FreeObjectInList_worker(objectHead, object);
-	if (objectHead != &objectHead_bullets)
+	if (objectHead != &objectHead_weapons)
 	{
 		ExplodeObject(object);
 		return;
@@ -972,147 +972,147 @@ void FreeObjectInList(ObjectIndex *objectHead, ObjectIndex object)
 	FreeObject(object);
 }
 
-bool MoveBulletAndTestHit(OrthogonalDirection arg)
+bool MoveWeaponAndTestHit(OrthogonalDirection arg)
 {
-	switch (bulletCollisionDirection = arg)
+	switch (weaponCollisionDirection = arg)
 	{
 	case OrthogonalDirection_Up:
-		bulletTestPos -= MAZE_WIDTH;
+		weaponTestPos -= MAZE_WIDTH;
 		if (--currentObject->y == 0xFF)
 		{
 			currentObject->y = MAZE_HEIGHT - 1;
-			bulletTestPos += _countof(maze);
+			weaponTestPos += _countof(maze);
 		}
 		break;
 	case OrthogonalDirection_Right:
-		bulletTestPos++;
+		weaponTestPos++;
 		if (++currentObject->x >= MAZE_WIDTH)
 		{
 			currentObject->x = 0;
-			bulletTestPos -= MAZE_WIDTH;
+			weaponTestPos -= MAZE_WIDTH;
 		}
 		break;
 	case OrthogonalDirection_Down:
-		bulletTestPos += MAZE_WIDTH;
+		weaponTestPos += MAZE_WIDTH;
 		if (++currentObject->y >= MAZE_HEIGHT)
 		{
 			currentObject->y = 0;
-			bulletTestPos -= _countof(maze);
+			weaponTestPos -= _countof(maze);
 		}
 		break;
 	case OrthogonalDirection_Left:
-		bulletTestPos--;
+		weaponTestPos--;
 		if (--currentObject->x == 0xFF)
 		{
 			currentObject->x = MAZE_WIDTH - 1;
-			bulletTestPos += MAZE_WIDTH;
+			weaponTestPos += MAZE_WIDTH;
 		}
 		break;
 	default:
 		UNREACHABLE;
 	}
-	return bulletTestPos->chr != ' ';
+	return weaponTestPos->chr != ' ';
 }
 
-void UpdateBullets()
+void UpdateWeapons()
 {
 	ObjectIndex prevObject = 0;
-	for (ObjectIndex object = objectHead_bullets; object;)
+	for (ObjectIndex object = objectHead_weapons; object;)
 	{
-		Bullet &bullet = SetCurrentObject<Bullet>(object);
-		bulletTestPos = &maze[bullet.y * MAZE_WIDTH + bullet.x];
-		if (bulletTestPos->chr == 0xB2)
+		Weapon &weapon = SetCurrentObject<Weapon>(object);
+		weaponTestPos = &maze[weapon.y * MAZE_WIDTH + weapon.x];
+		if (weaponTestPos->chr == 0xB2)
 		{
-			ObjectIndex nextObject = bullet.next;
-			*bulletTestPos = MazeTile(0x9, ' ');
-			FreeObjectInList(&objectHead_bullets, object);
-			numBullets--;
+			ObjectIndex nextObject = weapon.next;
+			*weaponTestPos = MazeTile(0x9, ' ');
+			FreeObjectInList(&objectHead_weapons, object);
+			numWeapons--;
 			object = nextObject;
 			continue;
 		}
-		*bulletTestPos = MazeTile(0x9, ' ');
-		switch (bullet.moveDirection)
+		*weaponTestPos = MazeTile(0x9, ' ');
+		switch (weapon.moveDirection)
 		{
 		case MoveDirection_UpRight:
-			if (MoveBulletAndTestHit(OrthogonalDirection_Right) || (IsDiagonalDoubledPhase(bullet.y) && MoveBulletAndTestHit(OrthogonalDirection_Right)))
+			if (MoveWeaponAndTestHit(OrthogonalDirection_Right) || (IsDiagonalDoubledPhase(weapon.y) && MoveWeaponAndTestHit(OrthogonalDirection_Right)))
 				break;
 			goto case_MoveDirection_Up;
 		case MoveDirection_DownRight:
-			if (MoveBulletAndTestHit(OrthogonalDirection_Down) || (IsDiagonalDoubledPhase(bullet.y) && MoveBulletAndTestHit(OrthogonalDirection_Right)))
+			if (MoveWeaponAndTestHit(OrthogonalDirection_Down) || (IsDiagonalDoubledPhase(weapon.y) && MoveWeaponAndTestHit(OrthogonalDirection_Right)))
 				break;
 			// fall through
 		case MoveDirection_Right:
-			if (MoveBulletAndTestHit(OrthogonalDirection_Right))
+			if (MoveWeaponAndTestHit(OrthogonalDirection_Right))
 				break;
 			goto main_139A;
 		case MoveDirection_Down:
-			if (MoveBulletAndTestHit(OrthogonalDirection_Down))
+			if (MoveWeaponAndTestHit(OrthogonalDirection_Down))
 				break;
 			goto main_139A;
 		case MoveDirection_DownLeft:
-			if (MoveBulletAndTestHit(OrthogonalDirection_Down) || (IsDiagonalDoubledPhase(bullet.y) && MoveBulletAndTestHit(OrthogonalDirection_Left)))
+			if (MoveWeaponAndTestHit(OrthogonalDirection_Down) || (IsDiagonalDoubledPhase(weapon.y) && MoveWeaponAndTestHit(OrthogonalDirection_Left)))
 				break;
 			// fall through
 		case MoveDirection_Left:
-			if (MoveBulletAndTestHit(OrthogonalDirection_Left))
+			if (MoveWeaponAndTestHit(OrthogonalDirection_Left))
 				break;
 			goto main_139A;
 		case MoveDirection_UpLeft:
-			if (MoveBulletAndTestHit(OrthogonalDirection_Left) || (IsDiagonalDoubledPhase(bullet.y) && MoveBulletAndTestHit(OrthogonalDirection_Left)))
+			if (MoveWeaponAndTestHit(OrthogonalDirection_Left) || (IsDiagonalDoubledPhase(weapon.y) && MoveWeaponAndTestHit(OrthogonalDirection_Left)))
 				break;
 			// fall through
 		case MoveDirection_Up:
 		case_MoveDirection_Up:
-			if (MoveBulletAndTestHit(OrthogonalDirection_Up))
+			if (MoveWeaponAndTestHit(OrthogonalDirection_Up))
 				break;
 		main_139A:
-			if (bullet.bulletType!=BulletType_Player)
-				currentSprite = FakePointerToPointer(bullet.sprite);
+			if (weapon.weaponType!=WeaponType_Bullet)
+				currentSprite = FakePointerToPointer(weapon.sprite);
 			else
 			{
-				if (++bullet.animFrame > 3)
-					bullet.animFrame = 0;
-				currentSprite = data_11D4[bullet.animFrame];
+				if (++weapon.animFrame > 3)
+					weapon.animFrame = 0;
+				currentSprite = data_11D4[weapon.animFrame];
 			}
-			*bulletTestPos = (MazeTile&)currentSprite[1];
+			*weaponTestPos = (MazeTile&)currentSprite[1];
 			prevObject = object;
-			object = bullet.next;
+			object = weapon.next;
 			continue;
 		default:
 			UNREACHABLE;
 		}
-		BYTE find_this = bulletTestPos->chr;
+		BYTE find_this = weaponTestPos->chr;
 		if (!memchr(mazeWallCharacters, find_this, _countof(mazeWallCharacters)))
 		{
-			if (bullet.bulletType==BulletType_Player)
+			if (weapon.weaponType==WeaponType_Bullet)
 			{
 				if (memchr(enemyCharacters, find_this, _countof(enemyCharacters)))
 					score += 1;
 				else
-				if (IsGenerator(*bulletTestPos))
+				if (IsSnipePortal(*weaponTestPos))
 					score += 50;
 			}
 			else
-			if (generatorsResistSnipeBullets && IsGenerator(*bulletTestPos))
+			if (snipePortalsResistSnipeSpears && IsSnipePortal(*weaponTestPos))
 				goto main_150E;
-			*bulletTestPos = MazeTile(0xF, 0xB2);
+			*weaponTestPos = MazeTile(0xF, 0xB2);
 		}
 		else
-		if (enableRubberBullets && bullet.bulletType==BulletType_Player && bulletLifetime[object] && (bullet.moveDirection & MoveDirectionMask_Diagonal))
+		if (enableBouncingBullets && weapon.weaponType==WeaponType_Bullet && weaponLifetime[object] && (weapon.moveDirection & MoveDirectionMask_Diagonal))
 		{
-			bulletLifetime[object]--;
-			bullet.moveDirection = (MoveDirection)bulletBounceTable[bulletCollisionDirection][bullet.moveDirection];
-			SetSoundEffectState(1, SoundEffect_PlayerBullet);
-			MoveBulletAndTestHit((bulletCollisionDirection + 2) & OrthogonalDirectionMask_All);
+			weaponLifetime[object]--;
+			weapon.moveDirection = (MoveDirection)bulletBounceTable[weaponCollisionDirection][weapon.moveDirection];
+			SetSoundEffectState(1, SoundEffect_Bullet);
+			MoveWeaponAndTestHit((weaponCollisionDirection + 2) & OrthogonalDirectionMask_All);
 			goto main_139A;
 		}
 	main_150E:
-		numBullets--;
+		numWeapons--;
 		if (!prevObject)
-			objectHead_bullets = bullet.next;
+			objectHead_weapons = weapon.next;
 		else
-			objects[prevObject].next = bullet.next;
-		ObjectIndex nextObject = bullet.next;
+			objects[prevObject].next = weapon.next;
+		ObjectIndex nextObject = weapon.next;
 		FreeObject(object);
 		object = nextObject;
 	}
@@ -1288,7 +1288,7 @@ MoveObject_retval MoveObject(MovingObject &object)
 	return retval;
 }
 
-void FireBullet(BYTE bulletType)
+void FireWeapon(BYTE weaponType)
 {
 	MovingObject &shooter = *(MovingObject*)currentObject;
 	MoveDirection fireDirection = shooter.moveDirection;
@@ -1345,52 +1345,52 @@ void FireBullet(BYTE bulletType)
 	currentSprite = data_1150;
 	if (IsObjectLocationOccupied(y, x))
 	{
-		MazeTile &bulletHitPos = maze[y * MAZE_WIDTH + x];
-		if (!memchr(mazeWallCharacters, bulletHitPos.chr, _countof(mazeWallCharacters)))
+		MazeTile &weaponHitPos = maze[y * MAZE_WIDTH + x];
+		if (!memchr(mazeWallCharacters, weaponHitPos.chr, _countof(mazeWallCharacters)))
 		{
-			if (bulletType==BulletType_Player)
+			if (weaponType==WeaponType_Bullet)
 			{
-				if (memchr(enemyCharacters, bulletHitPos.chr, _countof(enemyCharacters)))
+				if (memchr(enemyCharacters, weaponHitPos.chr, _countof(enemyCharacters)))
 					score += 1;
 				else
-				if (IsGenerator(bulletHitPos))
+				if (IsSnipePortal(weaponHitPos))
 					score += 50;
-				bulletHitPos = MazeTile(0xF, 0xB2);
+				weaponHitPos = MazeTile(0xF, 0xB2);
 			}
 			else
-			if (!(generatorsResistSnipeBullets && IsGenerator(bulletHitPos)))
-				bulletHitPos = MazeTile(0xF, 0xB2);
+			if (!(snipePortalsResistSnipeSpears && IsSnipePortal(weaponHitPos)))
+				weaponHitPos = MazeTile(0xF, 0xB2);
 		}
 	}
 	else
 	{
-		ObjectIndex newBullet = CreateNewObject();
-		if (newBullet && numBullets <= 50)
+		ObjectIndex newWeapon = CreateNewObject();
+		if (newWeapon && numWeapons <= 50)
 		{
-			numBullets++;
+			numWeapons++;
 			Object *currentObject_backup = currentObject;
-			Bullet &bullet = SetCurrentObject<Bullet>(newBullet);
-			if (!objectHead_bullets)
-				objectHead_bullets = newBullet;
+			Weapon &weapon = SetCurrentObject<Weapon>(newWeapon);
+			if (!objectHead_weapons)
+				objectHead_weapons = newWeapon;
 			else
 			{
-				ObjectIndex objectTail_bullets = objectHead_bullets;
-				while (ObjectIndex nextObject = objects[objectTail_bullets].next)
-					objectTail_bullets = nextObject;
-				objects[objectTail_bullets].next = newBullet;
+				ObjectIndex objectTail_weapons = objectHead_weapons;
+				while (ObjectIndex nextObject = objects[objectTail_weapons].next)
+					objectTail_weapons = nextObject;
+				objects[objectTail_weapons].next = newWeapon;
 			}
-			bullet.next = 0;
-			if (bulletType==BulletType_Player)
-				bullet.sprite = FAKE_POINTER(1150);
+			weapon.next = 0;
+			if (weaponType==WeaponType_Bullet)
+				weapon.sprite = FAKE_POINTER(1150);
 			else
-				bullet.sprite = PointerToFakePointer(data_11B4[fireDirection]);
-			bullet.x = x;
-			bullet.y = y;
-			bullet.moveDirection = fireDirection;
-			bullet.animFrame = 0;
-			bullet.bulletType = bulletType;
-			bulletLifetime[newBullet] = (BYTE)GetRandomMasked(7) + 1;
-			currentSprite = FakePointerToPointer(bullet.sprite);
+				weapon.sprite = PointerToFakePointer(data_11B4[fireDirection]);
+			weapon.x = x;
+			weapon.y = y;
+			weapon.moveDirection = fireDirection;
+			weapon.animFrame = 0;
+			weapon.weaponType = weaponType;
+			weaponLifetime[newWeapon] = (BYTE)GetRandomMasked(7) + 1;
+			currentSprite = FakePointerToPointer(weapon.sprite);
 			PlotObjectToMaze();
 			currentObject = currentObject_backup;
 		}
@@ -1398,37 +1398,37 @@ void FireBullet(BYTE bulletType)
 	currentSprite = currentSprite_backup;
 }
 
-bool FireSnipeBullet()
+bool FireSnipeSpear()
 {
 	BYTE shiftCount = orthoDistance >> snipeShootingAccuracy;
 	if (shiftCount > 10)
 		return false;
 	if (GetRandomMasked(0xFFFF >> (15 - shiftCount)))
 		return false;
-	FireBullet(BulletType_Snipe);
-	SetSoundEffectState(0, SoundEffect_SnipeBullet);
+	FireWeapon(WeaponType_Spear);
+	SetSoundEffectState(0, SoundEffect_Spear);
 	return true;
 }
 
-void UpdateSnipes()
+void UpdateLargeSnipes()
 {
-	for (ObjectIndex object = objectHead_snipes; object;)
+	for (ObjectIndex object = objectHead_largeSnipes; object;)
 	{
-		Snipe &snipe = ((Snipe*)objects)[object];
+		LargeSnipe &snipe = ((LargeSnipe*)objects)[object];
 		MazeTile *snipeMazeRow = &maze[snipe.y * MAZE_WIDTH];
 		MazeTile * leftPart = &snipeMazeRow[snipe.x];
 		MazeTile *rightPart = snipe.x >= MAZE_WIDTH-1 ? &snipeMazeRow[0] : leftPart + 1;
-		MazeTile *ghostPart;
+		MazeTile *smallSnipePart;
 		if (leftPart->chr == 0xB2)
 		{
 			*leftPart = MazeTile(0x9, ' ');
-			ghostPart = rightPart;
+			smallSnipePart = rightPart;
 		}
 		else
 		if (rightPart->chr == 0xB2)
 		{
 			*rightPart = MazeTile(0x9, ' ');
-			ghostPart = leftPart;
+			smallSnipePart = leftPart;
 		}
 		else
 		if (--snipe.moveFrame == 0)
@@ -1489,7 +1489,7 @@ void UpdateSnipes()
 					snipe.moveDirection = al;
 					currentObject = (Object*)&snipe;
 					currentSprite = FakePointerToPointer(snipe.sprite);
-					bool tmp = FireSnipeBullet();
+					bool tmp = FireSnipeSpear();
 					snipe.moveDirection = moveDirection;
 					if (!tmp)
 						break;
@@ -1548,80 +1548,80 @@ void UpdateSnipes()
 			object = snipe.next;
 			continue;
 		}
-		if (enableGhostSnipes && ghostPart->chr == 0x01)
+		if (enableSmallSnipes && smallSnipePart->chr == 0x01)
 		{
-			*ghostPart = MazeTile(0x5, 0x02);
-			Ghost &ghost = (Ghost&)snipe;
-			ghost.x = ghostPart - snipeMazeRow;
+			*smallSnipePart = MazeTile(0x5, 0x02);
+			SmallSnipe &smallSnipe = (SmallSnipe&)snipe;
+			smallSnipe.x = smallSnipePart - snipeMazeRow;
 
-			// move this object out of the Snipe linked-list and into the Ghost linked-list
-			for (ObjectIndex *nextPtr = &objectHead_snipes;; nextPtr = &objects[*nextPtr].next)
+			// move this object out of the LargeSnipe linked-list and into the SmallSnipe linked-list
+			for (ObjectIndex *nextPtr = &objectHead_largeSnipes;; nextPtr = &objects[*nextPtr].next)
 			{
 				if (*nextPtr == object)
 				{
-					ObjectIndex nextObject = *nextPtr = ghost.next;
-					ghost.next = objectHead_ghosts;
-					objectHead_ghosts = object;
+					ObjectIndex nextObject = *nextPtr = smallSnipe.next;
+					smallSnipe.next = objectHead_smallSnipes;
+					objectHead_smallSnipes = object;
 					object = nextObject;
 					break;
 				}
 			}
-			ghost.moveFrame = 2;
-			ghost.sprite = FAKE_POINTER(10FE);
-			numGhosts++;
+			smallSnipe.moveFrame = 2;
+			smallSnipe.sprite = FAKE_POINTER(10FE);
+			numSmallSnipes++;
 		}
 		else
 		{
 			ObjectIndex nextObject = snipe.next;
-			FreeObjectInList(&objectHead_snipes, object);
+			FreeObjectInList(&objectHead_largeSnipes, object);
 			object = nextObject;
 		}
-		numSnipes--;
-		numSnipesKilled++;
+		numLargeSnipes--;
+		numLargeSnipesDestroyed++;
 	}
 }
 
-void UpdateGhosts()
+void UpdateSmallSnipes()
 {
-	for (ObjectIndex object = objectHead_ghosts; object;)
+	for (ObjectIndex object = objectHead_smallSnipes; object;)
 	{
-		Ghost &ghost = ((Ghost*)objects)[object];
-		MazeTile &ghostInMaze = maze[ghost.y * MAZE_WIDTH + ghost.x];
-		if (ghostInMaze.chr != 0xB2)
+		SmallSnipe &smallSnipe = ((SmallSnipe*)objects)[object];
+		MazeTile &smallSnipeInMaze = maze[smallSnipe.y * MAZE_WIDTH + smallSnipe.x];
+		if (smallSnipeInMaze.chr != 0xB2)
 		{
-			if (--ghost.moveFrame)
+			if (--smallSnipe.moveFrame)
 			{
-				object = ghost.next;
+				object = smallSnipe.next;
 				continue;
 			}
 		}
 		else
 		{
-	kill_ghost:
-			ObjectIndex nextObject = ghost.next;
-			FreeObjectInList(&objectHead_ghosts, object);
+	destroy_smallSnipe:
+			ObjectIndex nextObject = smallSnipe.next;
+			FreeObjectInList(&objectHead_smallSnipes, object);
 			object = nextObject;
-			numGhosts--;
-			numGhostsKilled++;
+			numSmallSnipes--;
+			numSmallSnipesDestroyed++;
 			continue;
 		}
-		ghostInMaze = MazeTile(0x9, ' ');
-		if (!(ghost.movementFlags & EnemyMovementFlag_GhostMoveStraight))
+		smallSnipeInMaze = MazeTile(0x9, ' ');
+		if (!(smallSnipe.movementFlags & EnemyMovementFlag_SmallSnipeMoveStraight))
 		{
-			OrthoDistanceInfo orthoDist = GetOrthoDistanceAndDirection(ghost);
+			OrthoDistanceInfo orthoDist = GetOrthoDistanceAndDirection(smallSnipe);
 			if (orthoDistance <= 4)
 			{
-				ghost.moveDirection = orthoDist.direction;
-				MoveObject_retval result = MoveObject(ghost);
-				if (result.hitObstruction && (ghost.moveDirection & MoveDirectionMask_Diagonal))
+				smallSnipe.moveDirection = orthoDist.direction;
+				MoveObject_retval result = MoveObject(smallSnipe);
+				if (result.hitObstruction && (smallSnipe.moveDirection & MoveDirectionMask_Diagonal))
 					if (IsPlayer(result.chrHit))
 					{
-						if (GetRandomMasked(ghostBitingAccuracy) == 0)
+						if (GetRandomMasked(smallSnipeExplosionChance) == 0)
 						{
 							result.bx_si->chr = 0xB2;
-							goto kill_ghost;
+							goto destroy_smallSnipe;
 						}
-#ifndef FIX_BUGS
+#if 0//ndef FIX_BUGS
 						// a compiler bug manifesting in the original game caused the CX register to be overwritten by the call to GetRandomMasked()
 						orthoDist.xy = 947;
 #endif
@@ -1632,12 +1632,12 @@ void UpdateGhosts()
 			else
 			if (orthoDist.y < 1)
 			{
-				ghost.moveDirection = ++orthoDist.direction;
-				MoveObject_retval result = MoveObject(ghost);
+				smallSnipe.moveDirection = ++orthoDist.direction;
+				MoveObject_retval result = MoveObject(smallSnipe);
 				if (!result.hitObstruction)
 				{
-					ghost.xy = result.cx;
-					goto plot_ghost_and_continue;
+					smallSnipe.xy = result.cx;
+					goto plot_smallSnipe_and_continue;
 				}
 				orthoDist.direction -= 2;
 			}
@@ -1647,46 +1647,46 @@ void UpdateGhosts()
 			else
 			if (orthoDist.x < 1)
 			{
-				ghost.moveDirection = orthoDist.direction += 2;
-				MoveObject_retval result = MoveObject(ghost);
+				smallSnipe.moveDirection = orthoDist.direction += 2;
+				MoveObject_retval result = MoveObject(smallSnipe);
 				if (!result.hitObstruction)
 				{
-					ghost.xy = result.cx;
-					goto plot_ghost_and_continue;
+					smallSnipe.xy = result.cx;
+					goto plot_smallSnipe_and_continue;
 				}
 				orthoDist.direction = (orthoDist.direction - 4) & MoveDirectionMask_All;
 			}
-			ghost.moveDirection = orthoDist.direction;
+			smallSnipe.moveDirection = orthoDist.direction;
 			{
-				MoveObject_retval result = MoveObject(ghost);
+				MoveObject_retval result = MoveObject(smallSnipe);
 				if (!result.hitObstruction)
 				{
-					ghost.xy = result.cx;
-					goto plot_ghost_and_continue;
+					smallSnipe.xy = result.cx;
+					goto plot_smallSnipe_and_continue;
 				}
 			}
 			if (orthoDistance >= 20)
-				ghost.movementFlags |= EnemyMovementFlag_GhostMoveStraight;
-			ghost.moveDirection = (MoveDirection)GetRandomMasked(MoveDirectionMask_All);
+				smallSnipe.movementFlags |= EnemyMovementFlag_SmallSnipeMoveStraight;
+			smallSnipe.moveDirection = (MoveDirection)GetRandomMasked(MoveDirectionMask_All);
 		}
 		for (Uint count=8; count; count--)
 		{
-			MoveObject_retval result = MoveObject(ghost);
+			MoveObject_retval result = MoveObject(smallSnipe);
 			if (!result.hitObstruction)
 			{
-				ghost.xy = result.cx;
+				smallSnipe.xy = result.cx;
 				break;
 			}
-			ghost.movementFlags &= ~EnemyMovementFlag_GhostMoveStraight;
-			if (ghost.movementFlags & EnemyMovementFlag_TurnDirection)
-				ghost.moveDirection = (ghost.moveDirection - 1) & MoveDirectionMask_All;
+			smallSnipe.movementFlags &= ~EnemyMovementFlag_SmallSnipeMoveStraight;
+			if (smallSnipe.movementFlags & EnemyMovementFlag_TurnDirection)
+				smallSnipe.moveDirection = (smallSnipe.moveDirection - 1) & MoveDirectionMask_All;
 			else
-				ghost.moveDirection = (ghost.moveDirection + 1) & MoveDirectionMask_All;
+				smallSnipe.moveDirection = (smallSnipe.moveDirection + 1) & MoveDirectionMask_All;
 		}
-	plot_ghost_and_continue:
-		maze[ghost.y * MAZE_WIDTH + ghost.x] = MazeTile(0x5, 0x02);
-		ghost.moveFrame = 3;
-		object = ghost.next;
+	plot_smallSnipe_and_continue:
+		maze[smallSnipe.y * MAZE_WIDTH + smallSnipe.x] = MazeTile(0x5, 0x02);
+		smallSnipe.moveFrame = 3;
+		object = smallSnipe.next;
 	}
 }
 
@@ -1734,36 +1734,36 @@ void EraseObjectFromMaze()
 
 //template <typename TYPE> TYPE &IncWrap(TYPE &n, 
 
-void UpdateGenerators()
+void UpdateSnipePortals()
 {
-	for (ObjectIndex object = objectHead_generators; object;)
+	for (ObjectIndex object = objectHead_snipePortals; object;)
 	{
-		Generator &generator = SetCurrentObject<Generator>(object);
-		if (++generator.animFrame >= _countof(data_10A2))
-			generator.animFrame = 0;
-		currentSprite = data_10A2[generator.animFrame];
-		generator.sprite = PointerToFakePointer(currentSprite);
+		SnipePortal &snipePortal = SetCurrentObject<SnipePortal>(object);
+		if (++snipePortal.animFrame >= _countof(data_10A2))
+			snipePortal.animFrame = 0;
+		currentSprite = data_10A2[snipePortal.animFrame];
+		snipePortal.sprite = PointerToFakePointer(currentSprite);
 		if (IsObjectTaggedToExplode())
 		{
-			ObjectIndex nextObject = generator.next;
-			FreeObjectInList(&objectHead_generators, object);
+			ObjectIndex nextObject = snipePortal.next;
+			FreeObjectInList(&objectHead_snipePortals, object);
 			object = nextObject;
-			numGenerators--;
+			numSnipePortals--;
 			continue;
 		}
 		EraseObjectFromMaze();
 		PlotObjectToMaze();
-		if (--generator.spawnFrame == 0)
+		if (--snipePortal.spawnFrame == 0)
 		{
 			GetOrthoDistanceAndDirection(*currentObject);
 			if (frame >= 0xF00)
-				generator.spawnFrame = 5;
+				snipePortal.spawnFrame = 5;
 			else
-				generator.spawnFrame = 5 + (orthoDistance >> (frame/0x100 + 1));
-			if (GetRandomMasked(0xF >> (numGeneratorsAtStart - numGenerators)) == 0)
+				snipePortal.spawnFrame = 5 + (orthoDistance >> (frame/0x100 + 1));
+			if (GetRandomMasked(0xF >> (numSnipePortalsAtStart - numSnipePortals)) == 0)
 			{
 				currentSprite = data_1112;
-				BYTE x = generator.x + 2;
+				BYTE x = snipePortal.x + 2;
 #ifdef EMULATE_LATENT_BUGS
 				if (x  > MAZE_WIDTH - 1)
 					x -= MAZE_WIDTH - 1;
@@ -1771,19 +1771,19 @@ void UpdateGenerators()
 				if (x >= MAZE_WIDTH)
 					x -= MAZE_WIDTH;
 #endif
-				BYTE y = generator.y;
+				BYTE y = snipePortal.y;
 				if (!IsObjectLocationOccupied(y, x))
 				{
-					if (numSnipes + numGhosts < maxSnipes)
+					if (numLargeSnipes + numSmallSnipes < maxSnipes)
 					{
 						ObjectIndex spawnedSnipeIndex = CreateNewObject();
 						if (spawnedSnipeIndex)
 						{
-							numSnipes++;
-							object = generator.next;
-							Snipe &spawnedSnipe = SetCurrentObject<Snipe>(spawnedSnipeIndex);
-							spawnedSnipe.next = objectHead_snipes;
-							objectHead_snipes = spawnedSnipeIndex;
+							numLargeSnipes++;
+							object = snipePortal.next;
+							LargeSnipe &spawnedSnipe = SetCurrentObject<LargeSnipe>(spawnedSnipeIndex);
+							spawnedSnipe.next = objectHead_largeSnipes;
+							objectHead_largeSnipes = spawnedSnipeIndex;
 							spawnedSnipe.x = x;
 							spawnedSnipe.y = y;
 							spawnedSnipe.moveDirection = MoveDirection_Right;
@@ -1797,7 +1797,7 @@ void UpdateGenerators()
 				}
 			}
 		}
-		object = generator.next;
+		object = snipePortal.next;
 	}
 }
 
@@ -2007,8 +2007,8 @@ playback_fire:
 			return false;
 		MoveDirection moveDirection_backup = player.moveDirection;
 		player.moveDirection = (MoveDirection)fireDirection;
-		FireBullet(BulletType_Player);
-		SetSoundEffectState(0, SoundEffect_PlayerBullet);
+		FireWeapon(WeaponType_Bullet);
+		SetSoundEffectState(0, SoundEffect_Bullet);
 		player.moveDirection = moveDirection_backup;
 		player.firingFrame = player.inputFrame == 1 ? playerFiringPeriod<<1 : playerFiringPeriod;
 		return false;
@@ -2056,14 +2056,14 @@ void UpdateExplosions()
 			{
 				explosion.sprite = PointerToFakePointer(data_1352[animFrame]);
 				currentSprite = data_1352[animFrame];
-				SetSoundEffectState(animFrame, SoundEffect_ExplodeSnipe);
+				SetSoundEffectState(animFrame, SoundEffect_ExplodeLargeSnipe);
 			}
 			else
 			if (explosion.spriteSize == EXPLOSION_SIZE(1,1))
 			{
 				explosion.sprite = PointerToFakePointer(data_1392[animFrame]);
 				currentSprite = data_1392[animFrame];
-				SetSoundEffectState(animFrame, SoundEffect_ExplodeGhost);
+				SetSoundEffectState(animFrame, SoundEffect_ExplodeSmallSnipe);
 			}
 			PlotObjectToMaze();
 		}
@@ -2071,9 +2071,9 @@ void UpdateExplosions()
 	}
 }
 
-static const WORD sound_ExplodeGhost [] = { 100,  100, 1400, 1800, 1600, 1200};
-static const WORD sound_ExplodeSnipe [] = {2200, 6600, 1800, 4400, 8400, 1100};
-static const WORD sound_ExplodePlayer[] = {2000, 8000, 6500, 4000, 2500, 1000};
+static const WORD sound_ExplodeSmallSnipe[] = { 100,  100, 1400, 1800, 1600, 1200};
+static const WORD sound_ExplodeLargeSnipe[] = {2200, 6600, 1800, 4400, 8400, 1100};
+static const WORD sound_ExplodePlayer    [] = {2000, 8000, 6500, 4000, 2500, 1000};
 
 void UpdateSound()
 {
@@ -2093,20 +2093,20 @@ void UpdateSound()
 	}
 	switch (currentSoundEffect)
 	{
-	case SoundEffect_PlayerBullet:
+	case SoundEffect_Bullet:
 		if (!currentSoundEffectFrame)
 			PlayTone(1900);
 		else
 			PlayTone(1400);
 		break;
-	case SoundEffect_SnipeBullet:
+	case SoundEffect_Spear:
 		PlayTone(1600);
 		break;
-	case SoundEffect_ExplodeGhost:
-		PlayTone(sound_ExplodeGhost[currentSoundEffectFrame]);
+	case SoundEffect_ExplodeSmallSnipe:
+		PlayTone(sound_ExplodeSmallSnipe[currentSoundEffectFrame]);
 		break;
-	case SoundEffect_ExplodeSnipe:
-		PlayTone(sound_ExplodeSnipe[currentSoundEffectFrame]);
+	case SoundEffect_ExplodeLargeSnipe:
+		PlayTone(sound_ExplodeLargeSnipe[currentSoundEffectFrame]);
 		break;
 	case SoundEffect_ExplodePlayer:
 		PlayTone(sound_ExplodePlayer[currentSoundEffectFrame]);
@@ -2291,16 +2291,16 @@ extern "C" int __cdecl SDL_main(int argc, char* argv[])
 			}
 		}
 
-		enableElectricWalls          = skillLevelLetter >= 'M'-'A';
-		generatorsResistSnipeBullets = skillLevelLetter >= 'W'-'A';
-		enableRubberBullets          = rubberBulletTable         [skillLevelLetter];
-		snipeShootingAccuracy        = snipeShootingAccuracyTable[skillLevelLetter];
-		enableGhostSnipes            = enableGhostSnipesTable    [skillLevelLetter];
-		ghostBitingAccuracy          = ghostBitingAccuracyTable  [skillLevelLetter];
-		maxSnipes                    = maxSnipesTable            [skillLevelNumber-1];
-		numGeneratorsAtStart         = numGeneratorsTable        [skillLevelNumber-1];
-		numLives                     = numLivesTable             [skillLevelNumber-1];
-		playerFiringPeriod           = 2;
+		enableElectricWalls           = skillLevelLetter >= 'M'-'A';
+		snipePortalsResistSnipeSpears = skillLevelLetter >= 'W'-'A';
+		enableBouncingBullets         = bouncingBulletTable           [skillLevelLetter];
+		snipeShootingAccuracy         = snipeShootingAccuracyTable    [skillLevelLetter];
+		enableSmallSnipes             = enableSmallSnipesTable        [skillLevelLetter];
+		smallSnipeExplosionChance     = smallSnipeExplosionChanceTable[skillLevelLetter];
+		maxSnipes                     = maxSnipesTable                [skillLevelNumber-1];
+		numSnipePortalsAtStart        = numSnipePortalsTable          [skillLevelNumber-1];
+		numLives                      = numLivesTable                 [skillLevelNumber-1];
+		playerFiringPeriod            = 2;
 
 		OpenDirectConsole();
 		if (int result = OpenKeyboard())
@@ -2320,7 +2320,7 @@ extern "C" int __cdecl SDL_main(int argc, char* argv[])
 		frame = 0;
 		InitializeHUD();
 		CreateMaze();
-		CreateGeneratorsAndPlayer();
+		CreateSnipePortalsAndPlayer();
 		SetSoundEffectState(0, SoundEffect_None);
 
 		if (playbackMode && _PLAYBACK_FOR_SCREEN_RECORDING)
@@ -2440,10 +2440,10 @@ extern "C" int __cdecl SDL_main(int argc, char* argv[])
 #endif
 				WaitForNextTick(tick_count);
 
-			UpdateBullets();
-			UpdateGhosts();
-			UpdateSnipes();
-			UpdateGenerators();
+			UpdateWeapons();
+			UpdateSmallSnipes();
+			UpdateLargeSnipes();
+			UpdateSnipePortals();
 
 			BYTE replayIO;
 			bool playbackFinished = false;

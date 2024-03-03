@@ -2171,7 +2171,7 @@ extern "C" int __cdecl SDL_main(int argc, char* argv[])
 	}
 	bool playbackMode;
 	const char *replayPlaybackFilename = NULL;
-	if (playbackMode = (argc == 2))
+	if ((playbackMode = (argc == 2)))
 		replayPlaybackFilename = argv[1];
 
 	if (int result = OpenConsole())
@@ -2189,6 +2189,11 @@ extern "C" int __cdecl SDL_main(int argc, char* argv[])
 	}
 
 	WORD tick_count;
+
+#ifdef CHEAT
+	rerecordingMode = !playbackMode;
+	bool replayFileWriting = false;
+#endif
 
 	ClearConsole();
 	if (!playbackMode)
@@ -2229,11 +2234,6 @@ extern "C" int __cdecl SDL_main(int argc, char* argv[])
 	random_seed_hi = tick_count >> 8;
 	if (!random_seed_hi)
 		random_seed_hi = 555;
-
-#ifdef CHEAT
-	rerecordingMode = !playbackMode;
-	bool replayFileWriting = false;
-#endif
 
 	for (;;)
 	{

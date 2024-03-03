@@ -560,7 +560,7 @@ bool IsPlayer(BYTE chr)
 }
 bool IsSnipePortal(MazeTile tile)
 {
-#ifdef FIX_BUGS
+#if defined(FIX_BUGS) || defined(FIX_SNIPE_PORTAL_IDENTIFICATION_BUG)
 	return tile.chr == 0xDA || tile.chr == 0xBF || tile.chr == 0xC0 || tile.chr == 0xD9 || tile.chr == 0xFF;
 #else
 	for (Uint i=1; i<_countof(data_1002); i++)
@@ -1129,7 +1129,7 @@ struct OrthoDistanceInfo
 };
 
 OrthoDistanceInfo GetOrthoDistanceAndDirection(Object &object)
-// Calculates the orthogonal distance between object and the viewport focus
+// Calculates the orthogonal distance between object and the player
 {
 	OrthoDistanceInfo result;
 	BYTE bx = 1;
@@ -1621,8 +1621,9 @@ void UpdateSmallSnipes()
 							result.bx_si->chr = 0xB2;
 							goto destroy_smallSnipe;
 						}
-#if 0//ndef FIX_BUGS
-						// a compiler bug manifesting in the original game caused the CX register to be overwritten by the call to GetRandomMasked()
+#if !defined(FIX_BUGS) && !defined(FIX_SMALL_SNIPE_LOGIC_COMPILER_BUG)
+						// A PL/M-86 compiler bug manifesting in the original game caused the CX register to be overwritten by the call to GetRandomMasked().
+						// When a small snipe has a chance to explode next to the player, but doesn't, this bug changes the way it will move.
 						orthoDist.xy = 947;
 #endif
 					}

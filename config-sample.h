@@ -6,7 +6,8 @@
 
 //#define USE_MODULO_LOOKUP_TABLE  // might result in slightly better speed, but makes the EXE larger
 
-//#define FIX_BUGS
+//#define FIX_SNIPE_PORTAL_IDENTIFICATION_BUG
+//#define FIX_SMALL_SNIPE_LOGIC_COMPILER_BUG
 //#define EMULATE_LATENT_BUGS
 //#define OBJECT_TABLE_BINARY_COMPATIBILITY  // useful for debugging differences between the DOS version and this port, if any are found
 

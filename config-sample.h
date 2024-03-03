@@ -22,9 +22,9 @@
 #define WINDOWS_PRECISE_TIMER
 
 // SDL options
-//#define TILE_WIDTH  27
-#define TILE_HEIGHT 36
 #define FONT_FILENAME "SnipesConsole.ttf"
+//#define TILE_WIDTH  27
+//#define TILE_HEIGHT 36
 //#define FONT_SIZE TILE_HEIGHT
 
 // If CHEAT_OMNISCIENCE_SHOW_NORMAL_VIEWPORT is enabled in the SDL version, this sets the RGBA of the mask used to darken the area outside the standard viewport

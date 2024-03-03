@@ -296,16 +296,9 @@ static void DestroyGlyphs()
 
 static int SDLCALL ConsoleThreadFunc(void*)
 {
-	if (SDL_Init(SDL_INIT_VIDEO | SDL_INIT_AUDIO) != 0)
-	{
-		fprintf(stderr, "SDL_Init: %s\n", SDL_GetError());
-		return 1;
-	}
-
 	if (TTF_Init() != 0)
 	{
 		fprintf(stderr, "TTF_Init: %s\n", SDL_GetError());
-		SDL_Quit();
 		return 1;
 	}
 
@@ -314,7 +307,6 @@ static int SDLCALL ConsoleThreadFunc(void*)
 	{
 		fprintf(stderr, "TTF_OpenFont: %s\n", SDL_GetError());
 		TTF_Quit();
-		SDL_Quit();
 		return 1;
 	}
 	
@@ -324,7 +316,6 @@ static int SDLCALL ConsoleThreadFunc(void*)
 		fprintf(stderr, "SDL_CreateWindow: %s\n", SDL_GetError());
 		TTF_CloseFont(font);
 		TTF_Quit();
-		SDL_Quit();
 		return 1;
 	}
 
@@ -335,7 +326,6 @@ static int SDLCALL ConsoleThreadFunc(void*)
 		fprintf(stderr, "SDL_CreateRenderer: %s\n", SDL_GetError());
 		TTF_CloseFont(font);
 		TTF_Quit();
-		SDL_Quit();
 		return 1;
 	}
 
@@ -491,7 +481,6 @@ static int SDLCALL ConsoleThreadFunc(void*)
 	SDL_DestroyWindow(win);
 	TTF_CloseFont(font);
 	TTF_Quit();
-	SDL_Quit();
 
 	return 0;
 }
@@ -502,29 +491,55 @@ int OpenConsole()
 {
 	Exiting = false;
 
-#ifndef TILE_WIDTH
-	TileWidth = ((TILE_HEIGHT*3+2)/4);
-#else
-	TileWidth = TILE_WIDTH;
-#endif
-	TileHeight = TILE_HEIGHT;
-#ifndef FONT_SIZE
-	FontSize = TILE_HEIGHT;
-#else
-	FontSize = FONT_SIZE;
-#endif
-
-	ConsoleThread = SDL_CreateThread(ConsoleThreadFunc, "ConsoleThread", NULL);
-	if (!ConsoleThread)
+	if (SDL_Init(SDL_INIT_VIDEO | SDL_INIT_AUDIO) != 0)
 	{
-		fprintf(stderr, "SDL_CreateWindow: %s\n", SDL_GetError());
-		SDL_Quit();
+		fprintf(stderr, "SDL_Init: %s\n", SDL_GetError());
 		return 1;
 	}
+	else
+	{
+		SDL_DisplayMode dm;
+		if (SDL_GetDesktopDisplayMode(0, &dm) != 0)
+		{
+			fprintf(stderr, "SDL_GetDesktopDisplayMode: %s\n", SDL_GetError());
+			SDL_Quit();
+			return 1;
+		}
+#ifdef TILE_HEIGHT
+		if (TILE_HEIGHT * WINDOW_HEIGHT > dm.h)
+		{
+			fprintf(stderr, "Error: Configured tile height (%d) exceeds desktop height (%d)\n", TILE_HEIGHT, dm.h);
+			SDL_Quit();
+			return 1;
+		}
+		TileHeight = TILE_HEIGHT;
+#else
+		TileHeight = dm.h / WINDOW_HEIGHT;
+#endif
 
-	ScreenMutex = SDL_CreateMutex();
+#ifndef TILE_WIDTH
+		TileWidth = ((TileHeight*3+2)/4);
+#else
+		TileWidth = TILE_WIDTH;
+#endif
+#ifndef FONT_SIZE
+		FontSize = TileHeight;
+#else
+		FontSize = FONT_SIZE;
+#endif
 
-	return 0;
+		ConsoleThread = SDL_CreateThread(ConsoleThreadFunc, "ConsoleThread", NULL);
+		if (!ConsoleThread)
+		{
+			fprintf(stderr, "SDL_CreateWindow: %s\n", SDL_GetError());
+			SDL_Quit();
+			return 1;
+		}
+
+		ScreenMutex = SDL_CreateMutex();
+
+		return 0;
+	}
 }
 
 void CloseConsole()
@@ -532,4 +547,5 @@ void CloseConsole()
 	Exiting = true;
 	SDL_WaitThread(ConsoleThread, NULL);
 	SDL_DestroyMutex(ScreenMutex);
+	SDL_Quit();
 }

@@ -295,6 +295,11 @@ void InitializeHUD()
 	outputText  (0x17, WINDOW_WIDTH, 1, 0, scratchBuffer);
 	outputText  (0x17, WINDOW_WIDTH, 2, 0, scratchBuffer);
 	outputText  (0x17,     2, 0,  0, statusLine);
+#ifdef CHEAT_OMNISCIENCE
+	outputText  (0x17,     1, 0, 40, "\xB3");
+	outputText  (0x17,     1, 1, 40, "\xB3");
+	outputText  (0x17,     1, 2, 40, "\xB3");
+#endif
 	outputNumber(0x13,  0, 2, 0,  3, 0);
 	outputText  (0x17,     1, 0,  6, statusLine+2);
 	outputText  (0x13,     2, 0,  8, statusLine+3);
@@ -853,6 +858,13 @@ bool UpdateHUD(bool incrementFrame = true) // returns true if the match has been
 		else
 			outputText  (0x17,    6, 2, 33, statusLine+65);
 	}
+#ifdef CHEAT_OMNISCIENCE
+	{
+		char hex[strlength("RNG 941,947")+1];
+		sprintf(hex, "RNG %03u,%03u", random_seed_lo, random_seed_hi);
+		outputText(0x17, strlength("RNG 941,947"), 2, 42, hex);
+	}
+#endif
 	if (lastHUD_numPlayerDeaths != numPlayerDeaths)
 	{
 		BYTE livesRemaining = numLives - (lastHUD_numPlayerDeaths = numPlayerDeaths);

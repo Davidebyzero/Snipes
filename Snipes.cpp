@@ -256,7 +256,7 @@ const WORD *currentSprite;
 
 #define MAX_OBJECTS 0x100
 
-static BYTE weaponLifetime[MAX_OBJECTS];
+static BYTE weaponBouncesRemaining[MAX_OBJECTS];
 
 static Object objects[MAX_OBJECTS];
 
@@ -1098,9 +1098,9 @@ void UpdateWeapons()
 			*weaponTestPos = MazeTile(0xF, 0xB2);
 		}
 		else
-		if (enableBouncingBullets && weapon.weaponType==WeaponType_Bullet && weaponLifetime[object] && (weapon.moveDirection & MoveDirectionMask_Diagonal))
+		if (enableBouncingBullets && weapon.weaponType==WeaponType_Bullet && weaponBouncesRemaining[object] && (weapon.moveDirection & MoveDirectionMask_Diagonal))
 		{
-			weaponLifetime[object]--;
+			weaponBouncesRemaining[object]--;
 			weapon.moveDirection = (MoveDirection)bulletBounceTable[weaponCollisionDirection][weapon.moveDirection];
 			SetSoundEffectState(1, SoundEffect_Bullet);
 			MoveWeaponAndTestHit((weaponCollisionDirection + 2) & OrthogonalDirectionMask_All);
@@ -1389,7 +1389,7 @@ void FireWeapon(BYTE weaponType)
 			weapon.moveDirection = fireDirection;
 			weapon.animFrame = 0;
 			weapon.weaponType = weaponType;
-			weaponLifetime[newWeapon] = (BYTE)GetRandomMasked(7) + 1;
+			weaponBouncesRemaining[newWeapon] = (BYTE)GetRandomMasked(7) + 1;
 			currentSprite = FakePointerToPointer(weapon.sprite);
 			PlotObjectToMaze();
 			currentObject = currentObject_backup;

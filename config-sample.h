@@ -25,3 +25,8 @@
 #define TILE_HEIGHT 36
 #define FONT_FILENAME "SnipesConsole.ttf"
 //#define FONT_SIZE TILE_HEIGHT
+
+// If CHEAT_OMNISCIENCE_SHOW_NORMAL_VIEWPORT is enabled in the SDL version, this sets the RGBA of the mask used to darken the area outside the standard viewport
+#define CHEAT_OMNISCIENCE_RGBA_OUTSIDE_NORMAL_VIEWPORT 0x60, 0x60, 0x60, 0x28
+// If CHEAT_OMNISCIENCE_SHOW_NORMAL_VIEWPORT is enabled in the SDL version, and the following is defined, it sets the RGBA of a rectangle drawn around the standard viewport
+//#define CHEAT_OMNISCIENCE_RGBA_AROUND_NORMAAL_VIEWPORT 0xC0, 0xC0, 0xC0, 0xFF

@@ -433,7 +433,7 @@ static int SDLCALL ConsoleThreadFunc(void*)
 
 			// darken outside area
 
-			SDL_SetRenderDrawColor(ren, 0x00, 0x00, 0x00, 0x60);
+			SDL_SetRenderDrawColor(ren, CHEAT_OMNISCIENCE_RGBA_OUTSIDE_NORMAL_VIEWPORT);
 			SDL_SetRenderDrawBlendMode(ren, SDL_BLENDMODE_BLEND);
 
 			rect.w = WINDOW_WIDTH * TileWidth;  rect.x = 0; rect.y = VIEWPORT_ROW * TileHeight; rect.h = (VIEWPORT_HEIGHT/2 - (25 - VIEWPORT_ROW)/2) * TileHeight;
@@ -448,12 +448,15 @@ static int SDLCALL ConsoleThreadFunc(void*)
 			rect.x = (WINDOW_WIDTH/2 + 40/2) * TileWidth;
 			SDL_RenderFillRect(ren, &rect);
 
+	#ifdef CHEAT_OMNISCIENCE_RGBA_AROUND_NORMAAL_VIEWPORT
 			// draw gray rectangle around inside area
 			rect.x = (WINDOW_WIDTH/2 - 40/2) * TileWidth - 1; rect.y = (VIEWPORT_ROW + VIEWPORT_HEIGHT/2 - (25 - VIEWPORT_ROW)/2  ) * TileHeight - 1;
 			rect.w = (                 80/2) * TileWidth + 2; rect.h = (                                   (25 - VIEWPORT_ROW)/2*2) * TileHeight + 2;
-			SDL_SetRenderDrawColor(ren, 0xC0, 0xC0, 0xC0, 0xFF);
-			SDL_SetRenderDrawBlendMode(ren, SDL_BLENDMODE_NONE);
+			SDL_SetRenderDrawColor(ren, CHEAT_OMNISCIENCE_RGBA_AROUND_NORMAAL_VIEWPORT);
 			SDL_RenderDrawRect(ren, &rect);
+	#endif CHEAT_OMNISCIENCE_RGBA_AROUND_NORMAAL_VIEWPORT
+
+			SDL_SetRenderDrawBlendMode(ren, SDL_BLENDMODE_NONE);
 		}
 #endif
 

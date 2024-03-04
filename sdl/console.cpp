@@ -231,6 +231,7 @@ static const SDL_Color ScreenColors[16] =
 };
 
 static SDL_Texture* Glyphs[256] = {};
+static bool GlyphIsEmpty[256] = {};
 
 static Uint8 *SingleHorzLineEdge = NULL;
 static Uint8 *DoubleHorzLineEdge = NULL;
@@ -368,9 +369,11 @@ static SDL_Texture*& GetGlyph(SDL_Renderer *ren, TTF_Font* font, BYTE chr)
 	SDL_FillRect(s_rgba, NULL, 0xFFFFFFFF);
 	Uint8 *srcPixel = (Uint8*)s     ->pixels;
 	Uint8 *dstAlpha = (Uint8*)s_rgba->pixels + 3;
+	Uint total = 0;
 	for (int y=0; y<s->h; y++, srcPixel += s->pitch, dstAlpha += s_rgba->pitch)
 		for (int x=0; x<s->w; x++)
-			dstAlpha[x*4] = srcPixel[x];
+			total += dstAlpha[x*4] = srcPixel[x];
+	GlyphIsEmpty[chr] = total == 0;
 
 	t = SDL_CreateTextureFromSurface(ren, s_rgba);
 	SDL_FreeSurface(s);
@@ -380,11 +383,17 @@ static SDL_Texture*& GetGlyph(SDL_Renderer *ren, TTF_Font* font, BYTE chr)
 static void RenderCharacterAt(SDL_Renderer *ren, TTF_Font* font, Uint x, Uint y)
 {
 	MazeTile tile = Screen[y][x];
-	SDL_Color fg = ScreenColors[tile.color & 15];
-	SDL_Color bg = ScreenColors[tile.color >> 4];
+	Uint fgScreen = tile.color & 0xF;
+	Uint bgScreen = tile.color >> 4;
+	SDL_Color fg = ScreenColors[fgScreen];
+	SDL_Color bg = ScreenColors[bgScreen];
+	SDL_Color black = {0, 0, 0, 0xFF};
 	SDL_Rect rect = { (int)x * TileWidth, (int)y * TileHeight, TileWidth, TileHeight };
 	SDL_SetRenderDrawColor(ren, bg.r, bg.g, bg.b, 0xFF);
-	SDL_RenderFillRect(ren, &rect);
+	if (bgScreen != 0)
+		SDL_RenderFillRect(ren, &rect);
+	if (GlyphIsEmpty[tile.chr]) // as opposed to tile.chr==0||tile.chr==' ', this leaves full flexibility up to the font
+		return;
 
 	SDL_Texture*& t = GetGlyph(ren, font, tile.chr);
 
@@ -405,6 +414,7 @@ static void RenderCharacterAt(SDL_Renderer *ren, TTF_Font* font, Uint x, Uint y)
 static void ClearGlyphs()
 {
 	memset(Glyphs, 0, sizeof(Glyphs));
+	memset(GlyphIsEmpty, 0, sizeof(GlyphIsEmpty));
 	if (SingleHorzLineEdge) delete [] SingleHorzLineEdge; SingleHorzLineEdge = NULL;
 	if (DoubleHorzLineEdge) delete [] DoubleHorzLineEdge; DoubleHorzLineEdge = NULL;
 }

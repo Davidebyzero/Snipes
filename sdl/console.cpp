@@ -230,7 +230,7 @@ static const SDL_Color ScreenColors[16] =
 	{ 0xFF, 0xFF, 0xFF, 0xFF },
 };
 
-static SDL_Texture* Glyphs[256][256] = {{}};
+static SDL_Texture* Glyphs[256] = {};
 
 static void RenderCharacterAt(SDL_Renderer *ren, TTF_Font* font, Uint x, Uint y)
 {
@@ -238,9 +238,10 @@ static void RenderCharacterAt(SDL_Renderer *ren, TTF_Font* font, Uint x, Uint y)
 	SDL_Color fg = ScreenColors[tile.color & 15];
 	SDL_Color bg = ScreenColors[tile.color >> 4];
 	SDL_Rect rect = { (int)x * TileWidth, (int)y * TileHeight, TileWidth, TileHeight };
+	SDL_SetRenderDrawColor(ren, bg.r, bg.g, bg.b, 0xFF);
 	SDL_RenderFillRect(ren, &rect);
 
-	SDL_Texture*& t = Glyphs[tile.color][tile.chr];
+	SDL_Texture*& t = Glyphs[tile.chr];
 	if (!t)
 	{
 		static const wchar_t Chars[257] =
@@ -264,53 +265,44 @@ static void RenderCharacterAt(SDL_Renderer *ren, TTF_Font* font, Uint x, Uint y)
 		wchar_t str[2];
 		str[0] = Chars[tile.chr];
 		str[1] = 0;
-		SDL_Surface *s = TTF_RenderUNICODE_Shaded(font, (Uint16*)str, fg, bg);
+		SDL_Color white = {0xFF, 0xFF, 0xFF, 0xFF};
+		SDL_Surface *s = TTF_RenderUNICODE_Blended(font, (Uint16*)str, white);
 #ifdef FONT_FIXUP
 		if (wcschr(L"│┤╡╢╖╕╣║╗┐┬├┼╞╟╔╦╠╬╤╥╒╓╫╪┌", str[0]) != NULL)
 		{
-			// Extract the bottommost-penultimate 1-pixel tall horizontal strip
-			SDL_Rect srcRect = {0, TileHeight - 2, s->w, 1};
-			SDL_Surface *stripSurface = SDL_CreateRGBSurface(0, s->w, 1, 32, 0, 0, 0, 0);
-			SDL_BlitSurface(s, &srcRect, stripSurface, NULL);
-			// Clone the strip onto the bottommost 1-pixel tall horizontal strip
-			SDL_Rect destRect = {0, TileHeight - 1};
-			SDL_BlitSurface(stripSurface, NULL, s, &destRect);
-			SDL_FreeSurface(stripSurface);
+			// Clone the bottommost-penultimate 1-pixel tall horizontal strip into the bottommost one
+			Uint32 *pixel = (Uint32*)s->pixels;
+			for (int x=0; x<s->w; x++)
+				((Uint32*)((Uint8*)pixel + (TileHeight - 1) * s->pitch))[x] = ((Uint32*)((Uint8*)pixel + (TileHeight - 2) * s->pitch))[x];
 		}
 		if (wcschr(L"│┤╡╢╣║╝╜╛└┴├┼╞╟╚╩╠╬╧╨╙╘╫╪┘", str[0]) != NULL)
 		{
-			// Extract the topmost-penultimate 1-pixel tall horizontal strip
-			SDL_Rect srcRect = {0, 1, s->w, 1};
-			SDL_Surface *stripSurface = SDL_CreateRGBSurface(0, s->w, 1, 32, 0, 0, 0, 0);
-			SDL_BlitSurface(s, &srcRect, stripSurface, NULL);
-			// Clone the strip onto the topmost 1-pixel tall horizontal strip
-			SDL_Rect destRect = {0, 0};
-			SDL_BlitSurface(stripSurface, NULL, s, &destRect);
-			SDL_FreeSurface(stripSurface);
+			// Clone the topmost-penultimate 1-pixel tall horizontal strip into the topmost one
+			Uint32 *pixel = (Uint32*)s->pixels;
+			for (int x=0; x<s->w; x++)
+				((Uint32*)((Uint8*)pixel + 0 * s->pitch))[x] = ((Uint32*)((Uint8*)pixel + 1 * s->pitch))[x];
 		}
 		if (wcschr(L"└┴┬├─┼╞╟╚╔╩╦╠═╬╧╨╤╥╙╘╒╓╫╪┌", str[0]) != NULL)
 		{
-			// Extract the rightmost-penultimate 1-pixel wide vertical strip
-			SDL_Rect srcRect = {TileWidth - 2, 0, 1, s->h};
-			SDL_Surface *stripSurface = SDL_CreateRGBSurface(0, 1, s->h, 32, 0, 0, 0, 0);
-			SDL_BlitSurface(s, &srcRect, stripSurface, NULL);
-			// Clone the strip onto the rightmost 1-pixel wide vertical strip
-			SDL_Rect destRect = {TileWidth - 1, 0};
-			SDL_BlitSurface(stripSurface, NULL, s, &destRect);
-			SDL_FreeSurface(stripSurface);
+			// Clone the rightmost-penultimate 1-pixel wide vertical strip into the rightmost one
+			Uint32 *pixel = (Uint32*)s->pixels;
+			for (int y=0; y<s->h; y++, (Uint8*&)pixel += s->pitch)
+				pixel[TileWidth-1] = pixel[TileWidth-2];
 		}
 		if (wcschr(L"└┴┬├─┼╞╟╚╔╩╦╠═╬╧╨╤╥╙╘╒╓╫╪┌", str[0]) != NULL)
 		{
-			// Extract the leftmost-penultimate 1-pixel wide vertical strip
-			SDL_Rect srcRect = {1, 0, 1, s->h};
-			SDL_Surface *stripSurface = SDL_CreateRGBSurface(0, 1, s->h, 32, 0, 0, 0, 0);
-			SDL_BlitSurface(s, &srcRect, stripSurface, NULL);
-			// Clone the strip onto the leftmost 1-pixel wide vertical strip
-			SDL_Rect destRect = {0, 0};
-			SDL_BlitSurface(stripSurface, NULL, s, &destRect);
-			SDL_FreeSurface(stripSurface);
+			// Clone the leftmost-penultimate 1-pixel wide vertical strip into the leftmost one
+			Uint32 *pixel = (Uint32*)s->pixels;
+			for (int y=0; y<s->h; y++, (Uint8*&)pixel += s->pitch)
+				pixel[0] = pixel[1];
 		}
 #endif
+		// fill all channels except for alpha with solid 0xFF
+		Uint32 *pixel = (Uint32*)s->pixels;
+		for (int y=0; y<s->h; y++, (Uint8*&)pixel += s->pitch)
+			for (int x=0; x<s->w; x++)
+				pixel[x] |= 0xFFFFFF;
+
 		t = SDL_CreateTextureFromSurface(ren, s);
 		SDL_FreeSurface(s);
 	}
@@ -325,6 +317,7 @@ static void RenderCharacterAt(SDL_Renderer *ren, TTF_Font* font, Uint x, Uint y)
 		src.h--;
 		dst.h--;
 	}
+	SDL_SetTextureColorMod(t, fg.r, fg.g, fg.b);
 	SDL_RenderCopy(ren, t, &src, &dst);
 }
 
@@ -336,8 +329,8 @@ static void DestroyGlyphs()
 {
 	for (Uint color=0; color<256; color++)
 		for (Uint chr=0; chr<256; chr++)
-			if (Glyphs[color][chr])
-				SDL_DestroyTexture(Glyphs[color][chr]);
+			if (Glyphs[color])
+				SDL_DestroyTexture(Glyphs[color]);
 }
 
 static int SDLCALL ConsoleThreadFunc(void*)

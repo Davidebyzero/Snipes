@@ -378,11 +378,11 @@ static int SDLCALL ConsoleThreadFunc(void*)
 			fprintf(stderr, "SDL_CreateWindow: %s\n", SDL_GetError());
 			return 1;
 		}
+		SDL_GetWindowBordersSize(win, &top, &left, &bottom, &right);
+		totalHeight = WINDOW_HEIGHT * TileHeight + (top + bottom);
 #ifdef TILE_HEIGHT
 		break;
 #else
-		SDL_GetWindowBordersSize(win, &top, &left, &bottom, &right);
-		totalHeight = WINDOW_HEIGHT * TileHeight + (top + bottom);
 		if (i || totalHeight <= usableRect.h + ALLOWABLE_BORDER_EXCESS)
 			break;
 		TileHeight = (usableRect.h - (top + bottom)) / WINDOW_HEIGHT;

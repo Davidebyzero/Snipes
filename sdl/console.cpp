@@ -337,6 +337,43 @@ static void DestroyGlyphs()
 
 static int SDLCALL ConsoleThreadFunc(void*)
 {
+	SDL_DisplayMode dm;
+	if (SDL_GetDesktopDisplayMode(0, &dm) != 0)
+	{
+		fprintf(stderr, "SDL_GetDesktopDisplayMode: %s\n", SDL_GetError());
+		SDL_Quit();
+		return 1;
+	}
+#ifdef TILE_HEIGHT
+	if (TILE_HEIGHT * WINDOW_HEIGHT > dm.h)
+	{
+		fprintf(stderr, "Error: Configured tile height (%d) exceeds desktop height (%d)\n", TILE_HEIGHT, dm.h);
+		SDL_Quit();
+		return 1;
+	}
+	TileHeight = TILE_HEIGHT;
+#else
+	TileHeight = dm.h / WINDOW_HEIGHT;
+#endif
+
+#ifndef TILE_WIDTH
+	TileWidth = ((TileHeight*3+2)/4);
+#else
+	TileWidth = TILE_WIDTH;
+#endif
+#ifndef FONT_SIZE
+	FontSize = TileHeight;
+#else
+	FontSize = FONT_SIZE;
+#endif
+
+	SDL_Window *win = SDL_CreateWindow("Snipes", SDL_WINDOWPOS_CENTERED, SDL_WINDOWPOS_CENTERED, WINDOW_WIDTH * TileWidth, WINDOW_HEIGHT * TileHeight, SDL_WINDOW_SHOWN | SDL_WINDOW_RESIZABLE);
+	if (!win)
+	{
+		fprintf(stderr, "SDL_CreateWindow: %s\n", SDL_GetError());
+		return 1;
+	}
+
 	if (TTF_Init() != 0)
 	{
 		fprintf(stderr, "TTF_Init: %s\n", SDL_GetError());
@@ -351,15 +388,6 @@ static int SDLCALL ConsoleThreadFunc(void*)
 		return 1;
 	}
 	TTF_SetFontHinting(font, TTF_HINTING_MONO);
-	
-	SDL_Window *win = SDL_CreateWindow("Snipes", SDL_WINDOWPOS_CENTERED, SDL_WINDOWPOS_CENTERED, WINDOW_WIDTH * TileWidth, WINDOW_HEIGHT * TileHeight, SDL_WINDOW_SHOWN | SDL_WINDOW_RESIZABLE);
-	if (!win)
-	{
-		fprintf(stderr, "SDL_CreateWindow: %s\n", SDL_GetError());
-		TTF_CloseFont(font);
-		TTF_Quit();
-		return 1;
-	}
 
 	SDL_Renderer *ren = SDL_CreateRenderer(win, -1, SDL_RENDERER_ACCELERATED | SDL_RENDERER_PRESENTVSYNC);
 	if (!ren)
@@ -540,36 +568,6 @@ int OpenConsole()
 	}
 	else
 	{
-		SDL_DisplayMode dm;
-		if (SDL_GetDesktopDisplayMode(0, &dm) != 0)
-		{
-			fprintf(stderr, "SDL_GetDesktopDisplayMode: %s\n", SDL_GetError());
-			SDL_Quit();
-			return 1;
-		}
-#ifdef TILE_HEIGHT
-		if (TILE_HEIGHT * WINDOW_HEIGHT > dm.h)
-		{
-			fprintf(stderr, "Error: Configured tile height (%d) exceeds desktop height (%d)\n", TILE_HEIGHT, dm.h);
-			SDL_Quit();
-			return 1;
-		}
-		TileHeight = TILE_HEIGHT;
-#else
-		TileHeight = dm.h / WINDOW_HEIGHT;
-#endif
-
-#ifndef TILE_WIDTH
-		TileWidth = ((TileHeight*3+2)/4);
-#else
-		TileWidth = TILE_WIDTH;
-#endif
-#ifndef FONT_SIZE
-		FontSize = TileHeight;
-#else
-		FontSize = FONT_SIZE;
-#endif
-
 		ConsoleThread = SDL_CreateThread(ConsoleThreadFunc, "ConsoleThread", NULL);
 		if (!ConsoleThread)
 		{

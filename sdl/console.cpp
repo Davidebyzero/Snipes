@@ -232,6 +232,43 @@ static const SDL_Color ScreenColors[16] =
 
 static SDL_Texture* Glyphs[256] = {};
 
+static Uint8 *SingleHorzLineEdge = NULL;
+static Uint8 *DoubleHorzLineEdge = NULL;
+
+static void FixUpLineJoiningGlitch(SDL_Surface *s, Uint8 *HorzLineEdge, bool useRightEdge)
+{
+	Uint64 diff[2] = {}; // initialize all element to zero
+	for (int d=0; d<=1; d++)
+	{
+		Uint8 *alpha = (Uint8*)s->pixels + 3 + useRightEdge*(s->w - 1)*4;
+		for (int y0=0; y0<s->h; y0++)
+		{
+			int y = y0 + d;
+			if (y >= s->h)
+				continue;
+			int alphaDiff = *alpha - SingleHorzLineEdge[y];
+			diff[d] += (Uint)(alphaDiff * alphaDiff);
+		}
+		diff[1] = diff[1] * (s->h-1) / s->h; // compensate for there having been 1 extra sampling
+	}
+	if (diff[1] < diff[0]) // is the glitch active with this font size?
+		memmove((Uint8*)s->pixels + s->pitch, s->pixels, s->pitch * (s->h - 1)); // fix it by shifting the glyph down 1 pixel
+}
+static void FixUpGlyphVerticallyBottom(SDL_Surface *s)
+{
+	// Clone the bottommost-penultimate 1-pixel tall horizontal strip into the bottommost one
+	Uint32 *pixel = (Uint32*)s->pixels;
+	for (int x=0; x<s->w; x++)
+		((Uint32*)((Uint8*)pixel + (TileHeight - 1) * s->pitch))[x] = ((Uint32*)((Uint8*)pixel + (TileHeight - 2) * s->pitch))[x];
+}
+static void FixUpGlyphVerticallyTop(SDL_Surface *s)
+{
+	// Clone the topmost-penultimate 1-pixel tall horizontal strip into the topmost one
+	Uint32 *pixel = (Uint32*)s->pixels;
+	for (int x=0; x<s->w; x++)
+		((Uint32*)((Uint8*)pixel + 0 * s->pitch))[x] = ((Uint32*)((Uint8*)pixel + 1 * s->pitch))[x];
+}
+
 static SDL_Texture*& GetGlyph(SDL_Renderer *ren, TTF_Font* font, BYTE chr)
 {
 	SDL_Texture*& t = Glyphs[chr];
@@ -261,20 +298,8 @@ static SDL_Texture*& GetGlyph(SDL_Renderer *ren, TTF_Font* font, BYTE chr)
 	SDL_Color white = {0xFF, 0xFF, 0xFF, 0xFF};
 	SDL_Surface *s = TTF_RenderUNICODE_Blended(font, (Uint16*)str, white);
 #ifdef FONT_FIXUP_VERTICALLY
-	if (wcschr(L"│┤╡╢╖╕╣║╗┐┬├┼╞╟╔╦╠╬╤╥╒╓╫╪┌", str[0]) != NULL)
-	{
-		// Clone the bottommost-penultimate 1-pixel tall horizontal strip into the bottommost one
-		Uint32 *pixel = (Uint32*)s->pixels;
-		for (int x=0; x<s->w; x++)
-			((Uint32*)((Uint8*)pixel + (TileHeight - 1) * s->pitch))[x] = ((Uint32*)((Uint8*)pixel + (TileHeight - 2) * s->pitch))[x];
-	}
-	if (wcschr(L"│┤╡╢╣║╝╜╛└┴├┼╞╟╚╩╠╬╧╨╙╘╫╪┘", str[0]) != NULL)
-	{
-		// Clone the topmost-penultimate 1-pixel tall horizontal strip into the topmost one
-		Uint32 *pixel = (Uint32*)s->pixels;
-		for (int x=0; x<s->w; x++)
-			((Uint32*)((Uint8*)pixel + 0 * s->pitch))[x] = ((Uint32*)((Uint8*)pixel + 1 * s->pitch))[x];
-	}
+	if (wcschr(L"│┤╡╢╖╕╣║╗┐┬├┼╞╟╔╦╠╬╤╥╒╓╫╪┌", str[0]) != NULL) FixUpGlyphVerticallyBottom(s);
+	if (wcschr(L"│┤╡╢╣║╝╜╛└┴├┼╞╟╚╩╠╬╧╨╙╘╫╪┘", str[0]) != NULL) FixUpGlyphVerticallyTop   (s);
 #endif
 #ifdef FONT_FIXUP_HORIZONTALLY
 	if (wcschr(L"└┴┬├─┼╞╟╚╔╩╦╠═╬╧╨╤╥╙╘╒╓╫╪┌", str[0]) != NULL)
@@ -290,6 +315,50 @@ static SDL_Texture*& GetGlyph(SDL_Renderer *ren, TTF_Font* font, BYTE chr)
 		Uint32 *pixel = (Uint32*)s->pixels;
 		for (int y=0; y<s->h; y++, (Uint8*&)pixel += s->pitch)
 			pixel[0] = pixel[1];
+	}
+#endif
+#ifdef FONT_FIXUP_JOINING
+	if (chr == 0xC4 && SingleHorzLineEdge==NULL) // ─
+	{
+		SingleHorzLineEdge = new Uint8 [TileHeight];
+		Uint8 *alpha = (Uint8*)s->pixels + 3;
+		for (int y=0; y<s->h; y++, alpha += s->pitch)
+			SingleHorzLineEdge[y] = *alpha;
+	}
+	else
+	if (chr == 0xCD && DoubleHorzLineEdge==NULL) // ═
+	{
+		DoubleHorzLineEdge = new Uint8 [TileHeight];
+		Uint8 *alpha = (Uint8*)s->pixels + 3;
+		for (int y=0; y<s->h; y++, alpha += s->pitch)
+			DoubleHorzLineEdge[y] = *alpha;
+	}
+	else
+	if (wcschr(L"┤╢╖┐┬┼╥╫", str[0]) != NULL)
+	{
+		GetGlyph(ren, font, 0xC4); // ─ // make sure SingleHorzLineEdge is initialized
+		FixUpLineJoiningGlitch(s, SingleHorzLineEdge, false);
+		FixUpGlyphVerticallyTop(s);
+	}
+	if (wcschr(L"╡╕╣╗╦╬╤╪", str[0]) != NULL)
+	{
+		GetGlyph(ren, font, 0xCD); // ═ // make sure DoubleHorzLineEdge is initialized
+		FixUpLineJoiningGlitch(s, DoubleHorzLineEdge, false);
+		FixUpGlyphVerticallyTop(s);
+	}
+	else
+	if (wcschr(L"├╟╓┌", str[0]) != NULL)
+	{
+		GetGlyph(ren, font, 0xC4); // ─ // make sure SingleHorzLineEdge is initialized
+		FixUpLineJoiningGlitch(s, SingleHorzLineEdge, true);
+		FixUpGlyphVerticallyTop(s);
+	}
+	else
+	if (wcschr(L"╞╔╠╒", str[0]) != NULL)
+	{
+		GetGlyph(ren, font, 0xCD); // ═ // make sure DoubleHorzLineEdge is initialized
+		FixUpLineJoiningGlitch(s, DoubleHorzLineEdge, true);
+		FixUpGlyphVerticallyTop(s);
 	}
 #endif
 	// fill all channels except for alpha with solid 0xFF
@@ -331,6 +400,8 @@ static void RenderCharacterAt(SDL_Renderer *ren, TTF_Font* font, Uint x, Uint y)
 static void ClearGlyphs()
 {
 	memset(Glyphs, 0, sizeof(Glyphs));
+	if (SingleHorzLineEdge) delete [] SingleHorzLineEdge; SingleHorzLineEdge = NULL;
+	if (DoubleHorzLineEdge) delete [] DoubleHorzLineEdge; DoubleHorzLineEdge = NULL;
 }
 static void DestroyGlyphs()
 {

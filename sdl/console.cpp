@@ -267,7 +267,7 @@ static void RenderCharacterAt(SDL_Renderer *ren, TTF_Font* font, Uint x, Uint y)
 		str[1] = 0;
 		SDL_Color white = {0xFF, 0xFF, 0xFF, 0xFF};
 		SDL_Surface *s = TTF_RenderUNICODE_Blended(font, (Uint16*)str, white);
-#ifdef FONT_FIXUP
+#ifdef FONT_FIXUP_VERTICALLY
 		if (wcschr(L"│┤╡╢╖╕╣║╗┐┬├┼╞╟╔╦╠╬╤╥╒╓╫╪┌", str[0]) != NULL)
 		{
 			// Clone the bottommost-penultimate 1-pixel tall horizontal strip into the bottommost one
@@ -282,6 +282,8 @@ static void RenderCharacterAt(SDL_Renderer *ren, TTF_Font* font, Uint x, Uint y)
 			for (int x=0; x<s->w; x++)
 				((Uint32*)((Uint8*)pixel + 0 * s->pitch))[x] = ((Uint32*)((Uint8*)pixel + 1 * s->pitch))[x];
 		}
+#endif
+#ifdef FONT_FIXUP_HORIZONTALLY
 		if (wcschr(L"└┴┬├─┼╞╟╚╔╩╦╠═╬╧╨╤╥╙╘╒╓╫╪┌", str[0]) != NULL)
 		{
 			// Clone the rightmost-penultimate 1-pixel wide vertical strip into the rightmost one
@@ -348,6 +350,7 @@ static int SDLCALL ConsoleThreadFunc(void*)
 		TTF_Quit();
 		return 1;
 	}
+	TTF_SetFontHinting(font, TTF_HINTING_MONO);
 	
 	SDL_Window *win = SDL_CreateWindow("Snipes", SDL_WINDOWPOS_CENTERED, SDL_WINDOWPOS_CENTERED, WINDOW_WIDTH * TileWidth, WINDOW_HEIGHT * TileHeight, SDL_WINDOW_SHOWN | SDL_WINDOW_RESIZABLE);
 	if (!win)

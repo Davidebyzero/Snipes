@@ -23,7 +23,8 @@
 
 // SDL options
 #define FONT_FILENAME "SnipesConsole.ttf"
-#define FONT_FIXUP // smear the edges of line-drawing characters to make sure they don't leave gaps
+#define FONT_FIXUP_VERTICALLY // vertically smear the edges of line-drawing characters to make sure they don't leave gaps
+//#define FONT_FIXUP_HORIZONTALLY // horizontally smear the edges of line-drawing characters to make sure they don't leave gaps (probably not necessary thanks to TTF_HINTING_MONO)
 //#define TILE_WIDTH  27
 //#define TILE_HEIGHT 36
 //#define FONT_SIZE TILE_HEIGHT

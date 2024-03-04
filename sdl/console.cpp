@@ -232,6 +232,77 @@ static const SDL_Color ScreenColors[16] =
 
 static SDL_Texture* Glyphs[256] = {};
 
+static SDL_Texture*& GetGlyph(SDL_Renderer *ren, TTF_Font* font, BYTE chr)
+{
+	SDL_Texture*& t = Glyphs[chr];
+	if (t)
+		return t;
+	static const wchar_t Chars[257] =
+		L" ☺☻♥♦♣♠•◘○◙♂♀♪♫☼"
+		L"►◄↕‼¶§▬↨↑↓→←∟↔▲▼"
+		L" !\"#$%&'()*+,-./"
+		L"0123456789:;<=>?"
+		L"@ABCDEFGHIJKLMNO"
+		L"PQRSTUVWXYZ[\\]^_"
+		L"`abcdefghijklmno"
+		L"pqrstuvwxyz{|}~⌂"
+		L"ÇüéâäàåçêëèïîìÄÅ"
+		L"ÉæÆôöòûùÿÖÜ¢£¥₧ƒ"
+		L"áíóúñÑªº¿⌐¬½¼¡«»"
+		L"░▒▓│┤╡╢╖╕╣║╗╝╜╛┐"
+		L"└┴┬├─┼╞╟╚╔╩╦╠═╬╧"
+		L"╨╤╥╙╘╒╓╫╪┘┌█▄▌▐▀"
+		L"αßΓπΣσµτΦΘΩδ∞φε∩"
+		L"≡±≥≤⌠⌡÷≈°∙·√ⁿ²■ ";
+
+	wchar_t str[2];
+	str[0] = Chars[chr];
+	str[1] = 0;
+	SDL_Color white = {0xFF, 0xFF, 0xFF, 0xFF};
+	SDL_Surface *s = TTF_RenderUNICODE_Blended(font, (Uint16*)str, white);
+#ifdef FONT_FIXUP_VERTICALLY
+	if (wcschr(L"│┤╡╢╖╕╣║╗┐┬├┼╞╟╔╦╠╬╤╥╒╓╫╪┌", str[0]) != NULL)
+	{
+		// Clone the bottommost-penultimate 1-pixel tall horizontal strip into the bottommost one
+		Uint32 *pixel = (Uint32*)s->pixels;
+		for (int x=0; x<s->w; x++)
+			((Uint32*)((Uint8*)pixel + (TileHeight - 1) * s->pitch))[x] = ((Uint32*)((Uint8*)pixel + (TileHeight - 2) * s->pitch))[x];
+	}
+	if (wcschr(L"│┤╡╢╣║╝╜╛└┴├┼╞╟╚╩╠╬╧╨╙╘╫╪┘", str[0]) != NULL)
+	{
+		// Clone the topmost-penultimate 1-pixel tall horizontal strip into the topmost one
+		Uint32 *pixel = (Uint32*)s->pixels;
+		for (int x=0; x<s->w; x++)
+			((Uint32*)((Uint8*)pixel + 0 * s->pitch))[x] = ((Uint32*)((Uint8*)pixel + 1 * s->pitch))[x];
+	}
+#endif
+#ifdef FONT_FIXUP_HORIZONTALLY
+	if (wcschr(L"└┴┬├─┼╞╟╚╔╩╦╠═╬╧╨╤╥╙╘╒╓╫╪┌", str[0]) != NULL)
+	{
+		// Clone the rightmost-penultimate 1-pixel wide vertical strip into the rightmost one
+		Uint32 *pixel = (Uint32*)s->pixels;
+		for (int y=0; y<s->h; y++, (Uint8*&)pixel += s->pitch)
+			pixel[TileWidth-1] = pixel[TileWidth-2];
+	}
+	if (wcschr(L"└┴┬├─┼╞╟╚╔╩╦╠═╬╧╨╤╥╙╘╒╓╫╪┌", str[0]) != NULL)
+	{
+		// Clone the leftmost-penultimate 1-pixel wide vertical strip into the leftmost one
+		Uint32 *pixel = (Uint32*)s->pixels;
+		for (int y=0; y<s->h; y++, (Uint8*&)pixel += s->pitch)
+			pixel[0] = pixel[1];
+	}
+#endif
+	// fill all channels except for alpha with solid 0xFF
+	Uint32 *pixel = (Uint32*)s->pixels;
+	for (int y=0; y<s->h; y++, (Uint8*&)pixel += s->pitch)
+		for (int x=0; x<s->w; x++)
+			pixel[x] |= 0xFFFFFF;
+
+	t = SDL_CreateTextureFromSurface(ren, s);
+	SDL_FreeSurface(s);
+	return t;
+}
+
 static void RenderCharacterAt(SDL_Renderer *ren, TTF_Font* font, Uint x, Uint y)
 {
 	MazeTile tile = Screen[y][x];
@@ -241,73 +312,7 @@ static void RenderCharacterAt(SDL_Renderer *ren, TTF_Font* font, Uint x, Uint y)
 	SDL_SetRenderDrawColor(ren, bg.r, bg.g, bg.b, 0xFF);
 	SDL_RenderFillRect(ren, &rect);
 
-	SDL_Texture*& t = Glyphs[tile.chr];
-	if (!t)
-	{
-		static const wchar_t Chars[257] =
-			L" ☺☻♥♦♣♠•◘○◙♂♀♪♫☼"
-			L"►◄↕‼¶§▬↨↑↓→←∟↔▲▼"
-			L" !\"#$%&'()*+,-./"
-			L"0123456789:;<=>?"
-			L"@ABCDEFGHIJKLMNO"
-			L"PQRSTUVWXYZ[\\]^_"
-			L"`abcdefghijklmno"
-			L"pqrstuvwxyz{|}~⌂"
-			L"ÇüéâäàåçêëèïîìÄÅ"
-			L"ÉæÆôöòûùÿÖÜ¢£¥₧ƒ"
-			L"áíóúñÑªº¿⌐¬½¼¡«»"
-			L"░▒▓│┤╡╢╖╕╣║╗╝╜╛┐"
-			L"└┴┬├─┼╞╟╚╔╩╦╠═╬╧"
-			L"╨╤╥╙╘╒╓╫╪┘┌█▄▌▐▀"
-			L"αßΓπΣσµτΦΘΩδ∞φε∩"
-			L"≡±≥≤⌠⌡÷≈°∙·√ⁿ²■ ";
-
-		wchar_t str[2];
-		str[0] = Chars[tile.chr];
-		str[1] = 0;
-		SDL_Color white = {0xFF, 0xFF, 0xFF, 0xFF};
-		SDL_Surface *s = TTF_RenderUNICODE_Blended(font, (Uint16*)str, white);
-#ifdef FONT_FIXUP_VERTICALLY
-		if (wcschr(L"│┤╡╢╖╕╣║╗┐┬├┼╞╟╔╦╠╬╤╥╒╓╫╪┌", str[0]) != NULL)
-		{
-			// Clone the bottommost-penultimate 1-pixel tall horizontal strip into the bottommost one
-			Uint32 *pixel = (Uint32*)s->pixels;
-			for (int x=0; x<s->w; x++)
-				((Uint32*)((Uint8*)pixel + (TileHeight - 1) * s->pitch))[x] = ((Uint32*)((Uint8*)pixel + (TileHeight - 2) * s->pitch))[x];
-		}
-		if (wcschr(L"│┤╡╢╣║╝╜╛└┴├┼╞╟╚╩╠╬╧╨╙╘╫╪┘", str[0]) != NULL)
-		{
-			// Clone the topmost-penultimate 1-pixel tall horizontal strip into the topmost one
-			Uint32 *pixel = (Uint32*)s->pixels;
-			for (int x=0; x<s->w; x++)
-				((Uint32*)((Uint8*)pixel + 0 * s->pitch))[x] = ((Uint32*)((Uint8*)pixel + 1 * s->pitch))[x];
-		}
-#endif
-#ifdef FONT_FIXUP_HORIZONTALLY
-		if (wcschr(L"└┴┬├─┼╞╟╚╔╩╦╠═╬╧╨╤╥╙╘╒╓╫╪┌", str[0]) != NULL)
-		{
-			// Clone the rightmost-penultimate 1-pixel wide vertical strip into the rightmost one
-			Uint32 *pixel = (Uint32*)s->pixels;
-			for (int y=0; y<s->h; y++, (Uint8*&)pixel += s->pitch)
-				pixel[TileWidth-1] = pixel[TileWidth-2];
-		}
-		if (wcschr(L"└┴┬├─┼╞╟╚╔╩╦╠═╬╧╨╤╥╙╘╒╓╫╪┌", str[0]) != NULL)
-		{
-			// Clone the leftmost-penultimate 1-pixel wide vertical strip into the leftmost one
-			Uint32 *pixel = (Uint32*)s->pixels;
-			for (int y=0; y<s->h; y++, (Uint8*&)pixel += s->pitch)
-				pixel[0] = pixel[1];
-		}
-#endif
-		// fill all channels except for alpha with solid 0xFF
-		Uint32 *pixel = (Uint32*)s->pixels;
-		for (int y=0; y<s->h; y++, (Uint8*&)pixel += s->pitch)
-			for (int x=0; x<s->w; x++)
-				pixel[x] |= 0xFFFFFF;
-
-		t = SDL_CreateTextureFromSurface(ren, s);
-		SDL_FreeSurface(s);
-	}
+	SDL_Texture*& t = GetGlyph(ren, font, tile.chr);
 
 	int w, h;
 	SDL_QueryTexture(t, NULL, NULL, &w, &h);

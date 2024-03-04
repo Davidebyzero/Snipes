@@ -257,16 +257,16 @@ static void FixUpLineJoiningGlitch(SDL_Surface *s, Uint8 *HorzLineEdge, bool use
 static void FixUpGlyphVerticallyBottom(SDL_Surface *s)
 {
 	// Clone the bottommost-penultimate 1-pixel tall horizontal strip into the bottommost one
-	Uint32 *pixel = (Uint32*)s->pixels;
+	Uint8 *pixel = (Uint8*)s->pixels;
 	for (int x=0; x<s->w; x++)
-		((Uint32*)((Uint8*)pixel + (TileHeight - 1) * s->pitch))[x] = ((Uint32*)((Uint8*)pixel + (TileHeight - 2) * s->pitch))[x];
+		pixel[(TileHeight - 1)*s->pitch + x] = pixel[(TileHeight - 2)*s->pitch + x];
 }
 static void FixUpGlyphVerticallyTop(SDL_Surface *s)
 {
 	// Clone the topmost-penultimate 1-pixel tall horizontal strip into the topmost one
-	Uint32 *pixel = (Uint32*)s->pixels;
+	Uint8 *pixel = (Uint8*)s->pixels;
 	for (int x=0; x<s->w; x++)
-		((Uint32*)((Uint8*)pixel + 0 * s->pitch))[x] = ((Uint32*)((Uint8*)pixel + 1 * s->pitch))[x];
+		pixel[0 * s->pitch + x] = pixel[1 * s->pitch + x];
 }
 
 static SDL_Texture*& GetGlyph(SDL_Renderer *ren, TTF_Font* font, BYTE chr)
@@ -296,7 +296,8 @@ static SDL_Texture*& GetGlyph(SDL_Renderer *ren, TTF_Font* font, BYTE chr)
 	str[0] = Chars[chr];
 	str[1] = 0;
 	SDL_Color white = {0xFF, 0xFF, 0xFF, 0xFF};
-	SDL_Surface *s = TTF_RenderUNICODE_Blended(font, (Uint16*)str, white);
+	SDL_Color black = {0x00, 0x00, 0x00, 0x00};
+	SDL_Surface *s = TTF_RenderUNICODE_Shaded(font, (Uint16*)str, white, black);
 #ifdef FONT_FIXUP_VERTICALLY
 	if (wcschr(L"│┤╡╢╖╕╣║╗┐┬├┼╞╟╔╦╠╬╤╥╒╓╫╪┌", str[0]) != NULL) FixUpGlyphVerticallyBottom(s);
 	if (wcschr(L"│┤╡╢╣║╝╜╛└┴├┼╞╟╚╩╠╬╧╨╙╘╫╪┘", str[0]) != NULL) FixUpGlyphVerticallyTop   (s);
@@ -305,15 +306,15 @@ static SDL_Texture*& GetGlyph(SDL_Renderer *ren, TTF_Font* font, BYTE chr)
 	if (wcschr(L"└┴┬├─┼╞╟╚╔╩╦╠═╬╧╨╤╥╙╘╒╓╫╪┌", str[0]) != NULL)
 	{
 		// Clone the rightmost-penultimate 1-pixel wide vertical strip into the rightmost one
-		Uint32 *pixel = (Uint32*)s->pixels;
-		for (int y=0; y<s->h; y++, (Uint8*&)pixel += s->pitch)
+		Uint8 *pixel = (Uint8*)s->pixels;
+		for (int y=0; y<s->h; y++, pixel += s->pitch)
 			pixel[TileWidth-1] = pixel[TileWidth-2];
 	}
 	if (wcschr(L"└┴┬├─┼╞╟╚╔╩╦╠═╬╧╨╤╥╙╘╒╓╫╪┌", str[0]) != NULL)
 	{
 		// Clone the leftmost-penultimate 1-pixel wide vertical strip into the leftmost one
-		Uint32 *pixel = (Uint32*)s->pixels;
-		for (int y=0; y<s->h; y++, (Uint8*&)pixel += s->pitch)
+		Uint8 *pixel = (Uint8*)s->pixels;
+		for (int y=0; y<s->h; y++, pixel += s->pitch)
 			pixel[0] = pixel[1];
 	}
 #endif
@@ -321,7 +322,7 @@ static SDL_Texture*& GetGlyph(SDL_Renderer *ren, TTF_Font* font, BYTE chr)
 	if (chr == 0xC4 && SingleHorzLineEdge==NULL) // ─
 	{
 		SingleHorzLineEdge = new Uint8 [TileHeight];
-		Uint8 *alpha = (Uint8*)s->pixels + 3;
+		Uint8 *alpha = (Uint8*)s->pixels;
 		for (int y=0; y<s->h; y++, alpha += s->pitch)
 			SingleHorzLineEdge[y] = *alpha;
 	}
@@ -329,7 +330,7 @@ static SDL_Texture*& GetGlyph(SDL_Renderer *ren, TTF_Font* font, BYTE chr)
 	if (chr == 0xCD && DoubleHorzLineEdge==NULL) // ═
 	{
 		DoubleHorzLineEdge = new Uint8 [TileHeight];
-		Uint8 *alpha = (Uint8*)s->pixels + 3;
+		Uint8 *alpha = (Uint8*)s->pixels;
 		for (int y=0; y<s->h; y++, alpha += s->pitch)
 			DoubleHorzLineEdge[y] = *alpha;
 	}
@@ -361,13 +362,17 @@ static SDL_Texture*& GetGlyph(SDL_Renderer *ren, TTF_Font* font, BYTE chr)
 		FixUpGlyphVerticallyTop(s);
 	}
 #endif
-	// fill all channels except for alpha with solid 0xFF
-	Uint32 *pixel = (Uint32*)s->pixels;
-	for (int y=0; y<s->h; y++, (Uint8*&)pixel += s->pitch)
+	// Create an RGBA surface from the 8-bit surface created by TTF_RenderUNICODE_Shaded(), initializing the RGB values to maximum white and the alpha channel from the source surface.
+	// We assume that its palette maps 0-255 linearly to grayscale 0-255.
+	SDL_Surface *s_rgba = SDL_CreateRGBSurfaceWithFormat(0, s->w, s->h, 32, SDL_PIXELFORMAT_RGBA32);
+	SDL_FillRect(s_rgba, NULL, 0xFFFFFFFF);
+	Uint8 *srcPixel = (Uint8*)s     ->pixels;
+	Uint8 *dstAlpha = (Uint8*)s_rgba->pixels + 3;
+	for (int y=0; y<s->h; y++, srcPixel += s->pitch, dstAlpha += s_rgba->pitch)
 		for (int x=0; x<s->w; x++)
-			pixel[x] |= 0xFFFFFF;
+			dstAlpha[x*4] = srcPixel[x];
 
-	t = SDL_CreateTextureFromSurface(ren, s);
+	t = SDL_CreateTextureFromSurface(ren, s_rgba);
 	SDL_FreeSurface(s);
 	return t;
 }

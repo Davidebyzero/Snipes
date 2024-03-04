@@ -369,6 +369,7 @@ static int SDLCALL ConsoleThreadFunc(void*)
 #endif
 	}
 	SDL_Window *win;
+	int top, left, bottom, right, totalWidth, totalHeight;
 	for (Uint i=0; i<2; i++)
 	{
 		win = SDL_CreateWindow("Snipes", SDL_WINDOWPOS_CENTERED, SDL_WINDOWPOS_CENTERED, WINDOW_WIDTH * TileWidth, WINDOW_HEIGHT * TileHeight, SDL_WINDOW_SHOWN | SDL_WINDOW_RESIZABLE);
@@ -380,16 +381,17 @@ static int SDLCALL ConsoleThreadFunc(void*)
 #ifdef TILE_HEIGHT
 		break;
 #else
-		int top, left, bottom, right;
 		SDL_GetWindowBordersSize(win, &top, &left, &bottom, &right);
-		int totalHeight = WINDOW_HEIGHT * TileHeight + (top + bottom);
-		if (totalHeight <= usableRect.h + ALLOWABLE_BORDER_EXCESS)
+		totalHeight = WINDOW_HEIGHT * TileHeight + (top + bottom);
+		if (i || totalHeight <= usableRect.h + ALLOWABLE_BORDER_EXCESS)
 			break;
 		TileHeight = (usableRect.h - (top + bottom)) / WINDOW_HEIGHT;
 		TileWidth = ((TileHeight*3+2)/4);
 		SDL_DestroyWindow(win);
 #endif
 	}
+	totalWidth = WINDOW_WIDTH * TileWidth + (left + right);
+	SDL_SetWindowPosition(win, (usableRect.w - totalWidth) / 2 + left, (usableRect.h - totalHeight) / 2 + top); // center the window within the usable desktop area
 
 	if (TTF_Init() != 0)
 	{

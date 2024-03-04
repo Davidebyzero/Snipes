@@ -337,41 +337,58 @@ static void DestroyGlyphs()
 
 static int SDLCALL ConsoleThreadFunc(void*)
 {
-	SDL_DisplayMode dm;
-	if (SDL_GetDesktopDisplayMode(0, &dm) != 0)
+	SDL_Rect usableRect;
+	if (SDL_GetDisplayUsableBounds(0, &usableRect) != 0)
 	{
 		fprintf(stderr, "SDL_GetDesktopDisplayMode: %s\n", SDL_GetError());
 		SDL_Quit();
 		return 1;
 	}
-#ifdef TILE_HEIGHT
-	if (TILE_HEIGHT * WINDOW_HEIGHT > dm.h)
 	{
-		fprintf(stderr, "Error: Configured tile height (%d) exceeds desktop height (%d)\n", TILE_HEIGHT, dm.h);
-		SDL_Quit();
-		return 1;
-	}
-	TileHeight = TILE_HEIGHT;
+#ifdef TILE_HEIGHT
+		if (TILE_HEIGHT * WINDOW_HEIGHT > usableRect.h)
+		{
+			fprintf(stderr, "Error: Configured tile height (%d) exceeds usable height (%d)\n", TILE_HEIGHT, usableRect.h);
+			SDL_Quit();
+			return 1;
+		}
+		TileHeight = TILE_HEIGHT;
 #else
-	TileHeight = dm.h / WINDOW_HEIGHT;
+		TileHeight = usableRect.h / WINDOW_HEIGHT;
 #endif
 
 #ifndef TILE_WIDTH
-	TileWidth = ((TileHeight*3+2)/4);
+		TileWidth = ((TileHeight*3+2)/4);
 #else
-	TileWidth = TILE_WIDTH;
+		TileWidth = TILE_WIDTH;
 #endif
 #ifndef FONT_SIZE
-	FontSize = TileHeight;
+		FontSize = TileHeight;
 #else
-	FontSize = FONT_SIZE;
+		FontSize = FONT_SIZE;
 #endif
-
-	SDL_Window *win = SDL_CreateWindow("Snipes", SDL_WINDOWPOS_CENTERED, SDL_WINDOWPOS_CENTERED, WINDOW_WIDTH * TileWidth, WINDOW_HEIGHT * TileHeight, SDL_WINDOW_SHOWN | SDL_WINDOW_RESIZABLE);
-	if (!win)
+	}
+	SDL_Window *win;
+	for (Uint i=0; i<2; i++)
 	{
-		fprintf(stderr, "SDL_CreateWindow: %s\n", SDL_GetError());
-		return 1;
+		win = SDL_CreateWindow("Snipes", SDL_WINDOWPOS_CENTERED, SDL_WINDOWPOS_CENTERED, WINDOW_WIDTH * TileWidth, WINDOW_HEIGHT * TileHeight, SDL_WINDOW_SHOWN | SDL_WINDOW_RESIZABLE);
+		if (!win)
+		{
+			fprintf(stderr, "SDL_CreateWindow: %s\n", SDL_GetError());
+			return 1;
+		}
+#ifdef TILE_HEIGHT
+		break;
+#else
+		int top, left, bottom, right;
+		SDL_GetWindowBordersSize(win, &top, &left, &bottom, &right);
+		int totalHeight = WINDOW_HEIGHT * TileHeight + (top + bottom);
+		if (totalHeight <= usableRect.h + ALLOWABLE_BORDER_EXCESS)
+			break;
+		TileHeight = (usableRect.h - (top + bottom)) / WINDOW_HEIGHT;
+		TileWidth = ((TileHeight*3+2)/4);
+		SDL_DestroyWindow(win);
+#endif
 	}
 
 	if (TTF_Init() != 0)

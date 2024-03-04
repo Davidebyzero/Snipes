@@ -28,6 +28,7 @@
 //#define TILE_WIDTH  27
 //#define TILE_HEIGHT 36
 //#define FONT_SIZE TILE_HEIGHT
+#define ALLOWABLE_BORDER_EXCESS 2 // when tile size is automatically chosen, due to being undefined above, this decides how much overflow (in pixels) beyond the usable desktop area is allowed
 
 // If CHEAT_OMNISCIENCE_SHOW_NORMAL_VIEWPORT is enabled in the SDL version, this sets the RGBA of the mask used to darken the area outside the standard viewport
 #define CHEAT_OMNISCIENCE_RGBA_OUTSIDE_NORMAL_VIEWPORT 0x60, 0x60, 0x60, 0x28

@@ -1,7 +1,7 @@
 SOURCES=$(addsuffix .cpp, Snipes $(addprefix sdl/, console keyboard sound timer))
 CFLAGS=-std=c++11 $(shell sdl2-config --cflags)
 CFLAGS+=$(if $(MAINT),-Werror -Wall -Wextra,)
-CFLAGS2=-O3
+CFLAGS2=-O3 -fstack-protector
 #CFLAGS2=-Og -g -fsanitize=address -fsanitize=undefined
 LDFLAGS=$(shell sdl2-config --libs) -lm -lSDL2_ttf
 CXX=g++

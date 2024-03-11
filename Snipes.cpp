@@ -2453,7 +2453,12 @@ extern "C" int __cdecl SDL_main(int argc, char* argv[])
 			if (UpdatePlayer(playbackMode, replayIO) || playbackFinished)
 				break;
 			if (!playbackMode && replayFile)
+			{
 				fwrite(&replayIO, 1, 1, replayFile);
+#ifdef CHEAT
+				fflush(replayFile);
+#endif
+			}
 
 			UpdateExplosions();
 			UpdateSound();

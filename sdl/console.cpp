@@ -414,8 +414,8 @@ static void ClearGlyphs()
 {
 	memset(Glyphs, 0, sizeof(Glyphs));
 	memset(GlyphIsEmpty, 0, sizeof(GlyphIsEmpty));
-	if (SingleHorzLineEdge) delete [] SingleHorzLineEdge; SingleHorzLineEdge = NULL;
-	if (DoubleHorzLineEdge) delete [] DoubleHorzLineEdge; DoubleHorzLineEdge = NULL;
+	if (SingleHorzLineEdge) { delete [] SingleHorzLineEdge; SingleHorzLineEdge = NULL; }
+	if (DoubleHorzLineEdge) { delete [] DoubleHorzLineEdge; DoubleHorzLineEdge = NULL; }
 }
 static void DestroyGlyphs()
 {

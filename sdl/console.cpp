@@ -387,7 +387,6 @@ static void RenderCharacterAt(SDL_Renderer *ren, TTF_Font* font, Uint x, Uint y)
 	Uint bgScreen = tile.color >> 4;
 	SDL_Color fg = ScreenColors[fgScreen];
 	SDL_Color bg = ScreenColors[bgScreen];
-	SDL_Color black = {0, 0, 0, 0xFF};
 	SDL_Rect rect = { (int)x * TileWidth, (int)y * TileHeight, TileWidth, TileHeight };
 	SDL_SetRenderDrawColor(ren, bg.r, bg.g, bg.b, 0xFF);
 	if (bgScreen != 0)

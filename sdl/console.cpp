@@ -236,7 +236,7 @@ static bool GlyphIsEmpty[256] = {};
 static Uint8 *SingleHorzLineEdge = NULL;
 static Uint8 *DoubleHorzLineEdge = NULL;
 
-static void FixUpLineJoiningGlitch(SDL_Surface *s, Uint8 *HorzLineEdge, bool useRightEdge)
+static void FixUpLineJoiningGlitch(SDL_Surface *s, bool useRightEdge)
 {
 	Uint64 diff[2] = {}; // initialize all element to zero
 	for (int d=0; d<=1; d++)
@@ -339,27 +339,27 @@ static SDL_Texture*& GetGlyph(SDL_Renderer *ren, TTF_Font* font, BYTE chr)
 	if (wcschr(L"┤╢╖┐┬┼╥╫", str[0]) != NULL)
 	{
 		GetGlyph(ren, font, 0xC4); // ─ // make sure SingleHorzLineEdge is initialized
-		FixUpLineJoiningGlitch(s, SingleHorzLineEdge, false);
+		FixUpLineJoiningGlitch(s, false);
 		FixUpGlyphVerticallyTop(s);
 	}
 	if (wcschr(L"╡╕╣╗╦╬╤╪", str[0]) != NULL)
 	{
 		GetGlyph(ren, font, 0xCD); // ═ // make sure DoubleHorzLineEdge is initialized
-		FixUpLineJoiningGlitch(s, DoubleHorzLineEdge, false);
+		FixUpLineJoiningGlitch(s, false);
 		FixUpGlyphVerticallyTop(s);
 	}
 	else
 	if (wcschr(L"├╟╓┌", str[0]) != NULL)
 	{
 		GetGlyph(ren, font, 0xC4); // ─ // make sure SingleHorzLineEdge is initialized
-		FixUpLineJoiningGlitch(s, SingleHorzLineEdge, true);
+		FixUpLineJoiningGlitch(s, true);
 		FixUpGlyphVerticallyTop(s);
 	}
 	else
 	if (wcschr(L"╞╔╠╒", str[0]) != NULL)
 	{
 		GetGlyph(ren, font, 0xCD); // ═ // make sure DoubleHorzLineEdge is initialized
-		FixUpLineJoiningGlitch(s, DoubleHorzLineEdge, true);
+		FixUpLineJoiningGlitch(s, true);
 		FixUpGlyphVerticallyTop(s);
 	}
 #endif

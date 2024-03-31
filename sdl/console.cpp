@@ -236,7 +236,7 @@ static bool GlyphIsEmpty[256] = {};
 static Uint8 *SingleHorzLineEdge = NULL;
 static Uint8 *DoubleHorzLineEdge = NULL;
 
-static void FixUpLineJoiningGlitch(SDL_Surface *s, Uint8 *HorzLineEdge, bool useRightEdge)
+static void FixUpLineJoiningGlitch(SDL_Surface *s, bool useRightEdge)
 {
 	Uint64 diff[2] = {}; // initialize all element to zero
 	for (int d=0; d<=1; d++)
@@ -339,27 +339,27 @@ static SDL_Texture*& GetGlyph(SDL_Renderer *ren, TTF_Font* font, BYTE chr)
 	if (wcschr(L"┤╢╖┐┬┼╥╫", str[0]) != NULL)
 	{
 		GetGlyph(ren, font, 0xC4); // ─ // make sure SingleHorzLineEdge is initialized
-		FixUpLineJoiningGlitch(s, SingleHorzLineEdge, false);
+		FixUpLineJoiningGlitch(s, false);
 		FixUpGlyphVerticallyTop(s);
 	}
 	if (wcschr(L"╡╕╣╗╦╬╤╪", str[0]) != NULL)
 	{
 		GetGlyph(ren, font, 0xCD); // ═ // make sure DoubleHorzLineEdge is initialized
-		FixUpLineJoiningGlitch(s, DoubleHorzLineEdge, false);
+		FixUpLineJoiningGlitch(s, false);
 		FixUpGlyphVerticallyTop(s);
 	}
 	else
 	if (wcschr(L"├╟╓┌", str[0]) != NULL)
 	{
 		GetGlyph(ren, font, 0xC4); // ─ // make sure SingleHorzLineEdge is initialized
-		FixUpLineJoiningGlitch(s, SingleHorzLineEdge, true);
+		FixUpLineJoiningGlitch(s, true);
 		FixUpGlyphVerticallyTop(s);
 	}
 	else
 	if (wcschr(L"╞╔╠╒", str[0]) != NULL)
 	{
 		GetGlyph(ren, font, 0xCD); // ═ // make sure DoubleHorzLineEdge is initialized
-		FixUpLineJoiningGlitch(s, DoubleHorzLineEdge, true);
+		FixUpLineJoiningGlitch(s, true);
 		FixUpGlyphVerticallyTop(s);
 	}
 #endif
@@ -387,7 +387,6 @@ static void RenderCharacterAt(SDL_Renderer *ren, TTF_Font* font, Uint x, Uint y)
 	Uint bgScreen = tile.color >> 4;
 	SDL_Color fg = ScreenColors[fgScreen];
 	SDL_Color bg = ScreenColors[bgScreen];
-	SDL_Color black = {0, 0, 0, 0xFF};
 	SDL_Rect rect = { (int)x * TileWidth, (int)y * TileHeight, TileWidth, TileHeight };
 	SDL_SetRenderDrawColor(ren, bg.r, bg.g, bg.b, 0xFF);
 	if (bgScreen != 0)
@@ -415,8 +414,8 @@ static void ClearGlyphs()
 {
 	memset(Glyphs, 0, sizeof(Glyphs));
 	memset(GlyphIsEmpty, 0, sizeof(GlyphIsEmpty));
-	if (SingleHorzLineEdge) delete [] SingleHorzLineEdge; SingleHorzLineEdge = NULL;
-	if (DoubleHorzLineEdge) delete [] DoubleHorzLineEdge; DoubleHorzLineEdge = NULL;
+	if (SingleHorzLineEdge) { delete [] SingleHorzLineEdge; SingleHorzLineEdge = NULL; }
+	if (DoubleHorzLineEdge) { delete [] DoubleHorzLineEdge; DoubleHorzLineEdge = NULL; }
 }
 static void DestroyGlyphs()
 {

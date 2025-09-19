@@ -10,7 +10,7 @@ For more information, see the [vogons.org forum thread](https://www.vogons.org/v
 
 SDL builds require the SDL2 and SDL2_ttf libraries.
 
-On startup, the SDL build will attempt to load a custom font, which can be obtained separately from [here](http://kingbird.myphotos.cc/ee22d44076adb8a34d8e20df4be3730a/SnipesConsole.ttf).
+On startup, the SDL build will attempt to load a custom font, which can be obtained separately from [here](http://kingbird.myphotos.cc/ee22d44076adb8a34d8e20df4be3730a/SnipesConsole.ttf). The custom font is required for authentic visuals. If unavailable, the game will fall back to system fonts with a warning that visuals will differ from the original.
 
 #### With Visual Studio
 
@@ -22,6 +22,8 @@ On startup, the SDL build will attempt to load a custom font, which can be obtai
 
 1. (Optional) Copy `config-sample.h` to `config.h`, and edit as desired
 2. Run `make` to compile an SDL build.
+
+The SDL build works on Linux, Windows, and macOS.
 
 For Arch Linux, you can use the [snipes-git](https://aur.archlinux.org/packages/snipes-git/) AUR package.
 

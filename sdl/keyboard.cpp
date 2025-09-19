@@ -1,5 +1,8 @@
 #include <map>
-#include <SDL2/SDL.h>
+#ifdef __APPLE__
+#define SDL_MAIN_HANDLED
+#endif
+#include <SDL.h>
 #include "../keyboard.h"
 #include "../timer.h"
 #include "../Snipes.h"

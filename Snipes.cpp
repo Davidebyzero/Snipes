@@ -12,6 +12,9 @@
 #include "sound.h"
 #include "keyboard.h"
 #include "platform.h"
+#ifdef __APPLE__
+#include <SDL.h>
+#endif
 
 bool got_ctrl_break = false;
 bool forfeit_match = false;
@@ -2158,10 +2161,10 @@ void WaitForNextTick(WORD &tick_count)
 	}
 }
 
-#if !(defined(_WIN32) || defined(_WIN64)) || defined(_CONSOLE)
-int __cdecl main(int argc, char* argv[])
-#else
+#if (defined(_WIN32) || defined(_WIN64)) && !defined(_CONSOLE)
 extern "C" int __cdecl SDL_main(int argc, char* argv[])
+#else
+int __cdecl main(int argc, char* argv[])
 #endif
 {
 	if (argc > 2)
@@ -2176,13 +2179,23 @@ extern "C" int __cdecl SDL_main(int argc, char* argv[])
 
 	if (int result = OpenConsole())
 		return result;
+	
+	// Create SDL window on main thread for macOS
+	if (int result = CreateSDLWindow())
+	{
+		CloseConsole();
+		return result;
+	}
+	
 	if (int result = OpenTimer())
 	{
+		CleanupSDL();
 		CloseConsole();
 		return result;
 	}
 	if (int result = OpenSound())
 	{
+		CleanupSDL();
 		CloseConsole();
 		CloseTimer();
 		return result;
@@ -2222,6 +2235,8 @@ extern "C" int __cdecl SDL_main(int argc, char* argv[])
 #undef _
 #undef S
 #undef i
+		// Render the title screen
+		RenderFrame();
 		ReadSkillLevel();
 		if (got_ctrl_break)
 			goto do_not_play_again;
@@ -2462,6 +2477,10 @@ extern "C" int __cdecl SDL_main(int argc, char* argv[])
 
 			UpdateExplosions();
 			UpdateSound();
+			
+			// Process SDL events and render frame for macOS
+			ProcessSDLEvents();
+			RenderFrame();
 		}
 #ifdef CHEAT
 	match_ended:
@@ -2516,6 +2535,7 @@ do_not_play_again:
 
 	CloseSound();
 	CloseTimer();
+	CleanupSDL();
 	CloseConsole();
 
 	return 0;

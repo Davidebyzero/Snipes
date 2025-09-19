@@ -1,6 +1,9 @@
 #include "../timer.h"
 
-#include <SDL2/SDL.h>
+#ifdef __APPLE__
+#define SDL_MAIN_HANDLED
+#endif
+#include <SDL.h>
 
 QWORD perf_freq;
 

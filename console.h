@@ -23,3 +23,9 @@ void ClearConsole();
 
 int OpenConsole();
 void CloseConsole();
+
+// macOS-specific SDL functions
+int CreateSDLWindow();
+void ProcessSDLEvents();
+void RenderFrame();
+void CleanupSDL();

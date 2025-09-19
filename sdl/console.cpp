@@ -1,7 +1,10 @@
 ﻿#include <stdio.h>
 #include <string.h>
-#include <SDL2/SDL.h>
-#include <SDL2/SDL_ttf.h>
+#ifdef __APPLE__
+#define SDL_MAIN_HANDLED
+#endif
+#include <SDL.h>
+#include <SDL_ttf.h>
 #include "../config.h"
 #include "../Snipes.h"
 #include "../macros.h"
@@ -107,6 +110,10 @@ DWORD ReadTextFromConsole(char buffer[], DWORD bufsize)
 			CheckForBreak();
 			if (forfeit_match)
 				goto done;
+			
+			// Process SDL events and render while waiting for input
+			ProcessSDLEvents();
+			RenderFrame();
 			SleepTimeslice();
 		}
 		char c = InputBuffer[InputBufferReadIndex];
@@ -426,7 +433,44 @@ static void DestroyGlyphs()
 				SDL_DestroyTexture(Glyphs[color]);
 }
 
-static int SDLCALL ConsoleThreadFunc(void*)
+#ifdef __APPLE__
+static SDL_Window *main_window = NULL;
+static bool window_created = false;
+#endif
+
+// Helper function to load font with fallbacks
+TTF_Font* LoadFontWithFallbacks(int size)
+{
+	TTF_Font* font = TTF_OpenFont(FONT_FILENAME, size);
+	if (!font)
+	{
+		fprintf(stderr, "WARNING: Could not load %s\n", FONT_FILENAME);
+		fprintf(stderr, "The custom font is required for authentic visuals.\n");
+		fprintf(stderr, "Download from: http://kingbird.myphotos.cc/ee22d44076adb8a34d8e20df4be3730a/SnipesConsole.ttf\n");
+		fprintf(stderr, "Attempting to use system fallback fonts (visuals may differ)...\n");
+		// Try common system monospace fonts as fallbacks
+		const char* fallback_fonts[] = {
+			"/System/Library/Fonts/Courier.ttc",
+			"/System/Library/Fonts/SFNSMono.ttf",
+			"/System/Library/Fonts/Menlo.ttc",
+			"/usr/share/fonts/truetype/dejavu/DejaVuSansMono.ttf", // Linux
+			NULL
+		};
+
+		for (int i = 0; fallback_fonts[i] != NULL; i++)
+		{
+			font = TTF_OpenFont(fallback_fonts[i], size);
+			if (font)
+			{
+				fprintf(stderr, "Using fallback font: %s (NOTICE: Game visuals will differ from original)\n", fallback_fonts[i]);
+				break;
+			}
+		}
+	}
+	return font;
+}
+
+int ConsoleThreadFunc(void*)
 {
 	SDL_Rect usableRect;
 	if (SDL_GetDisplayUsableBounds(0, &usableRect) != 0)
@@ -490,10 +534,10 @@ static int SDLCALL ConsoleThreadFunc(void*)
 		return 1;
 	}
 
-	TTF_Font* font = TTF_OpenFont(FONT_FILENAME, FontSize);
+	TTF_Font* font = LoadFontWithFallbacks(FontSize);
 	if (!font)
 	{
-		fprintf(stderr, "TTF_OpenFont: %s\n", SDL_GetError());
+		fprintf(stderr, "TTF_OpenFont: Could not load any fonts\n");
 		TTF_Quit();
 		return 1;
 	}
@@ -568,10 +612,10 @@ static int SDLCALL ConsoleThreadFunc(void*)
 						DestroyGlyphs();
 						ClearGlyphs();
 
-						TTF_Font* newFont = TTF_OpenFont(FONT_FILENAME, FontSize);
+						TTF_Font* newFont = LoadFontWithFallbacks(FontSize);
 						if (!newFont)
 						{
-							fprintf(stderr, "TTF_OpenFont: %s\n", SDL_GetError());
+							fprintf(stderr, "TTF_OpenFont: Could not load any fonts\n");
 							instant_quit = forfeit_match = got_ctrl_break = true;
 						}
 						else
@@ -676,26 +720,207 @@ int OpenConsole()
 		fprintf(stderr, "SDL_Init: %s\n", SDL_GetError());
 		return 1;
 	}
-	else
-	{
-		ConsoleThread = SDL_CreateThread(ConsoleThreadFunc, "ConsoleThread", NULL);
-		if (!ConsoleThread)
-		{
-			fprintf(stderr, "SDL_CreateWindow: %s\n", SDL_GetError());
-			SDL_Quit();
-			return 1;
-		}
-
-		ScreenMutex = SDL_CreateMutex();
-
-		return 0;
-	}
+	
+	// For macOS, we'll initialize everything on the main thread
+	ScreenMutex = SDL_CreateMutex();
+	
+	// On macOS, the console window will be created when we run the main loop
+	return 0;
 }
 
 void CloseConsole()
 {
 	Exiting = true;
-	SDL_WaitThread(ConsoleThread, NULL);
 	SDL_DestroyMutex(ScreenMutex);
 	SDL_Quit();
+}
+
+// For macOS - run the SDL window creation and event loop on main thread
+SDL_Window* global_window = NULL;
+SDL_Renderer* global_renderer = NULL;
+TTF_Font* global_font = NULL;
+
+int CreateSDLWindow()
+{
+	SDL_Rect usableRect;
+	if (SDL_GetDisplayUsableBounds(0, &usableRect) != 0)
+	{
+		fprintf(stderr, "SDL_GetDisplayUsableBounds: %s\n", SDL_GetError());
+		return 1;
+	}
+	
+#ifdef TILE_HEIGHT
+	if (TILE_HEIGHT * WINDOW_HEIGHT > usableRect.h)
+	{
+		fprintf(stderr, "Error: Configured tile height (%d) exceeds usable height (%d)\n", TILE_HEIGHT, usableRect.h);
+		return 1;
+	}
+	TileHeight = TILE_HEIGHT;
+#else
+	TileHeight = usableRect.h / WINDOW_HEIGHT;
+#endif
+
+#ifndef TILE_WIDTH
+	TileWidth = ((TileHeight*3+2)/4);
+#else
+	TileWidth = TILE_WIDTH;
+#endif
+#ifndef FONT_SIZE
+	FontSize = TileHeight;
+#else
+	FontSize = FONT_SIZE;
+#endif
+
+	int top, left, bottom, right, totalWidth, totalHeight;
+	for (Uint i=0; i<2; i++)
+	{
+		global_window = SDL_CreateWindow("Snipes", SDL_WINDOWPOS_CENTERED, SDL_WINDOWPOS_CENTERED, 
+		                                 WINDOW_WIDTH * TileWidth, WINDOW_HEIGHT * TileHeight, 
+		                                 SDL_WINDOW_SHOWN | SDL_WINDOW_RESIZABLE);
+		if (!global_window)
+		{
+			fprintf(stderr, "SDL_CreateWindow: %s\n", SDL_GetError());
+			return 1;
+		}
+		SDL_GetWindowBordersSize(global_window, &top, &left, &bottom, &right);
+		totalHeight = WINDOW_HEIGHT * TileHeight + (top + bottom);
+#ifdef TILE_HEIGHT
+		break;
+#else
+		if (i || totalHeight <= usableRect.h + ALLOWABLE_BORDER_EXCESS)
+			break;
+		TileHeight = (usableRect.h - (top + bottom)) / WINDOW_HEIGHT;
+		TileWidth = ((TileHeight*3+2)/4);
+		FontSize = TileHeight;
+		SDL_DestroyWindow(global_window);
+#endif
+	}
+	totalWidth = WINDOW_WIDTH * TileWidth + (left + right);
+	SDL_SetWindowPosition(global_window, (usableRect.w - totalWidth) / 2 + left, (usableRect.h - totalHeight) / 2 + top);
+
+	if (TTF_Init() != 0)
+	{
+		fprintf(stderr, "TTF_Init: %s\n", SDL_GetError());
+		SDL_DestroyWindow(global_window);
+		return 1;
+	}
+
+	global_font = LoadFontWithFallbacks(FontSize);
+	if (!global_font)
+	{
+		fprintf(stderr, "TTF_OpenFont: Could not load any fonts\n");
+		TTF_Quit();
+		SDL_DestroyWindow(global_window);
+		return 1;
+	}
+	TTF_SetFontHinting(global_font, TTF_HINTING_MONO);
+
+	global_renderer = SDL_CreateRenderer(global_window, -1, SDL_RENDERER_ACCELERATED | SDL_RENDERER_PRESENTVSYNC);
+	if (!global_renderer)
+	{
+		fprintf(stderr, "SDL_CreateRenderer: %s\n", SDL_GetError());
+		TTF_CloseFont(global_font);
+		TTF_Quit();
+		SDL_DestroyWindow(global_window);
+		return 1;
+	}
+
+	ClearGlyphs();
+	return 0;
+}
+
+void ProcessSDLEvents()
+{
+	SDL_Event e;
+	while (SDL_PollEvent(&e))
+	{
+		switch (e.type)
+		{
+		case SDL_QUIT:
+			instant_quit = forfeit_match = got_ctrl_break = true;
+			break;
+		case SDL_KEYDOWN:
+		case SDL_KEYUP:
+			HandleKey((SDL_KeyboardEvent*)&e);
+			break;
+		case SDL_TEXTINPUT:
+			for (const char* s = e.text.text; *s; s++)
+			{
+				InputBuffer[InputBufferWriteIndex] = *s;
+				InputBufferWriteIndex = (InputBufferWriteIndex+1) % InputBufferSize;
+			}
+			break;
+		case SDL_WINDOWEVENT:
+			switch (e.window.event)
+			{
+			case SDL_WINDOWEVENT_SIZE_CHANGED:
+				{
+					TileWidth = e.window.data1 / WINDOW_WIDTH;
+					TileHeight = e.window.data2 / WINDOW_HEIGHT;
+					if (TileWidth > TileHeight)
+					{
+						TileWidth = TileHeight;
+					}
+					else
+					{
+						if (TileWidth != TileHeight)
+						{
+							TileHeight = ((TileWidth*8+3)/6);
+						}
+					}
+
+					FontSize = TileHeight;
+					DestroyGlyphs();
+					ClearGlyphs();
+
+					TTF_Font* newFont = LoadFontWithFallbacks(FontSize);
+					if (!newFont)
+					{
+						fprintf(stderr, "TTF_OpenFont: Could not load any fonts\n");
+						instant_quit = forfeit_match = got_ctrl_break = true;
+					}
+					else
+					{
+						TTF_CloseFont(global_font);
+						global_font = newFont;
+					}
+
+					SDL_SetWindowSize(global_window, WINDOW_WIDTH * TileWidth, WINDOW_HEIGHT * TileHeight);
+				}
+				break;
+			}
+			break;
+		}
+	}
+}
+
+void RenderFrame()
+{
+	SDL_SetRenderDrawColor(global_renderer, 0, 0, 0, 255);
+	SDL_RenderClear(global_renderer);
+
+	SDL_LockMutex(ScreenMutex);
+	for (Uint y = 0; y < WINDOW_HEIGHT; y++)
+		for (Uint x = 0; x < WINDOW_WIDTH; x++)
+			RenderCharacterAt(global_renderer, global_font, x, y);
+	SDL_UnlockMutex(ScreenMutex);
+
+	if (OutputCursorVisible && SDL_GetTicks() % 500 < 250)
+	{
+		SDL_Color c = ScreenColors[OutputTextColor];
+		SDL_SetRenderDrawColor(global_renderer, c.r, c.g, c.b, c.a);
+		SDL_Rect rect = { (int)OutputCursorX * TileWidth, (int)OutputCursorY * TileHeight, TileWidth, TileHeight };
+		SDL_RenderFillRect(global_renderer, &rect);
+	}
+
+	SDL_RenderPresent(global_renderer);
+}
+
+void CleanupSDL()
+{
+	DestroyGlyphs();
+	if (global_renderer) SDL_DestroyRenderer(global_renderer);
+	if (global_font) TTF_CloseFont(global_font);
+	TTF_Quit();
+	if (global_window) SDL_DestroyWindow(global_window);
 }

@@ -13,6 +13,22 @@
 #include "keyboard.h"
 #include "platform.h"
 
+
+// Platform-specific directory creation
+#if defined(_WIN32) || defined(_WIN64)
+	#include <direct.h>
+	#define CREATE_DIRECTORY(path) _mkdir(path)
+#else
+	#include <sys/stat.h>
+	#include <sys/types.h>
+	#define CREATE_DIRECTORY(path) mkdir(path, 0755)
+#endif
+
+//IF REPLAY_FOLDER is not defined, it should use the current folder.
+#ifndef REPLAY_FOLDER
+    #define REPLAY_FOLDER "."
+#endif
+
 bool got_ctrl_break = false;
 bool forfeit_match = false;
 bool instant_quit = false;
@@ -1733,7 +1749,7 @@ void EraseObjectFromMaze()
 	}
 }
 
-//template <typename TYPE> TYPE &IncWrap(TYPE &n, 
+//template <typename TYPE> TYPE &IncWrap(TYPE &n,
 
 void UpdateSnipePortals()
 {
@@ -2271,9 +2287,13 @@ extern "C" int __cdecl SDL_main(int argc, char* argv[])
 			struct tm *rectime_gmt;
 			rectime_gmt = gmtime(&rectime);
 
-			char replayFilename[1024];
-			sprintf(replayFilename,
-					"%04d-%02d-%02d %02d.%02d.%02d.SnipesGame",
+			// Create the replay folder if it doesn't exist
+			CREATE_DIRECTORY(REPLAY_FOLDER);
+
+            char replayFilename[1024];
+            snprintf(replayFilename, sizeof(replayFilename),
+					"%s/%04d-%02d-%02d %02d.%02d.%02d.SnipesGame",
+					REPLAY_FOLDER,
 					1900+rectime_gmt->tm_year, rectime_gmt->tm_mon+1, rectime_gmt->tm_mday,
 					rectime_gmt->tm_hour, rectime_gmt->tm_min, rectime_gmt->tm_sec);
 

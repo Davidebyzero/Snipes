@@ -18,6 +18,14 @@
 // For playback: Wait for a keypress at start, and behave like a live game at end. Meant for screen recording of a played back replay.
 //#define PLAYBACK_FOR_SCREEN_RECORDING
 
+// Store Recording files to a single folder.
+// This should ensure playback that the game doesn't develop a __MACOSX problem where there are SnipesGameFiles littered everywhere.
+// For Linux: (note, you can't use the ~/SnipesGameFiles naming format)
+#define REPLAY_FOLDER "/home/username/SnipesGameFiles"
+//
+// For Windows:
+// #define PLAYBACKFOLDER "C:\SnipesGameFiles"
+
 // Windows options
 #define WINDOWS_PRECISE_TIMER
 

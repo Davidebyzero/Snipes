@@ -1,6 +1,6 @@
 # Snipes
 
-This is a modern port of the classic 1982 text-mode game Snipes. The code has been reverse-engineered from the original DOS executable, and has 100% identical game logic. 
+This is a modern port of the classic 1982 text-mode game Snipes. The code has been reverse-engineered from the original DOS executable, and has 100% identical game logic.
 
 For more information, see the [vogons.org forum thread](https://www.vogons.org/viewtopic.php?f=7&t=49073).
 
@@ -28,6 +28,7 @@ For Arch Linux, you can use the [snipes-git](https://aur.archlinux.org/packages/
 ### Replay recording
 
 This version automatically records replay files of played games. By default, replay files are saved to the current directory, and have a `.SnipesGame` file extension.
+If you uncomment the `#define REPLAY_FOLDER` line in config.h and enter a valid path, the `.SnipesGame` replays will be saved to that directory rather than the current directory.
 
 To play back a replay file, pass it as the first argument to the game program, e.g.:
 

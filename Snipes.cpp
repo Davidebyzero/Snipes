@@ -2158,7 +2158,11 @@ void WaitForNextTick(WORD &tick_count)
 	}
 }
 
-#if !(defined(_WIN32) || defined(_WIN64)) || defined(_CONSOLE)
+#if defined(__APPLE__) && !defined(_CONSOLE)
+// macOS requires window creation and event handling on the main thread, so
+// sdl/console.cpp provides main() and runs the game logic on a worker thread.
+int GameMain(int argc, char* argv[])
+#elif !(defined(_WIN32) || defined(_WIN64)) || defined(_CONSOLE)
 int __cdecl main(int argc, char* argv[])
 #else
 extern "C" int __cdecl SDL_main(int argc, char* argv[])

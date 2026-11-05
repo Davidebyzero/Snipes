@@ -95,10 +95,31 @@ void CheckForBreak()
 	got_ctrl_break = forfeit_match;
 }
 
+#if defined(__APPLE__)
+// On macOS, text input must be started/stopped on the main thread, but this is
+// called from the game thread. So post a request for the console loop to apply.
+enum { TextInputRequest_None, TextInputRequest_Start, TextInputRequest_Stop };
+static SDL_atomic_t TextInputRequest;
+static void StartTextInput() { SDL_AtomicSet(&TextInputRequest, TextInputRequest_Start); }
+static void StopTextInput () { SDL_AtomicSet(&TextInputRequest, TextInputRequest_Stop ); }
+static void ApplyTextInputRequest()
+{
+	switch (SDL_AtomicSet(&TextInputRequest, TextInputRequest_None))
+	{
+	case TextInputRequest_Start: SDL_StartTextInput(); break;
+	case TextInputRequest_Stop : SDL_StopTextInput (); break;
+	}
+}
+#else
+static void StartTextInput() { SDL_StartTextInput(); }
+static void StopTextInput () { SDL_StopTextInput (); }
+static void ApplyTextInputRequest() {}
+#endif
+
 DWORD ReadTextFromConsole(char buffer[], DWORD bufsize)
 {
 	// TODO: Semaphores?
-	SDL_StartTextInput();
+	StartTextInput();
 
 	DWORD numread = 0;
 	while (true)
@@ -138,7 +159,7 @@ DWORD ReadTextFromConsole(char buffer[], DWORD bufsize)
 	}
 
 done:
-	SDL_StopTextInput();
+	StopTextInput();
 	return numread;
 }
 
@@ -514,6 +535,8 @@ static int SDLCALL ConsoleThreadFunc(void*)
 
 	while (!Exiting)
 	{
+		ApplyTextInputRequest();
+
 		SDL_Event e;
 		while (SDL_PollEvent(&e))
 		{
@@ -666,6 +689,75 @@ static int SDLCALL ConsoleThreadFunc(void*)
 	return 0;
 }
 
+#if defined(__APPLE__)
+
+// macOS (and SDL3, which sdl2-compat runs on) only allows windows to be created
+// and events to be pumped on the main thread. So here the roles are swapped:
+// main() initializes SDL and runs the console/render loop on the main thread,
+// while the game logic (GameMain in Snipes.cpp) runs on a worker thread.
+
+int GameMain(int argc, char* argv[]);
+
+static SDL_atomic_t ConsoleRequested, GameFinished;
+static int GameArgc;
+static char **GameArgv;
+
+static int SDLCALL GameThreadFunc(void*)
+{
+	int result = GameMain(GameArgc, GameArgv);
+	SDL_AtomicSet(&GameFinished, 1);
+	return result;
+}
+
+int OpenConsole()
+{
+	Exiting = false;
+	SDL_AtomicSet(&ConsoleRequested, 1);
+	return 0;
+}
+
+void CloseConsole()
+{
+	Exiting = true; // main() tears down SDL once the game thread has finished
+}
+
+int main(int argc, char* argv[])
+{
+	if (SDL_Init(SDL_INIT_VIDEO | SDL_INIT_AUDIO) != 0)
+	{
+		fprintf(stderr, "SDL_Init: %s\n", SDL_GetError());
+		return 1;
+	}
+	ScreenMutex = SDL_CreateMutex();
+
+	GameArgc = argc;
+	GameArgv = argv;
+	SDL_Thread *gameThread = SDL_CreateThread(GameThreadFunc, "GameThread", NULL);
+	if (!gameThread)
+	{
+		fprintf(stderr, "SDL_CreateThread: %s\n", SDL_GetError());
+		SDL_DestroyMutex(ScreenMutex);
+		SDL_Quit();
+		return 1;
+	}
+
+	// Wait for the game to open the console (or to exit early, e.g. on a startup error)
+	while (!SDL_AtomicGet(&ConsoleRequested) && !SDL_AtomicGet(&GameFinished))
+		SDL_Delay(1);
+
+	if (SDL_AtomicGet(&ConsoleRequested))
+		if (ConsoleThreadFunc(NULL) != 0)
+			instant_quit = forfeit_match = got_ctrl_break = true; // no window; make the game exit
+
+	int result;
+	SDL_WaitThread(gameThread, &result);
+	SDL_DestroyMutex(ScreenMutex);
+	SDL_Quit();
+	return result;
+}
+
+#else
+
 static SDL_Thread *ConsoleThread;
 
 int OpenConsole()
@@ -700,3 +792,5 @@ void CloseConsole()
 	SDL_DestroyMutex(ScreenMutex);
 	SDL_Quit();
 }
+
+#endif

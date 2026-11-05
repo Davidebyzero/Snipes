@@ -448,6 +448,53 @@ static void DestroyGlyphs()
 				SDL_DestroyTexture(Glyphs[color]);
 }
 
+// Opens FONT_FILENAME, or if that is unavailable, the first fallback font that
+// can be opened. The fallbacks cover all 256 glyphs of code page 437, but may
+// not look like the original. Once a font has been chosen, it is reused for
+// subsequent calls (e.g. when the window is resized), and hinting is applied.
+static TTF_Font* OpenGameFont(int size)
+{
+	static const char* const fontFilenames[] =
+	{
+		FONT_FILENAME,
+		"/System/Library/Fonts/Menlo.ttc",                        // macOS
+		"/usr/share/fonts/truetype/dejavu/DejaVuSansMono.ttf",    // Debian, Ubuntu
+		"/usr/share/fonts/TTF/DejaVuSansMono.ttf",                // Arch
+		"/usr/share/fonts/dejavu-sans-mono-fonts/DejaVuSansMono.ttf", // Fedora
+	};
+	static int chosen = -1;
+
+	TTF_Font* font = NULL;
+	if (chosen >= 0)
+		font = TTF_OpenFont(fontFilenames[chosen], size);
+	else
+	{
+		for (int i = 0; i < (int)_countof(fontFilenames); i++)
+		{
+			font = TTF_OpenFont(fontFilenames[i], size);
+			if (font)
+			{
+				chosen = i;
+				if (i > 0)
+					fprintf(stderr, "Using fallback font %s; the game will not look exactly like the original.\n", fontFilenames[i]);
+				break;
+			}
+			if (i == 0)
+				fprintf(stderr, "Could not open %s: %s\n"
+				                "For authentic visuals, download it from:\n"
+				                "http://kingbird.myphotos.cc/ee22d44076adb8a34d8e20df4be3730a/SnipesConsole.ttf\n",
+				        FONT_FILENAME, SDL_GetError());
+		}
+	}
+	if (!font)
+	{
+		fprintf(stderr, "TTF_OpenFont: %s\n", SDL_GetError());
+		return NULL;
+	}
+	TTF_SetFontHinting(font, TTF_HINTING_MONO);
+	return font;
+}
+
 static int SDLCALL ConsoleThreadFunc(void*)
 {
 	SDL_Rect usableRect;
@@ -512,14 +559,12 @@ static int SDLCALL ConsoleThreadFunc(void*)
 		return 1;
 	}
 
-	TTF_Font* font = TTF_OpenFont(FONT_FILENAME, FontSize);
+	TTF_Font* font = OpenGameFont(FontSize);
 	if (!font)
 	{
-		fprintf(stderr, "TTF_OpenFont: %s\n", SDL_GetError());
 		TTF_Quit();
 		return 1;
 	}
-	TTF_SetFontHinting(font, TTF_HINTING_MONO);
 
 	SDL_Renderer *ren = SDL_CreateRenderer(win, -1, SDL_RENDERER_ACCELERATED | SDL_RENDERER_PRESENTVSYNC);
 	if (!ren)
@@ -592,10 +637,9 @@ static int SDLCALL ConsoleThreadFunc(void*)
 						DestroyGlyphs();
 						ClearGlyphs();
 
-						TTF_Font* newFont = TTF_OpenFont(FONT_FILENAME, FontSize);
+						TTF_Font* newFont = OpenGameFont(FontSize);
 						if (!newFont)
 						{
-							fprintf(stderr, "TTF_OpenFont: %s\n", SDL_GetError());
 							instant_quit = forfeit_match = got_ctrl_break = true;
 						}
 						else

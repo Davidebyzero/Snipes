@@ -1,5 +1,6 @@
 ﻿#include <stdio.h>
 #include <string.h>
+#include <wchar.h>
 #include <SDL2/SDL.h>
 #include <SDL2/SDL_ttf.h>
 #include "../config.h"
@@ -94,10 +95,31 @@ void CheckForBreak()
 	got_ctrl_break = forfeit_match;
 }
 
+#if defined(__APPLE__)
+// On macOS, text input must be started/stopped on the main thread, but this is
+// called from the game thread. So post a request for the console loop to apply.
+enum { TextInputRequest_None, TextInputRequest_Start, TextInputRequest_Stop };
+static SDL_atomic_t TextInputRequest;
+static void StartTextInput() { SDL_AtomicSet(&TextInputRequest, TextInputRequest_Start); }
+static void StopTextInput () { SDL_AtomicSet(&TextInputRequest, TextInputRequest_Stop ); }
+static void ApplyTextInputRequest()
+{
+	switch (SDL_AtomicSet(&TextInputRequest, TextInputRequest_None))
+	{
+	case TextInputRequest_Start: SDL_StartTextInput(); break;
+	case TextInputRequest_Stop : SDL_StopTextInput (); break;
+	}
+}
+#else
+static void StartTextInput() { SDL_StartTextInput(); }
+static void StopTextInput () { SDL_StopTextInput (); }
+static void ApplyTextInputRequest() {}
+#endif
+
 DWORD ReadTextFromConsole(char buffer[], DWORD bufsize)
 {
 	// TODO: Semaphores?
-	SDL_StartTextInput();
+	StartTextInput();
 
 	DWORD numread = 0;
 	while (true)
@@ -137,7 +159,7 @@ DWORD ReadTextFromConsole(char buffer[], DWORD bufsize)
 	}
 
 done:
-	SDL_StopTextInput();
+	StopTextInput();
 	return numread;
 }
 
@@ -426,6 +448,53 @@ static void DestroyGlyphs()
 				SDL_DestroyTexture(Glyphs[color]);
 }
 
+// Opens FONT_FILENAME, or if that is unavailable, the first fallback font that
+// can be opened. The fallbacks cover all 256 glyphs of code page 437, but may
+// not look like the original. Once a font has been chosen, it is reused for
+// subsequent calls (e.g. when the window is resized), and hinting is applied.
+static TTF_Font* OpenGameFont(int size)
+{
+	static const char* const fontFilenames[] =
+	{
+		FONT_FILENAME,
+		"/System/Library/Fonts/Menlo.ttc",                        // macOS
+		"/usr/share/fonts/truetype/dejavu/DejaVuSansMono.ttf",    // Debian, Ubuntu
+		"/usr/share/fonts/TTF/DejaVuSansMono.ttf",                // Arch
+		"/usr/share/fonts/dejavu-sans-mono-fonts/DejaVuSansMono.ttf", // Fedora
+	};
+	static int chosen = -1;
+
+	TTF_Font* font = NULL;
+	if (chosen >= 0)
+		font = TTF_OpenFont(fontFilenames[chosen], size);
+	else
+	{
+		for (int i = 0; i < (int)_countof(fontFilenames); i++)
+		{
+			font = TTF_OpenFont(fontFilenames[i], size);
+			if (font)
+			{
+				chosen = i;
+				if (i > 0)
+					fprintf(stderr, "Using fallback font %s; the game will not look exactly like the original.\n", fontFilenames[i]);
+				break;
+			}
+			if (i == 0)
+				fprintf(stderr, "Could not open %s: %s\n"
+				                "For authentic visuals, download it from:\n"
+				                "http://kingbird.myphotos.cc/ee22d44076adb8a34d8e20df4be3730a/SnipesConsole.ttf\n",
+				        FONT_FILENAME, SDL_GetError());
+		}
+	}
+	if (!font)
+	{
+		fprintf(stderr, "TTF_OpenFont: %s\n", SDL_GetError());
+		return NULL;
+	}
+	TTF_SetFontHinting(font, TTF_HINTING_MONO);
+	return font;
+}
+
 static int SDLCALL ConsoleThreadFunc(void*)
 {
 	SDL_Rect usableRect;
@@ -490,14 +559,12 @@ static int SDLCALL ConsoleThreadFunc(void*)
 		return 1;
 	}
 
-	TTF_Font* font = TTF_OpenFont(FONT_FILENAME, FontSize);
+	TTF_Font* font = OpenGameFont(FontSize);
 	if (!font)
 	{
-		fprintf(stderr, "TTF_OpenFont: %s\n", SDL_GetError());
 		TTF_Quit();
 		return 1;
 	}
-	TTF_SetFontHinting(font, TTF_HINTING_MONO);
 
 	SDL_Renderer *ren = SDL_CreateRenderer(win, -1, SDL_RENDERER_ACCELERATED | SDL_RENDERER_PRESENTVSYNC);
 	if (!ren)
@@ -513,6 +580,8 @@ static int SDLCALL ConsoleThreadFunc(void*)
 
 	while (!Exiting)
 	{
+		ApplyTextInputRequest();
+
 		SDL_Event e;
 		while (SDL_PollEvent(&e))
 		{
@@ -568,10 +637,9 @@ static int SDLCALL ConsoleThreadFunc(void*)
 						DestroyGlyphs();
 						ClearGlyphs();
 
-						TTF_Font* newFont = TTF_OpenFont(FONT_FILENAME, FontSize);
+						TTF_Font* newFont = OpenGameFont(FontSize);
 						if (!newFont)
 						{
-							fprintf(stderr, "TTF_OpenFont: %s\n", SDL_GetError());
 							instant_quit = forfeit_match = got_ctrl_break = true;
 						}
 						else
@@ -665,6 +733,75 @@ static int SDLCALL ConsoleThreadFunc(void*)
 	return 0;
 }
 
+#if defined(__APPLE__)
+
+// macOS (and SDL3, which sdl2-compat runs on) only allows windows to be created
+// and events to be pumped on the main thread. So here the roles are swapped:
+// main() initializes SDL and runs the console/render loop on the main thread,
+// while the game logic (GameMain in Snipes.cpp) runs on a worker thread.
+
+int GameMain(int argc, char* argv[]);
+
+static SDL_atomic_t ConsoleRequested, GameFinished;
+static int GameArgc;
+static char **GameArgv;
+
+static int SDLCALL GameThreadFunc(void*)
+{
+	int result = GameMain(GameArgc, GameArgv);
+	SDL_AtomicSet(&GameFinished, 1);
+	return result;
+}
+
+int OpenConsole()
+{
+	Exiting = false;
+	SDL_AtomicSet(&ConsoleRequested, 1);
+	return 0;
+}
+
+void CloseConsole()
+{
+	Exiting = true; // main() tears down SDL once the game thread has finished
+}
+
+int main(int argc, char* argv[])
+{
+	if (SDL_Init(SDL_INIT_VIDEO | SDL_INIT_AUDIO) != 0)
+	{
+		fprintf(stderr, "SDL_Init: %s\n", SDL_GetError());
+		return 1;
+	}
+	ScreenMutex = SDL_CreateMutex();
+
+	GameArgc = argc;
+	GameArgv = argv;
+	SDL_Thread *gameThread = SDL_CreateThread(GameThreadFunc, "GameThread", NULL);
+	if (!gameThread)
+	{
+		fprintf(stderr, "SDL_CreateThread: %s\n", SDL_GetError());
+		SDL_DestroyMutex(ScreenMutex);
+		SDL_Quit();
+		return 1;
+	}
+
+	// Wait for the game to open the console (or to exit early, e.g. on a startup error)
+	while (!SDL_AtomicGet(&ConsoleRequested) && !SDL_AtomicGet(&GameFinished))
+		SDL_Delay(1);
+
+	if (SDL_AtomicGet(&ConsoleRequested))
+		if (ConsoleThreadFunc(NULL) != 0)
+			instant_quit = forfeit_match = got_ctrl_break = true; // no window; make the game exit
+
+	int result;
+	SDL_WaitThread(gameThread, &result);
+	SDL_DestroyMutex(ScreenMutex);
+	SDL_Quit();
+	return result;
+}
+
+#else
+
 static SDL_Thread *ConsoleThread;
 
 int OpenConsole()
@@ -699,3 +836,5 @@ void CloseConsole()
 	SDL_DestroyMutex(ScreenMutex);
 	SDL_Quit();
 }
+
+#endif
